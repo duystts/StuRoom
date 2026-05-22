@@ -14,6 +14,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<RoomAmenity> RoomAmenities => Set<RoomAmenity>();
     public DbSet<FeeConfig> FeeConfigs => Set<FeeConfig>();
     public DbSet<ViewingRequest> ViewingRequests => Set<ViewingRequest>();
+    public DbSet<BookingRequest> BookingRequests => Set<BookingRequest>();
     public DbSet<Contract> Contracts => Set<Contract>();
     public DbSet<ContractMember> ContractMembers => Set<ContractMember>();
     public DbSet<Invoice> Invoices => Set<Invoice>();
@@ -68,6 +69,25 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasOne(r => r.Contract)
             .WithMany(c => c.Reviews)
             .HasForeignKey(r => r.ContractId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // BookingRequest
+        builder.Entity<BookingRequest>()
+            .HasOne(b => b.Tenant)
+            .WithMany()
+            .HasForeignKey(b => b.TenantId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<BookingRequest>()
+            .HasOne(b => b.Contract)
+            .WithMany()
+            .HasForeignKey(b => b.ContractId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<BookingRequest>()
+            .HasOne(b => b.ViewingRequest)
+            .WithMany()
+            .HasForeignKey(b => b.ViewingRequestId)
             .OnDelete(DeleteBehavior.Restrict);
 
         // ContractMember

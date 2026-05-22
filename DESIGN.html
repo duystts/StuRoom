@@ -227,11 +227,16 @@
   <nav>
     <a href="#overview">Bối cảnh</a>
     <a href="#roles">Roles</a>
+    <div class="nav-section">Workflows</div>
+    <a href="#wf-tenant">Tenant</a>
+    <a href="#wf-landlord">Landlord</a>
+    <a href="#wf-admin">Admin</a>
     <div class="nav-section">Database Schema</div>
     <a href="#users">Users</a>
     <a href="#property">Property</a>
     <a href="#fee">Fee Config</a>
     <a href="#viewing">Viewing Requests</a>
+    <a href="#booking">Booking Requests</a>
     <a href="#contract">Contracts</a>
     <a href="#invoice">Invoices & Payments</a>
     <a href="#review">Reviews & Notifications</a>
@@ -281,6 +286,116 @@
 
   <hr />
 
+  <!-- ═══════════ WORKFLOWS ═══════════ -->
+  <section id="wf-tenant">
+    <h2>Workflows</h2>
+    <h3>Tenant <span class="badge badge-green">Người thuê</span></h3>
+
+    <div style="display:flex;flex-direction:column;gap:6px;margin:12px 0 20px">
+      <div style="display:flex;align-items:flex-start;gap:12px">
+        <div style="min-width:28px;height:28px;border-radius:50%;background:#6c8fff;color:#fff;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0">1</div>
+        <div style="padding-top:4px"><strong>Đăng ký tài khoản</strong> — chọn role Tenant, xác nhận email. Không cần Admin duyệt.</div>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:12px">
+        <div style="min-width:28px;height:28px;border-radius:50%;background:#6c8fff;color:#fff;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0">2</div>
+        <div style="padding-top:4px"><strong>Tìm phòng</strong> — lọc theo giá, địa điểm (Tỉnh/Quận/Phường), diện tích, tiện ích, đang tìm ghép.</div>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:12px">
+        <div style="min-width:28px;height:28px;border-radius:50%;background:#6c8fff;color:#fff;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0">3</div>
+        <div style="padding-top:4px"><strong>Gửi lịch hẹn xem phòng</strong> — đề xuất giờ + ghi chú → Landlord confirm/đổi giờ → nhận email xác nhận.</div>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:12px">
+        <div style="min-width:28px;height:28px;border-radius:50%;background:#6c8fff;color:#fff;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0">4</div>
+        <div style="padding-top:4px"><strong>Đặt phòng</strong> — sau khi xem, bấm "Đặt phòng" trên app, điền ngày dự kiến vào ở + lời nhắn → tạo <code>BookingRequest</code> (Pending).</div>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:12px">
+        <div style="min-width:28px;height:28px;border-radius:50%;background:#6c8fff;color:#fff;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0">5</div>
+        <div style="padding-top:4px"><strong>Ký hợp đồng</strong> — Landlord duyệt BookingRequest → tạo Contract → Tenant download PDF/Word, ký tay, trả lại bản scan.</div>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:12px">
+        <div style="min-width:28px;height:28px;border-radius:50%;background:#6c8fff;color:#fff;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0">6</div>
+        <div style="padding-top:4px"><strong>Thanh toán hàng tháng</strong> — nhận thông báo hoá đơn mới → xem chi tiết → Landlord ghi nhận thanh toán.</div>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:12px">
+        <div style="min-width:28px;height:28px;border-radius:50%;background:#6c8fff;color:#fff;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0">7</div>
+        <div style="padding-top:4px"><strong>Tìm người ghép</strong> (tuỳ chọn) — bật <code>SeekingRoommates</code> → listing hiển thị "đang tìm ghép X chỗ" → người khác đăng ký vào <code>ContractMembers</code>.</div>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:12px">
+        <div style="min-width:28px;height:28px;border-radius:50%;background:#6c8fff;color:#fff;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0">8</div>
+        <div style="padding-top:4px"><strong>Đánh giá</strong> — sau khi hợp đồng kết thúc, viết review + rating cho phòng.</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="wf-landlord">
+    <h3>Landlord <span class="badge badge-blue">Chủ trọ</span></h3>
+
+    <div style="display:flex;flex-direction:column;gap:6px;margin:12px 0 20px">
+      <div style="display:flex;align-items:flex-start;gap:12px">
+        <div style="min-width:28px;height:28px;border-radius:50%;background:#3b82f6;color:#fff;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0">1</div>
+        <div style="padding-top:4px"><strong>Đăng ký tài khoản</strong> — chọn role Landlord → Admin duyệt → mới được đăng phòng.</div>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:12px">
+        <div style="min-width:28px;height:28px;border-radius:50%;background:#3b82f6;color:#fff;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0">2</div>
+        <div style="padding-top:4px"><strong>Tạo tòa nhà → tạo phòng</strong> — upload ảnh (Cloudinary), chọn tiện ích, cấu hình phí (Building/Room level).</div>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:12px">
+        <div style="min-width:28px;height:28px;border-radius:50%;background:#3b82f6;color:#fff;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0">3</div>
+        <div style="padding-top:4px"><strong>Xử lý lịch hẹn xem</strong> — nhận thông báo → confirm hoặc đổi giờ → tenant nhận email.</div>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:12px">
+        <div style="min-width:28px;height:28px;border-radius:50%;background:#3b82f6;color:#fff;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0">4</div>
+        <div style="padding-top:4px"><strong>Duyệt BookingRequest</strong> — xem thông tin tenant + ngày dự kiến → Approve (tạo Contract) hoặc Reject.</div>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:12px">
+        <div style="min-width:28px;height:28px;border-radius:50%;background:#3b82f6;color:#fff;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0">5</div>
+        <div style="padding-top:4px"><strong>Quản lý hợp đồng</strong> — tạo/gia hạn/chấm dứt hợp đồng, export PDF + Word.</div>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:12px">
+        <div style="min-width:28px;height:28px;border-radius:50%;background:#3b82f6;color:#fff;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0">6</div>
+        <div style="padding-top:4px"><strong>Tạo hoá đơn hàng tháng</strong> — nhập chỉ số điện/nước → hệ thống tính tự động → gửi cho tenant.</div>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:12px">
+        <div style="min-width:28px;height:28px;border-radius:50%;background:#3b82f6;color:#fff;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0">7</div>
+        <div style="padding-top:4px"><strong>Ghi nhận thanh toán</strong> — xác nhận tenant đã trả → đổi trạng thái Invoice → Paid.</div>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:12px">
+        <div style="min-width:28px;height:28px;border-radius:50%;background:#3b82f6;color:#fff;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0">8</div>
+        <div style="padding-top:4px"><strong>Dashboard</strong> — doanh thu theo tháng, tỷ lệ lấp đầy phòng, danh sách hoá đơn quá hạn.</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="wf-admin">
+    <h3>Admin <span class="badge badge-purple">Quản trị</span></h3>
+
+    <div style="display:flex;flex-direction:column;gap:6px;margin:12px 0 20px">
+      <div style="display:flex;align-items:flex-start;gap:12px">
+        <div style="min-width:28px;height:28px;border-radius:50%;background:#7c3aed;color:#fff;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0">1</div>
+        <div style="padding-top:4px"><strong>Duyệt tài khoản Landlord</strong> — xem danh sách Landlord chờ duyệt → Approve/Reject. Tenant không cần duyệt.</div>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:12px">
+        <div style="min-width:28px;height:28px;border-radius:50%;background:#7c3aed;color:#fff;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0">2</div>
+        <div style="padding-top:4px"><strong>Quản lý danh mục Amenities</strong> — thêm/sửa/xoá tiện ích dùng chung toàn hệ thống.</div>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:12px">
+        <div style="min-width:28px;height:28px;border-radius:50%;background:#7c3aed;color:#fff;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0">3</div>
+        <div style="padding-top:4px"><strong>Kiểm duyệt review</strong> — ẩn review vi phạm (<code>IsApproved = false</code>).</div>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:12px">
+        <div style="min-width:28px;height:28px;border-radius:50%;background:#7c3aed;color:#fff;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0">4</div>
+        <div style="padding-top:4px"><strong>Dashboard tổng platform</strong> — tổng số phòng, users, Landlord active, doanh thu toàn hệ thống.</div>
+      </div>
+    </div>
+
+    <div class="rule-block">
+      <span class="icon">📌</span>
+      <span><strong>RULE — Landlord approval:</strong> Landlord mới đăng ký có <code>IsApproved = false</code>. Chưa được duyệt thì không tạo được Building/Room.</span>
+    </div>
+  </section>
+
+  <hr />
+
   <!-- ── Users ── -->
   <section id="users">
     <h2>Database Schema</h2>
@@ -313,7 +428,8 @@
   + <span class="field">FullName      </span> <span class="type">string</span>
   + <span class="field">DateOfBirth   </span> <span class="type">DateTime?</span>
   + <span class="field">AvatarUrl     </span> <span class="type">string?</span>
-  + <span class="field">StudentId     </span> <span class="type">string?</span>   <span class="comment">-- chỉ dành cho Tenant</span></pre></div>
+  + <span class="field">StudentId     </span> <span class="type">string?</span>    <span class="comment">-- chỉ dành cho Tenant</span>
+  + <span class="field">IsApproved    </span> <span class="type">bool</span>       <span class="comment">-- chỉ dùng cho Landlord, default = false khi đăng ký</span></pre></div>
   </section>
 
   <!-- ── Tài sản ── -->
@@ -404,6 +520,31 @@
     <div class="rule-block">
       <span class="icon">📧</span>
       <span><strong>RULE — Email:</strong> Gửi email cho Tenant khi Status chuyển sang <code>Confirmed</code> hoặc <code>Rescheduled</code>.</span>
+    </div>
+  </section>
+
+  <!-- ── BookingRequests ── -->
+  <section id="booking">
+    <h3>Booking Requests <span class="badge badge-orange">Đặt phòng</span></h3>
+    <div class="schema"><pre><span class="entity">BookingRequests</span>   <span class="comment">-- cầu nối giữa "xem phòng" và "ký hợp đồng"</span>
+  <span class="field">Id                </span> <span class="type">int PK</span>
+  <span class="field">RoomId            </span> <span class="fk">FK → Rooms</span>
+  <span class="field">TenantId          </span> <span class="fk">FK → AspNetUsers</span>
+  <span class="field">ViewingRequestId  </span> <span class="fk">FK → ViewingRequests</span>  <span class="comment">(nullable — có thể đặt không qua lịch xem)</span>
+  <span class="field">DesiredMoveIn     </span> <span class="type">DateTime</span>    <span class="comment">-- ngày dự kiến vào ở</span>
+  <span class="field">Message           </span> <span class="type">string?</span>     <span class="comment">-- lời nhắn cho landlord</span>
+  <span class="field">Status            </span> <span class="type">enum</span>: Pending | Approved | Rejected
+  <span class="field">RejectionReason   </span> <span class="type">string?</span>
+  <span class="field">ContractId        </span> <span class="fk">FK → Contracts</span>  <span class="comment">(nullable — được set khi Landlord Approve)</span>
+  <span class="field">CreatedAt         </span> <span class="type">DateTime</span></pre></div>
+
+    <div class="rule-block">
+      <span class="icon">📌</span>
+      <span><strong>RULE — Approve flow:</strong> Landlord Approve → hệ thống tự tạo <code>Contract</code> (Status = Pending) → gán <code>ContractId</code> vào BookingRequest → thông báo Tenant.</span>
+    </div>
+    <div class="rule-block">
+      <span class="icon">📌</span>
+      <span><strong>RULE — Giới hạn:</strong> Một phòng chỉ có thể có 1 BookingRequest Status = Pending cùng lúc. Tenant không thể gửi 2 request cho cùng 1 phòng.</span>
     </div>
   </section>
 
@@ -566,6 +707,21 @@
           <td>2026-05-22</td>
           <td>Thêm <code>ContractMembers</code> + <code>Contract.SeekingRoommates</code> + <code>Contract.DesiredOccupancy</code></td>
           <td>Hỗ trợ phòng ghép: 1 HĐ/phòng, người ghép chỉ đăng ký hệ thống, MonthlyRent không tự thay đổi</td>
+        </tr>
+        <tr class="changelog-row">
+          <td>2026-05-22</td>
+          <td>Thêm <code>BookingRequests</code> — bước đặt phòng giữa xem và ký HĐ</td>
+          <td>Workflow A: Tenant bấm Đặt phòng → Landlord duyệt → tạo Contract</td>
+        </tr>
+        <tr class="changelog-row">
+          <td>2026-05-22</td>
+          <td>Thêm <code>ApplicationUser.IsApproved</code> cho Landlord</td>
+          <td>Landlord cần Admin duyệt trước khi đăng phòng; Tenant không cần</td>
+        </tr>
+        <tr class="changelog-row">
+          <td>2026-05-22</td>
+          <td>Bổ sung Workflows (Tenant / Landlord / Admin) và bộ lọc tìm phòng</td>
+          <td>Làm rõ luồng nghiệp vụ cho team trước khi phân task</td>
         </tr>
       </tbody>
     </table>

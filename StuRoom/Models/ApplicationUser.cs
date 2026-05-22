@@ -8,4 +8,7 @@ public class ApplicationUser : IdentityUser
     public DateTime? DateOfBirth { get; set; }
     public string? AvatarUrl { get; set; }
     public string? StudentId { get; set; }
+
+    /// <summary>Chỉ dùng cho Landlord — Admin duyệt trước khi được tạo Building/Room</summary>
+    public bool IsApproved { get; set; }
 }

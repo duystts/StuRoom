@@ -12,8 +12,13 @@ public enum NotificationType
 
     // Landlord nhận
     NewViewingRequest,
+    NewBookingRequest,
     PaymentReceived,
     NewReview,
+
+    // Tenant nhận (booking)
+    BookingApproved,
+    BookingRejected,
 }
 
 public class Notification
