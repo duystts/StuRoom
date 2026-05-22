@@ -29,8 +29,8 @@ artifacts/
 **/appsettings.*.local.json
 **/secrets.json
 
-## Claude Code (local machine config, không commit)
-.claude/settings.local.json
+## Claude Code (toàn bộ folder, không commit)
+.claude/
 
 ## OS
 .DS_Store
