@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>StuRoom — Database & Feature Design</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 15px;
+      line-height: 1.7;
+      color: #1a1a2e;
+      background: #f5f6fa;
+    }
+
+    /* ── Layout ── */
+    .sidebar {
+      position: fixed;
+      top: 0; left: 0;
+      width: 230px;
+      height: 100vh;
+      background: #1a1a2e;
+      color: #c8ccd8;
+      overflow-y: auto;
+      padding: 24px 0;
+      z-index: 100;
+    }
+
+    .sidebar-title {
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: #7c8db5;
+      padding: 0 20px 12px;
+      border-bottom: 1px solid #2e3150;
+      margin-bottom: 12px;
+    }
+
+    .sidebar nav a {
+      display: block;
+      padding: 6px 20px;
+      color: #c8ccd8;
+      text-decoration: none;
+      font-size: 13.5px;
+      border-left: 3px solid transparent;
+      transition: all .15s;
+    }
+
+    .sidebar nav a:hover,
+    .sidebar nav a.active {
+      background: #232645;
+      color: #fff;
+      border-left-color: #6c8fff;
+    }
+
+    .sidebar nav .nav-section {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: #4a527a;
+      padding: 16px 20px 4px;
+    }
+
+    main {
+      margin-left: 230px;
+      padding: 40px 48px;
+      max-width: 960px;
+    }
+
+    /* ── Typography ── */
+    h1 {
+      font-size: 26px;
+      font-weight: 700;
+      color: #1a1a2e;
+      margin-bottom: 6px;
+    }
+
+    h2 {
+      font-size: 20px;
+      font-weight: 700;
+      color: #1a1a2e;
+      margin: 40px 0 14px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid #e0e3ef;
+    }
+
+    h3 {
+      font-size: 15px;
+      font-weight: 700;
+      color: #2c3060;
+      margin: 28px 0 10px;
+    }
+
+    .subtitle {
+      color: #6b7280;
+      font-size: 14px;
+      margin-bottom: 32px;
+    }
+
+    /* ── Alert banner ── */
+    .alert {
+      background: #fff8e1;
+      border-left: 4px solid #f59e0b;
+      border-radius: 6px;
+      padding: 12px 16px;
+      font-size: 14px;
+      color: #78350f;
+      margin-bottom: 32px;
+    }
+
+    .alert strong { color: #92400e; }
+
+    /* ── Cards ── */
+    .card {
+      background: #fff;
+      border: 1px solid #e0e3ef;
+      border-radius: 10px;
+      padding: 20px 24px;
+      margin-bottom: 16px;
+    }
+
+    /* ── Tables ── */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+      margin: 12px 0 20px;
+    }
+
+    thead th {
+      background: #f0f2ff;
+      color: #2c3060;
+      font-weight: 700;
+      text-align: left;
+      padding: 9px 14px;
+      border-bottom: 2px solid #d0d4f0;
+    }
+
+    tbody td {
+      padding: 8px 14px;
+      border-bottom: 1px solid #eef0f8;
+      vertical-align: top;
+    }
+
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover td { background: #f8f9ff; }
+
+    /* ── Schema blocks ── */
+    .schema {
+      background: #1e2139;
+      border-radius: 8px;
+      padding: 18px 20px;
+      margin: 12px 0 20px;
+      overflow-x: auto;
+    }
+
+    .schema pre {
+      font-family: "Cascadia Code", "Fira Code", "Consolas", monospace;
+      font-size: 13px;
+      line-height: 1.65;
+      color: #c8ccd8;
+      white-space: pre;
+    }
+
+    /* colour tokens inside schema */
+    .schema .entity   { color: #7ec8e3; font-weight: 700; }
+    .schema .field    { color: #c8ccd8; }
+    .schema .type     { color: #98d982; }
+    .schema .fk       { color: #f0a05a; }
+    .schema .comment  { color: #6272a4; font-style: italic; }
+    .schema .rule     { color: #ff79c6; }
+
+    /* ── Rule pills ── */
+    .rule-block {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      background: #fdf2ff;
+      border: 1px solid #e9d0f8;
+      border-radius: 8px;
+      padding: 10px 14px;
+      margin: 8px 0;
+      font-size: 13.5px;
+      color: #4a1272;
+    }
+
+    .rule-block .icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+
+    /* ── Badge ── */
+    .badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 20px;
+      letter-spacing: .04em;
+      vertical-align: middle;
+      margin-left: 4px;
+    }
+
+    .badge-green  { background: #d1fae5; color: #065f46; }
+    .badge-blue   { background: #dbeafe; color: #1e40af; }
+    .badge-orange { background: #ffedd5; color: #9a3412; }
+    .badge-purple { background: #ede9fe; color: #4c1d95; }
+
+    /* ── Changelog ── */
+    .changelog-row td:first-child { color: #6b7280; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .changelog-row td:nth-child(2) { font-weight: 600; color: #1a1a2e; }
+
+    /* ── Divider ── */
+    hr { border: none; border-top: 1px solid #e0e3ef; margin: 36px 0; }
+
+    /* ── Scrollbar ── */
+    .sidebar::-webkit-scrollbar { width: 4px; }
+    .sidebar::-webkit-scrollbar-thumb { background: #3a3f6e; border-radius: 2px; }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════ SIDEBAR ═══════════════════════════ -->
+<aside class="sidebar">
+  <div class="sidebar-title">StuRoom Design</div>
+  <nav>
+    <a href="#overview">Bối cảnh</a>
+    <a href="#roles">Roles</a>
+    <div class="nav-section">Database Schema</div>
+    <a href="#users">Users</a>
+    <a href="#property">Property</a>
+    <a href="#fee">Fee Config</a>
+    <a href="#viewing">Viewing Requests</a>
+    <a href="#contract">Contracts</a>
+    <a href="#invoice">Invoices & Payments</a>
+    <a href="#review">Reviews & Notifications</a>
+    <div class="nav-section">Meta</div>
+    <a href="#open">Open Questions</a>
+    <a href="#changelog">Changelog</a>
+  </nav>
+</aside>
+
+<!-- ═══════════════════════════ MAIN ═══════════════════════════ -->
+<main>
+  <h1>StuRoom — Database &amp; Feature Design</h1>
+  <p class="subtitle">Tài liệu thiết kế hệ thống · Cập nhật lần cuối: 2026-05-22</p>
+
+  <div class="alert">
+    <strong>Quy tắc bắt buộc:</strong> Mọi thay đổi thiết kế phải được cập nhật vào file này
+    <strong>TRƯỚC</strong> khi viết code hoặc tạo migration. Ghi vào bảng
+    <a href="#changelog" style="color:#b45309">Lịch sử thay đổi</a>.
+  </div>
+
+  <!-- ── Bối cảnh ── -->
+  <section id="overview">
+    <h2>Bối cảnh dự án</h2>
+    <div class="card">
+      <table>
+        <tbody>
+          <tr><td style="width:120px;font-weight:600;color:#4a527a">Loại</td><td>Đồ án môn học (1 kỳ), nhóm 2–4 người</td></tr>
+          <tr><td style="font-weight:600;color:#4a527a">Stack</td><td>ASP.NET Core MVC · EF Core · SQL Server · Cloudinary · Export PDF + Word</td></tr>
+          <tr><td style="font-weight:600;color:#4a527a">Mục tiêu</td><td>Hệ thống <strong>hybrid</strong> — vừa marketplace tìm phòng cho sinh viên, vừa công cụ quản lý cho chủ trọ</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ── Roles ── -->
+  <section id="roles">
+    <h2>Roles</h2>
+    <table>
+      <thead><tr><th>Role</th><th>Quyền chính</th></tr></thead>
+      <tbody>
+        <tr><td><span class="badge badge-purple">Admin</span></td><td>Quản lý toàn hệ thống, duyệt nội dung</td></tr>
+        <tr><td><span class="badge badge-blue">Landlord</span></td><td>Quản lý tòa nhà, phòng, hợp đồng, hoá đơn</td></tr>
+        <tr><td><span class="badge badge-green">Tenant</span></td><td>Tìm phòng, đặt lịch xem, ký hợp đồng, trả tiền, đánh giá</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <hr />
+
+  <!-- ── Users ── -->
+  <section id="users">
+    <h2>Database Schema</h2>
+
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px">
+      <div style="background:#1e2139;border-radius:6px;padding:8px 14px;font-family:monospace;font-size:13px;display:flex;align-items:center;gap:10px">
+        <span style="color:#98d982">string</span>
+        <span style="color:#6272a4">—</span>
+        <span style="color:#c8ccd8;font-family:sans-serif;font-size:12px">bắt buộc, không được null</span>
+      </div>
+      <div style="background:#1e2139;border-radius:6px;padding:8px 14px;font-family:monospace;font-size:13px;display:flex;align-items:center;gap:10px">
+        <span style="color:#98d982">string<span style="color:#ff79c6">?</span></span>
+        <span style="color:#6272a4">—</span>
+        <span style="color:#c8ccd8;font-family:sans-serif;font-size:12px">nullable, có thể để trống</span>
+      </div>
+      <div style="background:#1e2139;border-radius:6px;padding:8px 14px;font-family:monospace;font-size:13px;display:flex;align-items:center;gap:10px">
+        <span style="color:#f0a05a">FK →</span>
+        <span style="color:#6272a4">—</span>
+        <span style="color:#c8ccd8;font-family:sans-serif;font-size:12px">khoá ngoại liên kết bảng khác</span>
+      </div>
+      <div style="background:#1e2139;border-radius:6px;padding:8px 14px;font-family:monospace;font-size:13px;display:flex;align-items:center;gap:10px">
+        <span style="color:#98d982">int PK</span>
+        <span style="color:#6272a4">—</span>
+        <span style="color:#c8ccd8;font-family:sans-serif;font-size:12px">khoá chính, tự tăng</span>
+      </div>
+    </div>
+
+    <h3>Users</h3>
+    <div class="schema"><pre><span class="entity">AspNetUsers</span> <span class="comment">(extends IdentityUser → ApplicationUser)</span>
+  + <span class="field">FullName      </span> <span class="type">string</span>
+  + <span class="field">DateOfBirth   </span> <span class="type">DateTime?</span>
+  + <span class="field">AvatarUrl     </span> <span class="type">string?</span>
+  + <span class="field">StudentId     </span> <span class="type">string?</span>   <span class="comment">-- chỉ dành cho Tenant</span></pre></div>
+  </section>
+
+  <!-- ── Tài sản ── -->
+  <section id="property">
+    <h3>Tài sản</h3>
+    <div class="schema"><pre><span class="entity">Buildings</span>
+  <span class="field">Id           </span> <span class="type">int PK</span>
+  <span class="field">LandlordId   </span> <span class="fk">FK → AspNetUsers</span>
+  <span class="field">Name         </span> <span class="type">string</span>
+  <span class="field">Address      </span> <span class="type">string</span>
+  <span class="field">Province     </span> <span class="type">string</span>
+  <span class="field">District     </span> <span class="type">string</span>
+  <span class="field">Ward         </span> <span class="type">string</span>
+  <span class="field">Description  </span> <span class="type">string?</span>
+  <span class="field">CreatedAt    </span> <span class="type">DateTime</span>
+
+<span class="entity">Rooms</span>
+  <span class="field">Id           </span> <span class="type">int PK</span>
+  <span class="field">BuildingId   </span> <span class="fk">FK → Buildings</span>
+  <span class="field">RoomNumber   </span> <span class="type">string</span>
+  <span class="field">FloorNumber  </span> <span class="type">int?</span>
+  <span class="field">Area         </span> <span class="type">decimal</span>   <span class="comment">-- m²</span>
+  <span class="field">Capacity     </span> <span class="type">int?</span>      <span class="comment">-- null = không giới hạn số người thuê</span>
+  <span class="field">Description  </span> <span class="type">string?</span>
+  <span class="field">Status       </span> <span class="type">enum</span>: Available | Occupied | Maintenance | Inactive
+  <span class="field">CreatedAt    </span> <span class="type">DateTime</span>
+
+<span class="entity">RoomImages</span>
+  <span class="field">Id                 </span> <span class="type">int PK</span>
+  <span class="field">RoomId             </span> <span class="fk">FK → Rooms</span>
+  <span class="field">ImageUrl           </span> <span class="type">string</span>   <span class="comment">-- Cloudinary URL</span>
+  <span class="field">CloudinaryPublicId </span> <span class="type">string</span>
+  <span class="field">IsPrimary          </span> <span class="type">bool</span>
+  <span class="field">SortOrder          </span> <span class="type">int</span>
+
+<span class="entity">Amenities</span>  <span class="comment">-- danh mục tiện ích (WiFi, Điều hoà, Máy giặt, Bãi xe…)</span>
+  <span class="field">Id        </span> <span class="type">int PK</span>
+  <span class="field">Name      </span> <span class="type">string</span>
+  <span class="field">IconClass </span> <span class="type">string</span>   <span class="comment">-- CSS icon class</span>
+
+<span class="entity">RoomAmenities</span>  <span class="comment">-- many-to-many, composite PK (RoomId, AmenityId)</span>
+  <span class="field">RoomId    </span> <span class="fk">FK → Rooms</span>
+  <span class="field">AmenityId </span> <span class="fk">FK → Amenities</span></pre></div>
+
+    <div class="rule-block">
+      <span class="icon">📌</span>
+      <span><strong>RULE — Room.Status:</strong> Tự động cập nhật theo Contract active — không toggle thủ công.
+      Có Contract.Status = Active → <code>Occupied</code>; không có → <code>Available</code>.</span>
+    </div>
+  </section>
+
+  <!-- ── FeeConfig ── -->
+  <section id="fee">
+    <h3>Cấu hình phí <span class="badge badge-orange">Điểm khác biệt</span></h3>
+    <div class="schema"><pre><span class="entity">FeeConfigs</span>
+  <span class="field">Id           </span> <span class="type">int PK</span>
+  <span class="field">BuildingId   </span> <span class="fk">FK → Buildings</span>  <span class="comment">(nullable)</span>
+  <span class="field">RoomId       </span> <span class="fk">FK → Rooms</span>      <span class="comment">(nullable) ← override cấp phòng</span>
+  <span class="field">Name         </span> <span class="type">string</span>          <span class="comment">-- VD: "Tiền điện", "Phí xe máy"</span>
+  <span class="field">FeeCategory  </span> <span class="type">enum</span>: Rent | Electricity | Water | Internet | Parking | Other
+  <span class="field">CalcType     </span> <span class="type">enum</span>: Fixed | PerUnit
+  <span class="field">UnitPrice    </span> <span class="type">decimal</span>
+  <span class="field">Unit         </span> <span class="type">string</span>          <span class="comment">-- "tháng", "kWh", "m³", "xe"…</span>
+  <span class="field">IsActive     </span> <span class="type">bool</span>
+  <span class="field">SortOrder    </span> <span class="type">int</span></pre></div>
+
+    <div class="rule-block">
+      <span class="icon">📌</span>
+      <span><strong>RULE — Ưu tiên khi tạo hoá đơn:</strong> RoomId-level override BuildingId-level cùng FeeCategory.
+      Lấy tất cả FeeConfig <code>IsActive = true</code> áp dụng cho phòng đó.</span>
+    </div>
+  </section>
+
+  <!-- ── ViewingRequests ── -->
+  <section id="viewing">
+    <h3>Lịch hẹn xem phòng</h3>
+    <div class="schema"><pre><span class="entity">ViewingRequests</span>
+  <span class="field">Id             </span> <span class="type">int PK</span>
+  <span class="field">RoomId         </span> <span class="fk">FK → Rooms</span>
+  <span class="field">TenantId       </span> <span class="fk">FK → AspNetUsers</span>
+  <span class="field">ProposedTime   </span> <span class="type">DateTime</span>    <span class="comment">-- tenant đề xuất</span>
+  <span class="field">ConfirmedTime  </span> <span class="type">DateTime?</span>   <span class="comment">-- chủ đổi giờ (nullable)</span>
+  <span class="field">Status         </span> <span class="type">enum</span>: Pending | Confirmed | Rescheduled | Cancelled | Completed
+  <span class="field">TenantNote     </span> <span class="type">string?</span>
+  <span class="field">LandlordNote   </span> <span class="type">string?</span>
+  <span class="field">CreatedAt      </span> <span class="type">DateTime</span></pre></div>
+
+    <div class="rule-block">
+      <span class="icon">📧</span>
+      <span><strong>RULE — Email:</strong> Gửi email cho Tenant khi Status chuyển sang <code>Confirmed</code> hoặc <code>Rescheduled</code>.</span>
+    </div>
+  </section>
+
+  <!-- ── Contracts ── -->
+  <section id="contract">
+    <h3>Hợp đồng</h3>
+    <div class="schema"><pre><span class="entity">Contracts</span>
+  <span class="field">Id                </span> <span class="type">int PK</span>
+  <span class="field">RoomId            </span> <span class="fk">FK → Rooms</span>
+  <span class="field">TenantId          </span> <span class="fk">FK → AspNetUsers</span>   <span class="comment">-- người ký HĐ (primary)</span>
+  <span class="field">StartDate         </span> <span class="type">DateTime</span>
+  <span class="field">EndDate           </span> <span class="type">DateTime?</span>           <span class="comment">-- null = open-ended</span>
+  <span class="field">ActualEndDate     </span> <span class="type">DateTime?</span>           <span class="comment">-- ngày thực tế kết thúc</span>
+  <span class="field">Status            </span> <span class="type">enum</span>: Pending | Active | Expired | Terminated
+  <span class="field">DepositAmount     </span> <span class="type">decimal</span>
+  <span class="field">MonthlyRent       </span> <span class="type">decimal</span>             <span class="comment">-- tổng tiền phòng, không tự đổi khi ghép</span>
+  <span class="field">SeekingRoommates  </span> <span class="type">bool</span>               <span class="comment">-- đang tìm người ghép</span>
+  <span class="field">DesiredOccupancy  </span> <span class="type">int?</span>               <span class="comment">-- muốn ở bao nhiêu người tổng (null = không giới hạn)</span>
+  <span class="field">GeneratedDocUrl   </span> <span class="type">string?</span>
+  <span class="field">TerminationReason </span> <span class="type">string?</span>
+  <span class="field">Notes             </span> <span class="type">string?</span>
+  <span class="field">CreatedAt         </span> <span class="type">DateTime</span>
+
+<span class="entity">ContractMembers</span>   <span class="comment">-- người ở ghép, đăng ký vào hệ thống (không ký HĐ riêng)</span>
+  <span class="field">Id          </span> <span class="type">int PK</span>
+  <span class="field">ContractId  </span> <span class="fk">FK → Contracts</span>
+  <span class="field">TenantId    </span> <span class="fk">FK → AspNetUsers</span>
+  <span class="field">JoinDate    </span> <span class="type">DateTime</span>
+  <span class="field">LeaveDate   </span> <span class="type">DateTime?</span>   <span class="comment">-- null = đang ở</span>
+  <span class="field">Note        </span> <span class="type">string?</span></pre></div>
+
+    <div class="rule-block">
+      <span class="icon">👥</span>
+      <span><strong>RULE — Occupancy:</strong> Tổng người ở = 1 (primary) + ContractMembers có <code>LeaveDate = null</code>.
+      Phải ≤ <code>Room.Capacity</code> (nếu có) và ≤ <code>Contract.DesiredOccupancy</code> (nếu có).</span>
+    </div>
+    <div class="rule-block">
+      <span class="icon">💰</span>
+      <span><strong>RULE — Tiền phòng:</strong> <code>MonthlyRent</code> là giá tổng phòng, không tự thay đổi khi người ghép vào/ra.
+      Việc chia tiền nội bộ do các tenant thoả thuận với landlord.</span>
+    </div>
+    <div class="rule-block">
+      <span class="icon">🔍</span>
+      <span><strong>RULE — Tìm ghép:</strong> Hiển thị "đang tìm ghép" khi <code>SeekingRoommates = true</code>.
+      Số chỗ còn: <code>DesiredOccupancy - current occupants</code>.</span>
+    </div>
+    <div class="rule-block">
+      <span class="icon">📌</span>
+      <span><strong>RULE — Lịch sử:</strong> Không xoá contract cũ, chỉ đổi Status. Khi member rời đi, set <code>LeaveDate</code> — không xoá dòng.</span>
+    </div>
+    <div class="rule-block">
+      <span class="icon">📄</span>
+      <span><strong>RULE — Template:</strong> Chỉ dùng template mặc định của app (không cho upload custom). Xuất cả PDF lẫn Word.</span>
+    </div>
+  </section>
+
+  <!-- ── Invoice ── -->
+  <section id="invoice">
+    <h3>Hoá đơn &amp; Thanh toán</h3>
+    <div class="schema"><pre><span class="entity">Invoices</span>
+  <span class="field">Id           </span> <span class="type">int PK</span>
+  <span class="field">ContractId   </span> <span class="fk">FK → Contracts</span>
+  <span class="field">BillingYear  </span> <span class="type">int</span>
+  <span class="field">BillingMonth </span> <span class="type">int</span>      <span class="comment">-- 1–12</span>
+  <span class="field">TotalAmount  </span> <span class="type">decimal</span>
+  <span class="field">Status       </span> <span class="type">enum</span>: Draft | Sent | Paid | Overdue | Cancelled
+  <span class="field">DueDate      </span> <span class="type">DateTime</span>
+  <span class="field">Notes        </span> <span class="type">string?</span>
+  <span class="field">CreatedAt    </span> <span class="type">DateTime</span>
+
+<span class="entity">InvoiceItems</span>
+  <span class="field">Id               </span> <span class="type">int PK</span>
+  <span class="field">InvoiceId        </span> <span class="fk">FK → Invoices</span>
+  <span class="field">FeeConfigId      </span> <span class="fk">FK → FeeConfigs</span>  <span class="comment">(nullable — có thể là dòng thủ công)</span>
+  <span class="field">Description      </span> <span class="type">string</span>
+  <span class="field">Quantity         </span> <span class="type">decimal?</span>  <span class="comment">-- null nếu Fixed</span>
+  <span class="field">UnitPrice        </span> <span class="type">decimal</span>
+  <span class="field">Amount           </span> <span class="type">decimal</span>
+  <span class="field">PreviousReading  </span> <span class="type">decimal?</span>  <span class="comment">-- cho PerUnit (điện/nước)</span>
+  <span class="field">CurrentReading   </span> <span class="type">decimal?</span>
+
+<span class="entity">Payments</span>
+  <span class="field">Id             </span> <span class="type">int PK</span>
+  <span class="field">InvoiceId      </span> <span class="fk">FK → Invoices</span>
+  <span class="field">Amount         </span> <span class="type">decimal</span>
+  <span class="field">PaymentDate    </span> <span class="type">DateTime</span>
+  <span class="field">Method         </span> <span class="type">enum</span>: Cash | BankTransfer | MoMo | VNPay
+  <span class="field">TransactionRef </span> <span class="type">string?</span>
+  <span class="field">Notes          </span> <span class="type">string?</span>
+  <span class="field">RecordedById   </span> <span class="fk">FK → AspNetUsers</span>
+  <span class="field">CreatedAt      </span> <span class="type">DateTime</span></pre></div>
+
+    <div class="rule-block">
+      <span class="icon">🧮</span>
+      <span><strong>RULE — Tính tiền:</strong> <code>Amount = Quantity × UnitPrice</code> (PerUnit) hoặc <code>UnitPrice</code> (Fixed).</span>
+    </div>
+    <div class="rule-block">
+      <span class="icon">➗</span>
+      <span><strong>RULE — Phòng ghép:</strong> Hoá đơn điện/nước chia đều tự động <code>1/N</code> người đang active trong phòng.</span>
+    </div>
+  </section>
+
+  <!-- ── Reviews & Notifications ── -->
+  <section id="review">
+    <h3>Đánh giá &amp; Thông báo</h3>
+    <div class="schema"><pre><span class="entity">RoomReviews</span>
+  <span class="field">Id          </span> <span class="type">int PK</span>
+  <span class="field">RoomId      </span> <span class="fk">FK → Rooms</span>
+  <span class="field">ReviewerId  </span> <span class="fk">FK → AspNetUsers</span>
+  <span class="field">ContractId  </span> <span class="fk">FK → Contracts</span>   <span class="comment">-- xác minh đã từng ở phòng đó</span>
+  <span class="field">Rating      </span> <span class="type">int</span>              <span class="comment">-- 1–5</span>
+  <span class="field">Content     </span> <span class="type">string?</span>
+  <span class="field">IsApproved  </span> <span class="type">bool</span>             <span class="comment">-- admin/landlord có thể ẩn</span>
+  <span class="field">CreatedAt   </span> <span class="type">DateTime</span>
+
+<span class="entity">Notifications</span>
+  <span class="field">Id                 </span> <span class="type">int PK</span>
+  <span class="field">UserId             </span> <span class="fk">FK → AspNetUsers</span>
+  <span class="field">Type               </span> <span class="type">enum</span>: ViewingConfirmed | ViewingRescheduled | ViewingCancelled
+                             | InvoiceDue | ContractExpiring | ContractSigned
+                             | NewViewingRequest | PaymentReceived | NewReview
+  <span class="field">Title              </span> <span class="type">string</span>
+  <span class="field">Content            </span> <span class="type">string</span>
+  <span class="field">IsRead             </span> <span class="type">bool</span>
+  <span class="field">RelatedEntityType  </span> <span class="type">string?</span>   <span class="comment">-- "Contract", "Invoice", "ViewingRequest"…</span>
+  <span class="field">RelatedEntityId    </span> <span class="type">int?</span>
+  <span class="field">CreatedAt          </span> <span class="type">DateTime</span></pre></div>
+  </section>
+
+  <hr />
+
+  <!-- ── Open questions ── -->
+  <section id="open">
+    <h2>Câu hỏi mở</h2>
+    <p style="color:#6b7280;font-size:14px">Không còn câu hỏi mở — mọi quyết định đã được chốt.</p>
+  </section>
+
+  <!-- ── Changelog ── -->
+  <section id="changelog">
+    <h2>Lịch sử thay đổi thiết kế</h2>
+    <table>
+      <thead><tr><th>Ngày</th><th>Thay đổi</th><th>Lý do</th></tr></thead>
+      <tbody>
+        <tr class="changelog-row">
+          <td>2026-05-22</td>
+          <td>Tạo thiết kế ban đầu</td>
+          <td>Kick-off meeting</td>
+        </tr>
+        <tr class="changelog-row">
+          <td>2026-05-22</td>
+          <td>Bỏ ContractTemplates — chỉ dùng template mặc định</td>
+          <td>Đơn giản hoá scope</td>
+        </tr>
+        <tr class="changelog-row">
+          <td>2026-05-22</td>
+          <td>Phòng ghép chia hoá đơn đều tự động 1/N</td>
+          <td>Giảm thao tác thủ công cho chủ</td>
+        </tr>
+        <tr class="changelog-row">
+          <td>2026-05-22</td>
+          <td>Thêm <code>ContractMembers</code> + <code>Contract.SeekingRoommates</code> + <code>Contract.DesiredOccupancy</code></td>
+          <td>Hỗ trợ phòng ghép: 1 HĐ/phòng, người ghép chỉ đăng ký hệ thống, MonthlyRent không tự thay đổi</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+</main>
+
+<script>
+  // Active link highlight khi scroll
+  const sections = document.querySelectorAll('section[id]');
+  const links = document.querySelectorAll('.sidebar nav a');
+
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        links.forEach(l => l.classList.remove('active'));
+        const active = document.querySelector(`.sidebar nav a[href="#${e.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-30% 0px -60% 0px' });
+
+  sections.forEach(s => observer.observe(s));
+</script>
+
+</body>
+</html>
