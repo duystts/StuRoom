@@ -5,6 +5,7 @@ using StuRoom.Data;
 using StuRoom.Models;
 using Microsoft.AspNetCore.Identity;
 using StuRoom.Services;
+using Microsoft.AspNetCore.Identity.UI.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -55,6 +56,10 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("LandlordOrAdmin", policy =>
         policy.RequireRole("Landlord", "Admin"));
 });
+
+// ── Email ──────────────────────────────────────────────────────────────
+// Overrides the default no-op IEmailSender registered by AddDefaultIdentity
+builder.Services.AddTransient<IEmailSender, SmtpEmailSender>();
 
 // ── Cloudinary ─────────────────────────────────────────────────────────
 builder.Services.AddSingleton<ICloudinaryService, CloudinaryService>();

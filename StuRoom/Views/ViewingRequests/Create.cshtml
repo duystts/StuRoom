@@ -1,0 +1,107 @@
+@{
+    ViewData["Title"] = "Đặt lịch xem phòng";
+    var room = (StuRoom.Models.Room)ViewBag.Room;
+}
+
+<div class="container py-4" style="max-width:560px">
+
+  <nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb small">
+      <li class="breadcrumb-item"><a asp-controller="Rooms" asp-action="Index">Tìm phòng</a></li>
+      <li class="breadcrumb-item">
+        <a asp-controller="Rooms" asp-action="Detail" asp-route-id="@room.Id">
+          @room.Building.Name
+        </a>
+      </li>
+      <li class="breadcrumb-item active">Đặt lịch xem</li>
+    </ol>
+  </nav>
+
+  @if (TempData["Error"] != null)
+  {
+    <div class="alert alert-danger py-2 small">
+      <i class="bi bi-exclamation-circle me-1"></i>@TempData["Error"]
+    </div>
+  }
+
+  @if (!ViewData.ModelState.IsValid)
+  {
+    foreach (var err in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+    {
+      <div class="alert alert-danger py-2 small">
+        <i class="bi bi-exclamation-circle me-1"></i>@err.ErrorMessage
+      </div>
+    }
+  }
+
+  @* Room card *@
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-body d-flex gap-3 align-items-center">
+      @{
+        var img = room.Images?.FirstOrDefault(i => i.IsPrimary)
+               ?? room.Images?.OrderBy(i => i.SortOrder).FirstOrDefault();
+      }
+      @if (img != null)
+      {
+        <img src="@img.ImageUrl" class="rounded-2"
+             style="width:72px;height:72px;object-fit:cover" alt="room" />
+      }
+      else
+      {
+        <div class="rounded-2 bg-light d-flex align-items-center justify-content-center flex-shrink-0"
+             style="width:72px;height:72px">
+          <i class="bi bi-door-open text-muted fs-3"></i>
+        </div>
+      }
+      <div>
+        <div class="fw-bold">Phòng @room.RoomNumber</div>
+        <div class="text-muted small">
+          <i class="bi bi-building me-1"></i>@room.Building.Name
+        </div>
+        <div class="text-muted small">
+          <i class="bi bi-geo-alt me-1"></i>@room.Building.Address
+          @if (!string.IsNullOrWhiteSpace(room.Building.District))
+          { <span>, @room.Building.District</span> }
+        </div>
+      </div>
+    </div>
+  </div>
+
+  @* Form *@
+  <div class="card border-0 shadow-sm">
+    <div class="card-body">
+      <h5 class="fw-bold mb-4"><i class="bi bi-calendar-check me-2"></i>Chọn giờ xem phòng</h5>
+
+      <form asp-action="Create" asp-route-roomId="@room.Id" method="post">
+        @Html.AntiForgeryToken()
+
+        <div class="mb-4">
+          <label class="form-label fw-semibold">
+            Thời gian đề xuất <span class="text-danger">*</span>
+          </label>
+          <input type="datetime-local" name="proposedTime" class="form-control"
+                 min="@DateTime.Now.AddHours(1).ToString("yyyy-MM-ddTHH:mm")"
+                 required />
+          <div class="form-text">Chọn thời gian bạn muốn đến xem — chủ trọ có thể đề xuất đổi giờ nếu cần.</div>
+        </div>
+
+        <div class="mb-4">
+          <label class="form-label fw-semibold">Ghi chú cho chủ trọ</label>
+          <textarea name="tenantNote" class="form-control" rows="3"
+                    placeholder="VD: Tôi sẽ đến cùng bạn cùng phòng, mong chủ trọ sắp xếp..."></textarea>
+        </div>
+
+        <div class="d-grid gap-2">
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-send me-2"></i>Gửi yêu cầu xem phòng
+          </button>
+          <a asp-controller="Rooms" asp-action="Detail" asp-route-id="@room.Id"
+             class="btn btn-outline-secondary">
+            Quay lại
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+</div>
