@@ -4,6 +4,7 @@ using StuRoom.Authorization;
 using StuRoom.Data;
 using StuRoom.Models;
 using Microsoft.AspNetCore.Identity;
+using StuRoom.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -54,6 +55,9 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("LandlordOrAdmin", policy =>
         policy.RequireRole("Landlord", "Admin"));
 });
+
+// ── Cloudinary ─────────────────────────────────────────────────────────
+builder.Services.AddSingleton<ICloudinaryService, CloudinaryService>();
 
 builder.Services.AddControllersWithViews();
 
