@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using StuRoom.Data;
@@ -7,7 +8,8 @@ using StuRoom.Models.ViewModels;
 namespace StuRoom.Controllers;
 
 /// <summary>Public marketplace — no authentication required.</summary>
-public class RoomsController(ApplicationDbContext db) : Controller
+public class RoomsController(ApplicationDbContext db,
+    UserManager<ApplicationUser> userManager) : Controller
 {
     // ════════════════════════════════════════════════════════
     // INDEX — danh sách + bộ lọc  (Task 12 + 13)
@@ -137,7 +139,7 @@ public class RoomsController(ApplicationDbContext db) : Controller
             .Include(r => r.Building.FeeConfigs.Where(f => f.IsActive))
             .Include(r => r.Reviews.Where(rv => rv.IsApproved))
                 .ThenInclude(rv => rv.Reviewer)
-            .FirstOrDefaultAsync(r => r.Id == id && r.Status == RoomStatus.Available);
+            .FirstOrDefaultAsync(r => r.Id == id);
 
         if (room == null) return NotFound();
 
@@ -152,17 +154,42 @@ public class RoomsController(ApplicationDbContext db) : Controller
         var reviews = room.Reviews.Where(rv => rv.IsApproved)
                           .OrderByDescending(rv => rv.CreatedAt).ToList();
 
+        // ── Check review eligibility ──────────────────────────
+        bool canReview       = false;
+        int? reviewContractId = null;
+        if (User.IsInRole("Tenant"))
+        {
+            var userId = userManager.GetUserId(User);
+            var eligibleContract = await db.Contracts
+                .Where(c => c.RoomId == id
+                         && c.TenantId == userId
+                         && (c.Status == ContractStatus.Expired
+                          || c.Status == ContractStatus.Terminated))
+                .Where(c => !db.RoomReviews
+                    .Any(rv => rv.ContractId == c.Id && rv.ReviewerId == userId))
+                .OrderByDescending(c => c.StartDate)
+                .FirstOrDefaultAsync();
+
+            if (eligibleContract != null)
+            {
+                canReview       = true;
+                reviewContractId = eligibleContract.Id;
+            }
+        }
+
         var vm = new RoomPublicDetailViewModel
         {
-            Room       = room,
-            Images     = room.Images.ToList(),
-            Amenities  = room.RoomAmenities.Select(ra => ra.Amenity).ToList(),
-            FeeConfigs = feeConfigs,
-            RentPrice  = rentCfg?.UnitPrice,
-            RentUnit   = rentCfg?.Unit ?? "tháng",
-            Reviews    = reviews,
-            AvgRating  = reviews.Any() ? reviews.Average(rv => (double)rv.Rating) : null,
-            CanBook    = User.IsInRole("Tenant")
+            Room             = room,
+            Images           = room.Images.ToList(),
+            Amenities        = room.RoomAmenities.Select(ra => ra.Amenity).ToList(),
+            FeeConfigs       = feeConfigs,
+            RentPrice        = rentCfg?.UnitPrice,
+            RentUnit         = rentCfg?.Unit ?? "tháng",
+            Reviews          = reviews,
+            AvgRating        = reviews.Any() ? reviews.Average(rv => (double)rv.Rating) : null,
+            CanBook          = User.IsInRole("Tenant") && room.Status == RoomStatus.Available,
+            CanReview        = canReview,
+            ReviewContractId = reviewContractId
         };
 
         return View(vm);

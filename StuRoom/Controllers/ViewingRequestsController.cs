@@ -4,13 +4,15 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using StuRoom.Data;
 using StuRoom.Models;
+using StuRoom.Services;
 
 namespace StuRoom.Controllers;
 
 [Authorize(Policy = "TenantOnly")]
 public class ViewingRequestsController(
     UserManager<ApplicationUser> userManager,
-    ApplicationDbContext db) : Controller
+    ApplicationDbContext db,
+    INotificationService notifier) : Controller
 {
     private string CurrentUserId => userManager.GetUserId(User)!;
 
@@ -81,6 +83,12 @@ public class ViewingRequestsController(
             Status       = ViewingStatus.Pending
         });
         await db.SaveChangesAsync();
+
+        // Task 30 — notify Landlord
+        await notifier.SendAsync(room.Building.LandlordId, NotificationType.NewViewingRequest,
+            "Yêu cầu xem phòng mới",
+            $"Tenant muốn xem phòng {room.RoomNumber} — {proposedTime:dd/MM HH:mm}.",
+            "ViewingRequest", db.ViewingRequests.Local.Last().Id);
 
         TempData["Success"] = "Đã gửi yêu cầu xem phòng. Chủ trọ sẽ liên hệ xác nhận sớm!";
         return RedirectToAction(nameof(Index));

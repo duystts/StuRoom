@@ -64,6 +64,7 @@ builder.Services.AddTransient<IEmailSender, SmtpEmailSender>();
 
 // ── Cloudinary ─────────────────────────────────────────────────────────
 builder.Services.AddSingleton<ICloudinaryService, CloudinaryService>();
+builder.Services.AddScoped<INotificationService, NotificationService>();
 
 builder.Services.AddControllersWithViews();
 

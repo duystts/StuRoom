@@ -1,0 +1,76 @@
+@model List<StuRoom.Models.Notification>
+@using StuRoom.Models
+@{
+    ViewData["Title"] = "Thông báo";
+    var typeIconMap = new Dictionary<NotificationType, string>
+    {
+        [NotificationType.ViewingConfirmed]   = "bi-calendar-check text-success",
+        [NotificationType.ViewingRescheduled] = "bi-calendar-event text-warning",
+        [NotificationType.ViewingCancelled]   = "bi-calendar-x text-danger",
+        [NotificationType.InvoiceDue]         = "bi-receipt text-warning",
+        [NotificationType.ContractExpiring]   = "bi-file-earmark-text text-warning",
+        [NotificationType.ContractSigned]     = "bi-file-earmark-check text-success",
+        [NotificationType.NewViewingRequest]  = "bi-calendar-plus text-primary",
+        [NotificationType.NewBookingRequest]  = "bi-bookmark-plus text-primary",
+        [NotificationType.PaymentReceived]    = "bi-cash-coin text-success",
+        [NotificationType.NewReview]          = "bi-star text-warning",
+        [NotificationType.BookingApproved]    = "bi-bookmark-check text-success",
+        [NotificationType.BookingRejected]    = "bi-bookmark-x text-danger",
+    };
+    var unread = Model.Count(n => !n.IsRead);
+}
+
+<div class="d-flex align-items-center justify-content-between mb-4">
+  <div>
+    <h4 class="fw-bold mb-0">Thông báo</h4>
+    <p class="text-muted small mb-0">
+      @unread chưa đọc / @Model.Count tổng
+    </p>
+  </div>
+  @if (unread > 0)
+  {
+    <form asp-action="MarkAllRead" method="post">
+      <button type="submit" class="btn btn-sm btn-outline-primary">
+        <i class="bi bi-check2-all me-1"></i>Đọc tất cả
+      </button>
+    </form>
+  }
+</div>
+
+@if (!Model.Any())
+{
+  <div class="text-center py-5 text-muted">
+    <i class="bi bi-bell-slash fs-1 d-block mb-2"></i>
+    Không có thông báo nào.
+  </div>
+}
+else
+{
+  <div class="card border-0 shadow-sm">
+    @foreach (var n in Model)
+    {
+      var icon = typeIconMap.TryGetValue(n.Type, out var ic) ? ic : "bi-bell text-muted";
+      <div class="d-flex align-items-start gap-3 p-3 border-bottom @(n.IsRead ? "" : "bg-primary bg-opacity-10")">
+        <i class="bi @icon fs-5 mt-1 flex-shrink-0"></i>
+        <div class="flex-grow-1">
+          <div class="small fw-semibold @(n.IsRead ? "text-muted" : "")">@n.Title</div>
+          <div class="small text-muted">@n.Content</div>
+          <div class="text-muted" style="font-size:11px">
+            @n.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
+          </div>
+        </div>
+        @if (!n.IsRead)
+        {
+          <form asp-action="MarkRead" method="post" class="flex-shrink-0">
+            <input type="hidden" name="id" value="@n.Id" />
+            <input type="hidden" name="returnUrl" value="@Url.Action("Index")" />
+            <button type="submit" class="btn btn-sm btn-link p-0 text-primary"
+                    title="Đánh dấu đã đọc">
+              <i class="bi bi-check2"></i>
+            </button>
+          </form>
+        }
+      </div>
+    }
+  </div>
+}
