@@ -1,0 +1,336 @@
+@model StuRoom.Models.ViewModels.RoomPublicDetailViewModel
+@using StuRoom.Models
+@{
+    ViewData["Title"] = $"Phòng {Model.Room.RoomNumber} — {Model.Room.Building.Name}";
+    Layout = "_Layout";
+
+    var categoryLabel = new Dictionary<FeeCategory, (string name, string icon)>
+    {
+        [FeeCategory.Rent]        = ("Tiền thuê",  "bi-house"),
+        [FeeCategory.Electricity] = ("Điện",        "bi-lightning-charge"),
+        [FeeCategory.Water]       = ("Nước",         "bi-droplet"),
+        [FeeCategory.Internet]    = ("Internet",     "bi-wifi"),
+        [FeeCategory.Parking]     = ("Đỗ xe",        "bi-car-front"),
+        [FeeCategory.Other]       = ("Khác",         "bi-three-dots"),
+    };
+}
+
+<div class="container py-4">
+
+  @* Breadcrumb *@
+  <nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb small">
+      <li class="breadcrumb-item"><a asp-action="Index">Tìm phòng</a></li>
+      <li class="breadcrumb-item active">@Model.Room.Building.Name — Phòng @Model.Room.RoomNumber</li>
+    </ol>
+  </nav>
+
+  <div class="row g-4">
+
+    @* ══════ Cột chính ══════ *@
+    <div class="col-lg-8">
+
+      @* Image carousel *@
+      @if (Model.Images.Any())
+      {
+        <div id="roomCarousel" class="carousel slide rounded-3 overflow-hidden shadow-sm mb-4"
+             data-bs-ride="false">
+          <div class="carousel-inner">
+            @for (int i = 0; i < Model.Images.Count; i++)
+            {
+              <div class="carousel-item @(i == 0 ? "active" : "")">
+                <img src="@Model.Images[i].ImageUrl"
+                     class="d-block w-100"
+                     alt="Ảnh phòng @(i+1)"
+                     style="height:420px;object-fit:cover" />
+              </div>
+            }
+          </div>
+          @if (Model.Images.Count > 1)
+          {
+            <button class="carousel-control-prev" type="button" data-bs-target="#roomCarousel" data-bs-slide="prev">
+              <span class="carousel-control-prev-icon"></span>
+            </button>
+            <button class="carousel-control-next" type="button" data-bs-target="#roomCarousel" data-bs-slide="next">
+              <span class="carousel-control-next-icon"></span>
+            </button>
+            <div class="carousel-indicators" style="bottom:-30px">
+              @for (int i = 0; i < Model.Images.Count; i++)
+              {
+                <button type="button" data-bs-target="#roomCarousel" data-bs-slide-to="@i"
+                        class="@(i == 0 ? "active" : "")"
+                        style="background:#6c8fff;width:8px;height:8px;border-radius:50%"></button>
+              }
+            </div>
+          }
+        </div>
+        @if (Model.Images.Count > 1)
+        {
+          <div class="mb-2" style="height:16px"></div>
+        }
+      }
+      else
+      {
+        <div class="bg-light rounded-3 d-flex align-items-center justify-content-center mb-4"
+             style="height:300px">
+          <div class="text-center text-muted">
+            <i class="bi bi-camera fs-1 d-block mb-2"></i>
+            Chưa có ảnh
+          </div>
+        </div>
+      }
+
+      @* Thông tin phòng *@
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+          <h5 class="fw-bold mb-1">Phòng @Model.Room.RoomNumber</h5>
+          <div class="text-muted small mb-3">
+            <i class="bi bi-geo-alt me-1"></i>
+            @Model.Room.Building.Address
+            @if (!string.IsNullOrWhiteSpace(Model.Room.Building.Ward))
+            { <span>, @Model.Room.Building.Ward</span> }
+            @if (!string.IsNullOrWhiteSpace(Model.Room.Building.District))
+            { <span>, @Model.Room.Building.District</span> }
+            @if (!string.IsNullOrWhiteSpace(Model.Room.Building.Province))
+            { <span>, @Model.Room.Building.Province</span> }
+          </div>
+
+          <div class="d-flex flex-wrap gap-3 mb-3">
+            <div class="text-center">
+              <div class="fw-bold fs-5">@Model.Room.Area m²</div>
+              <div class="text-muted small">Diện tích</div>
+            </div>
+            @if (Model.Room.FloorNumber.HasValue)
+            {
+              <div class="text-center">
+                <div class="fw-bold fs-5">Tầng @Model.Room.FloorNumber</div>
+                <div class="text-muted small">Vị trí</div>
+              </div>
+            }
+            @if (Model.Room.Capacity.HasValue)
+            {
+              <div class="text-center">
+                <div class="fw-bold fs-5">@Model.Room.Capacity người</div>
+                <div class="text-muted small">Sức chứa</div>
+              </div>
+            }
+            @if (Model.AvgRating.HasValue)
+            {
+              <div class="text-center">
+                <div class="fw-bold fs-5">
+                  <i class="bi bi-star-fill" style="color:#f59e0b;font-size:18px"></i>
+                  @Model.AvgRating.Value.ToString("0.0")
+                </div>
+                <div class="text-muted small">@Model.Reviews.Count đánh giá</div>
+              </div>
+            }
+          </div>
+
+          @if (!string.IsNullOrWhiteSpace(Model.Room.Description))
+          {
+            <p class="text-secondary mb-0">@Model.Room.Description</p>
+          }
+        </div>
+      </div>
+
+      @* Tiện ích *@
+      @if (Model.Amenities.Any())
+      {
+        <div class="card border-0 shadow-sm mb-4">
+          <div class="card-body">
+            <h6 class="fw-bold mb-3"><i class="bi bi-tags me-2"></i>Tiện ích</h6>
+            <div class="row g-2">
+              @foreach (var a in Model.Amenities)
+              {
+                <div class="col-6 col-md-4">
+                  <div class="d-flex align-items-center gap-2 small">
+                    <i class="bi @a.IconClass fs-5 text-primary"></i>
+                    <span>@a.Name</span>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+      }
+
+      @* Bảng phí *@
+      @if (Model.FeeConfigs.Any())
+      {
+        <div class="card border-0 shadow-sm mb-4">
+          <div class="card-body">
+            <h6 class="fw-bold mb-3"><i class="bi bi-receipt me-2"></i>Thông tin phí</h6>
+            <table class="table table-sm mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Loại phí</th>
+                  <th class="text-end">Đơn giá</th>
+                  <th>Cách tính</th>
+                </tr>
+              </thead>
+              <tbody>
+                @foreach (var f in Model.FeeConfigs)
+                {
+                  var (catName, catIcon) = categoryLabel[f.FeeCategory];
+                  <tr>
+                    <td>
+                      <i class="bi @catIcon me-1 text-muted"></i>
+                      @f.Name
+                    </td>
+                    <td class="text-end fw-semibold">
+                      @f.UnitPrice.ToString("N0") ₫<span class="text-muted fw-normal small">/@f.Unit</span>
+                    </td>
+                    <td class="text-muted small">
+                      @(f.CalcType == CalcType.Fixed ? "Cố định" : "Theo số đo")
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      }
+
+      @* Reviews *@
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+          <div class="d-flex align-items-center justify-content-between mb-3">
+            <h6 class="fw-bold mb-0">
+              <i class="bi bi-star me-2"></i>Đánh giá
+              @if (Model.Reviews.Any())
+              {
+                <span class="text-muted fw-normal">(@Model.Reviews.Count)</span>
+              }
+            </h6>
+            @if (Model.AvgRating.HasValue)
+            {
+              <div class="d-flex align-items-center gap-1">
+                @for (int i = 1; i <= 5; i++)
+                {
+                  <i class="bi @(i <= Math.Round(Model.AvgRating.Value) ? "bi-star-fill" : "bi-star")"
+                     style="color:#f59e0b"></i>
+                }
+                <span class="fw-bold ms-1">@Model.AvgRating.Value.ToString("0.0")</span>
+              </div>
+            }
+          </div>
+
+          @if (!Model.Reviews.Any())
+          {
+            <p class="text-muted small mb-0">Chưa có đánh giá nào cho phòng này.</p>
+          }
+          else
+          {
+            <div class="d-flex flex-column gap-3">
+              @foreach (var rv in Model.Reviews)
+              {
+                <div class="border-bottom pb-3">
+                  <div class="d-flex align-items-center gap-2 mb-1">
+                    @if (!string.IsNullOrWhiteSpace(rv.Reviewer.AvatarUrl))
+                    {
+                      <img src="@rv.Reviewer.AvatarUrl" class="rounded-circle"
+                           style="width:32px;height:32px;object-fit:cover" alt="avatar" />
+                    }
+                    else
+                    {
+                      <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center"
+                           style="width:32px;height:32px;font-size:14px;color:#fff">
+                        @rv.Reviewer.FullName.FirstOrDefault()
+                      </div>
+                    }
+                    <div>
+                      <div class="fw-semibold small">@rv.Reviewer.FullName</div>
+                      <div class="text-muted" style="font-size:11px">@rv.CreatedAt.ToString("dd/MM/yyyy")</div>
+                    </div>
+                    <div class="ms-auto">
+                      @for (int i = 1; i <= 5; i++)
+                      {
+                        <i class="bi @(i <= rv.Rating ? "bi-star-fill" : "bi-star")"
+                           style="color:#f59e0b;font-size:12px"></i>
+                      }
+                    </div>
+                  </div>
+                  @if (!string.IsNullOrWhiteSpace(rv.Content))
+                  {
+                    <p class="mb-0 small">@rv.Content</p>
+                  }
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+
+    </div>
+
+    @* ══════ Sidebar CTA ══════ *@
+    <div class="col-lg-4">
+      <div class="card border-0 shadow sticky-top" style="top:70px">
+        <div class="card-body">
+
+          @* Price *@
+          @if (Model.RentPrice.HasValue)
+          {
+            <div class="mb-3 pb-3 border-bottom">
+              <div class="text-muted small mb-1">Giá thuê</div>
+              <div class="fw-bold" style="font-size:28px;color:#6c8fff">
+                @Model.RentPrice.Value.ToString("N0")
+                <span class="text-muted fw-normal fs-6">₫/@Model.RentUnit</span>
+              </div>
+            </div>
+          }
+
+          @* Building info *@
+          <div class="mb-3 small text-muted">
+            <div class="fw-semibold text-dark mb-1">@Model.Room.Building.Name</div>
+            <div><i class="bi bi-geo-alt me-1"></i>@Model.Room.Building.Address</div>
+            @if (!string.IsNullOrWhiteSpace(Model.Room.Building.District))
+            {
+              <div class="ms-3">@Model.Room.Building.District, @Model.Room.Building.Province</div>
+            }
+          </div>
+
+          @* CTA buttons *@
+          @if (Model.CanBook)
+          {
+            <div class="d-grid gap-2">
+              <a asp-controller="ViewingRequests" asp-action="Create"
+                 asp-route-roomId="@Model.Room.Id"
+                 class="btn btn-outline-primary">
+                <i class="bi bi-calendar-check me-2"></i>Đặt lịch xem phòng
+              </a>
+              <a asp-controller="BookingRequests" asp-action="Create"
+                 asp-route-roomId="@Model.Room.Id"
+                 class="btn btn-primary">
+                <i class="bi bi-bookmark-check me-2"></i>Đặt phòng ngay
+              </a>
+            </div>
+          }
+          else if (!User.Identity!.IsAuthenticated)
+          {
+            <div class="d-grid gap-2">
+              <a asp-area="Identity" asp-page="/Account/Login"
+                 asp-route-returnUrl="@Context.Request.Path"
+                 class="btn btn-primary">
+                <i class="bi bi-box-arrow-in-right me-2"></i>Đăng nhập để đặt phòng
+              </a>
+            </div>
+            <p class="text-muted small text-center mt-2 mb-0">
+              Chưa có tài khoản?
+              <a asp-area="Identity" asp-page="/Account/Register">Đăng ký ngay</a>
+            </p>
+          }
+          else
+          {
+            <div class="alert alert-info small py-2 mb-0">
+              <i class="bi bi-info-circle me-1"></i>
+              Chỉ tài khoản Tenant mới có thể đặt phòng.
+            </div>
+          }
+
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
