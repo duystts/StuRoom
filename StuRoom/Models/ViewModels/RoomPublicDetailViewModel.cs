@@ -17,4 +17,10 @@ public class RoomPublicDetailViewModel
 
     /// <summary>True nếu user đang đăng nhập với role Tenant</summary>
     public bool CanBook { get; set; }
+
+    /// <summary>True nếu Tenant có HĐ Expired/Terminated tại phòng này và chưa review</summary>
+    public bool CanReview { get; set; }
+
+    /// <summary>ContractId dùng để gắn kèm khi tạo review</summary>
+    public int? ReviewContractId { get; set; }
 }

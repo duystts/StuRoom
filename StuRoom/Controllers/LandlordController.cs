@@ -21,7 +21,8 @@ public class LandlordController(
     UserManager<ApplicationUser> userManager,
     ApplicationDbContext db,
     ICloudinaryService cloudinary,
-    IEmailSender emailSender) : Controller
+    IEmailSender emailSender,
+    INotificationService notifier) : Controller
 {
     private string CurrentUserId =>
         userManager.GetUserId(User)!;
@@ -682,6 +683,12 @@ public class LandlordController(
             $"đã được xác nhận vào lúc <strong>{v.ConfirmedTime:dd/MM/yyyy HH:mm}</strong>.<br><br>" +
             "Vui lòng đến đúng giờ. Cảm ơn bạn!");
 
+        // Task 30 — notify Tenant
+        await notifier.SendAsync(v.TenantId, NotificationType.ViewingConfirmed,
+            "Lịch hẹn xem phòng đã xác nhận",
+            $"Lịch xem phòng {v.Room.RoomNumber} — {v.ConfirmedTime:dd/MM HH:mm}.",
+            "ViewingRequest", v.Id);
+
         TempData["Success"] = "Đã xác nhận lịch hẹn và gửi email cho Tenant.";
         return RedirectToAction(nameof(ViewingRequests));
     }
@@ -706,6 +713,12 @@ public class LandlordController(
             $"<strong>{newTime:dd/MM/yyyy HH:mm}</strong>." +
             (string.IsNullOrWhiteSpace(landlordNote) ? "" : $"<br>Ghi chú: {landlordNote}") +
             "<br><br>Vui lòng vào StuRoom để xác nhận hoặc huỷ lịch.");
+
+        // Task 30 — notify Tenant
+        await notifier.SendAsync(v.TenantId, NotificationType.ViewingRescheduled,
+            "Đề xuất đổi giờ xem phòng",
+            $"Phòng {v.Room.RoomNumber} — giờ mới: {newTime:dd/MM HH:mm}.",
+            "ViewingRequest", v.Id);
 
         TempData["Success"] = "Đã đề xuất đổi giờ và gửi email cho Tenant.";
         return RedirectToAction(nameof(ViewingRequests), new { filter = "confirmed" });
@@ -823,6 +836,12 @@ public class LandlordController(
             $"Tiền cọc: <strong>{depositAmount:N0} ₫</strong> — Giá thuê: <strong>{monthlyRent:N0} ₫/tháng</strong>.<br><br>" +
             "Chủ trọ sẽ liên hệ để hoàn tất hợp đồng. Chúc mừng bạn!");
 
+        // Task 30 — notify Tenant
+        await notifier.SendAsync(booking.TenantId, NotificationType.BookingApproved,
+            "Đặt phòng được chấp nhận!",
+            $"Phòng {booking.Room.RoomNumber} — {booking.Room.Building.Name}. Vào ở: {startDate:dd/MM/yyyy}.",
+            "Contract", contract.Id);
+
         TempData["Success"] = $"Đã duyệt đặt phòng và tạo hợp đồng #{contract.Id}.";
         return RedirectToAction(nameof(BookingRequests), new { filter = "approved" });
     }
@@ -851,6 +870,12 @@ public class LandlordController(
             $"<strong>{booking.Room.Building.Name}</strong> <strong>không được chấp nhận</strong>.<br>" +
             $"Lý do: {reason}.<br><br>" +
             "Bạn có thể tìm phòng khác trên StuRoom. Xin lỗi vì bất tiện!");
+
+        // Task 30 — notify Tenant
+        await notifier.SendAsync(booking.TenantId, NotificationType.BookingRejected,
+            "Đặt phòng không được chấp nhận",
+            $"Phòng {booking.Room.RoomNumber}. Lý do: {reason}.",
+            "BookingRequest", booking.Id);
 
         TempData["Warning"] = "Đã từ chối yêu cầu đặt phòng.";
         return RedirectToAction(nameof(BookingRequests));
@@ -1505,6 +1530,12 @@ public class LandlordController(
 <p>Vui lòng liên hệ chủ trọ nếu có thắc mắc.</p>";
 
         await emailSender.SendEmailAsync(tenant.Email!, subject, body);
+
+        // Task 30 — notify Tenant
+        await notifier.SendAsync(invoice.Contract.TenantId, NotificationType.InvoiceDue,
+            $"Hoá đơn tháng {invoice.BillingMonth}/{invoice.BillingYear}",
+            $"Tổng: {invoice.TotalAmount:N0} ₫ — Hạn: {invoice.DueDate:dd/MM/yyyy}.",
+            "Invoice", invoice.Id);
 
         TempData["Success"] = "Đã gửi hoá đơn đến tenant.";
         return RedirectToAction(nameof(InvoiceDetail), new { id });

@@ -1,0 +1,58 @@
+@model List<StuRoom.Models.Notification>
+@{
+    var typeIconMap = new Dictionary<StuRoom.Models.NotificationType, string>
+    {
+        [StuRoom.Models.NotificationType.ViewingConfirmed]    = "bi-calendar-check text-success",
+        [StuRoom.Models.NotificationType.ViewingRescheduled]  = "bi-calendar-event text-warning",
+        [StuRoom.Models.NotificationType.ViewingCancelled]    = "bi-calendar-x text-danger",
+        [StuRoom.Models.NotificationType.InvoiceDue]          = "bi-receipt text-warning",
+        [StuRoom.Models.NotificationType.ContractExpiring]    = "bi-file-earmark-text text-warning",
+        [StuRoom.Models.NotificationType.ContractSigned]      = "bi-file-earmark-check text-success",
+        [StuRoom.Models.NotificationType.NewViewingRequest]   = "bi-calendar-plus text-primary",
+        [StuRoom.Models.NotificationType.NewBookingRequest]   = "bi-bookmark-plus text-primary",
+        [StuRoom.Models.NotificationType.PaymentReceived]     = "bi-cash-coin text-success",
+        [StuRoom.Models.NotificationType.NewReview]           = "bi-star text-warning",
+        [StuRoom.Models.NotificationType.BookingApproved]     = "bi-bookmark-check text-success",
+        [StuRoom.Models.NotificationType.BookingRejected]     = "bi-bookmark-x text-danger",
+    };
+}
+
+@if (!Model.Any())
+{
+  <li class="dropdown-item text-muted small py-3 text-center">
+    <i class="bi bi-bell-slash me-1"></i>Không có thông báo mới
+  </li>
+}
+else
+{
+  @foreach (var n in Model)
+  {
+    var icon = typeIconMap.TryGetValue(n.Type, out var ic) ? ic : "bi-bell text-muted";
+    <li>
+      <form asp-controller="Notifications" asp-action="MarkRead" method="post"
+            class="d-flex align-items-start gap-2 px-3 py-2 notif-item">
+        <input type="hidden" name="id" value="@n.Id" />
+        <input type="hidden" name="returnUrl" value="@Context.Request.Path" />
+        <i class="bi @icon mt-1 flex-shrink-0"></i>
+        <div class="flex-grow-1 me-2">
+          <div class="small fw-semibold lh-sm">@n.Title</div>
+          <div class="text-muted" style="font-size:11px">@n.Content</div>
+          <div class="text-muted" style="font-size:10px">
+            @n.CreatedAt.ToLocalTime().ToString("dd/MM HH:mm")
+          </div>
+        </div>
+        <button type="submit" class="btn btn-link btn-sm p-0 text-muted flex-shrink-0"
+                title="Đánh dấu đã đọc">
+          <i class="bi bi-check2"></i>
+        </button>
+      </form>
+    </li>
+    <li><hr class="dropdown-divider my-0" /></li>
+  }
+}
+<li>
+  <a class="dropdown-item small text-center text-primary py-2"
+     asp-controller="Notifications" asp-action="Index">
+    Xem tất cả thông báo
+  </a>
+</li>

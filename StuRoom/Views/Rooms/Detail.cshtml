@@ -191,6 +191,56 @@
         </div>
       }
 
+      @* Review alerts *@
+      @if (TempData["ReviewSuccess"] != null)
+      {
+        <div class="alert alert-success alert-dismissible fade show py-2 small mb-3">
+          <i class="bi bi-check-circle me-1"></i>@TempData["ReviewSuccess"]
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+      }
+      @if (TempData["ReviewError"] != null)
+      {
+        <div class="alert alert-danger alert-dismissible fade show py-2 small mb-3">
+          <i class="bi bi-exclamation-circle me-1"></i>@TempData["ReviewError"]
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+      }
+
+      @* Write review form *@
+      @if (Model.CanReview)
+      {
+        <div class="card border-0 shadow-sm mb-3" style="border-left:3px solid #6c8fff!important">
+          <div class="card-body">
+            <h6 class="fw-bold mb-3"><i class="bi bi-pencil-square me-2"></i>Viết đánh giá</h6>
+            <form asp-controller="Reviews" asp-action="Create" method="post">
+              @Html.AntiForgeryToken()
+              <input type="hidden" name="roomId"     value="@Model.Room.Id" />
+              <input type="hidden" name="contractId" value="@Model.ReviewContractId" />
+              <div class="mb-3">
+                <label class="form-label small fw-semibold">Số sao <span class="text-danger">*</span></label>
+                <div class="d-flex gap-2 star-picker" id="starPicker">
+                  @for (int s = 1; s <= 5; s++)
+                  {
+                    <i class="bi bi-star fs-4 star-btn" data-val="@s"
+                       style="cursor:pointer;color:#d1d5db" title="@s sao"></i>
+                  }
+                </div>
+                <input type="hidden" name="rating" id="ratingInput" required />
+              </div>
+              <div class="mb-3">
+                <label class="form-label small fw-semibold">Nhận xét</label>
+                <textarea name="content" class="form-control form-control-sm" rows="3"
+                          placeholder="Chia sẻ trải nghiệm của bạn..."></textarea>
+              </div>
+              <button type="submit" class="btn btn-sm btn-primary">
+                <i class="bi bi-send me-1"></i>Gửi đánh giá
+              </button>
+            </form>
+          </div>
+        </div>
+      }
+
       @* Reviews *@
       <div class="card border-0 shadow-sm mb-4">
         <div class="card-body">
@@ -334,3 +384,30 @@
 
   </div>
 </div>
+
+@section Scripts {
+<script>
+// Star picker
+const stars = document.querySelectorAll('.star-btn');
+const ratingInput = document.getElementById('ratingInput');
+if (stars.length) {
+  stars.forEach(star => {
+    star.addEventListener('mouseover', () => highlightStars(+star.dataset.val));
+    star.addEventListener('mouseout',  () => highlightStars(+(ratingInput?.value || 0)));
+    star.addEventListener('click',     () => {
+      ratingInput.value = star.dataset.val;
+      highlightStars(+star.dataset.val);
+    });
+  });
+}
+function highlightStars(n) {
+  stars.forEach(s => {
+    const v = +s.dataset.val;
+    s.className = v <= n
+      ? 'bi bi-star-fill fs-4 star-btn'
+      : 'bi bi-star fs-4 star-btn';
+    s.style.color = v <= n ? '#f59e0b' : '#d1d5db';
+  });
+}
+</script>
+}

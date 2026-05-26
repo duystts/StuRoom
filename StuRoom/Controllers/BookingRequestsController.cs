@@ -4,13 +4,15 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using StuRoom.Data;
 using StuRoom.Models;
+using StuRoom.Services;
 
 namespace StuRoom.Controllers;
 
 [Authorize(Policy = "TenantOnly")]
 public class BookingRequestsController(
     UserManager<ApplicationUser> userManager,
-    ApplicationDbContext db) : Controller
+    ApplicationDbContext db,
+    INotificationService notifier) : Controller
 {
     private string CurrentUserId => userManager.GetUserId(User)!;
 
@@ -97,6 +99,12 @@ public class BookingRequestsController(
             Status           = BookingStatus.Pending
         });
         await db.SaveChangesAsync();
+
+        // Task 30 — notify Landlord
+        await notifier.SendAsync(room.Building.LandlordId, NotificationType.NewBookingRequest,
+            "Yêu cầu đặt phòng mới",
+            $"Tenant muốn đặt phòng {room.RoomNumber} — dự kiến vào: {desiredMoveIn:dd/MM/yyyy}.",
+            "BookingRequest", db.BookingRequests.Local.Last().Id);
 
         TempData["Success"] = "Đã gửi yêu cầu đặt phòng. Chủ trọ sẽ phản hồi sớm!";
         return RedirectToAction(nameof(Index));
