@@ -1214,4 +1214,281 @@ public class LandlordController(
             .Include(c => c.Members).ThenInclude(m => m.Tenant)
             .FirstOrDefaultAsync(c => c.Id == id && myBuildingIds.Contains(c.Room.BuildingId));
     }
+
+    // ════════════════════════════════════════════════════════════════════════════
+    // INVOICES — Task 25, 26, 27
+    // ════════════════════════════════════════════════════════════════════════════
+
+    // Task 25 — Danh sách hoá đơn ─────────────────────────────────────────────
+
+    public async Task<IActionResult> Invoices(string? filter, int? buildingId)
+    {
+        ViewData["ActiveMenu"] = "Invoices";
+        filter ??= "unpaid";
+
+        var myBuildingIds = await db.Buildings
+            .Where(b => b.LandlordId == CurrentUserId)
+            .Select(b => b.Id).ToListAsync();
+
+        var buildings = await db.Buildings
+            .Where(b => b.LandlordId == CurrentUserId)
+            .OrderBy(b => b.Name).ToListAsync();
+
+        var q = db.Invoices
+            .Include(i => i.Contract).ThenInclude(c => c.Room).ThenInclude(r => r.Building)
+            .Include(i => i.Contract).ThenInclude(c => c.Tenant)
+            .Where(i => myBuildingIds.Contains(i.Contract.Room.BuildingId));
+
+        if (buildingId.HasValue)
+            q = q.Where(i => i.Contract.Room.BuildingId == buildingId.Value);
+
+        q = filter switch
+        {
+            "draft"     => q.Where(i => i.Status == InvoiceStatus.Draft),
+            "sent"      => q.Where(i => i.Status == InvoiceStatus.Sent),
+            "paid"      => q.Where(i => i.Status == InvoiceStatus.Paid),
+            "overdue"   => q.Where(i => i.Status == InvoiceStatus.Overdue),
+            "unpaid"    => q.Where(i => i.Status == InvoiceStatus.Draft
+                                     || i.Status == InvoiceStatus.Sent
+                                     || i.Status == InvoiceStatus.Overdue),
+            _           => q
+        };
+
+        var invoices = await q.OrderByDescending(i => i.BillingYear)
+                               .ThenByDescending(i => i.BillingMonth)
+                               .ThenByDescending(i => i.Id)
+                               .ToListAsync();
+
+        ViewData["Filter"]     = filter;
+        ViewBag.Buildings      = buildings;
+        ViewBag.BuildingId     = buildingId;
+        return View(invoices);
+    }
+
+    // Task 25 — Tạo hoá đơn mới (GET) ────────────────────────────────────────
+
+    public async Task<IActionResult> CreateInvoice(int contractId)
+    {
+        var contract = await GetOwnedContractFull(contractId);
+        if (contract == null || contract.Status != ContractStatus.Active)
+            return NotFound();
+
+        // Gộp fee configs (room-level override building-level)
+        var roomFees     = await db.FeeConfigs
+            .Where(f => f.RoomId == contract.RoomId && f.IsActive).ToListAsync();
+        var buildingFees = await db.FeeConfigs
+            .Where(f => f.BuildingId == contract.Room.BuildingId && f.RoomId == null && f.IsActive)
+            .ToListAsync();
+        var roomCategories = roomFees.Select(f => f.FeeCategory).ToHashSet();
+        var effectiveFees  = roomFees
+            .Concat(buildingFees.Where(f => !roomCategories.Contains(f.FeeCategory)))
+            .OrderBy(f => f.SortOrder).ToList();
+
+        ViewBag.Contract     = contract;
+        ViewBag.EffectiveFees = effectiveFees;
+        ViewBag.Now          = DateTime.Now;
+        return View(contract);
+    }
+
+    // Task 25 — Tạo hoá đơn mới (POST) ───────────────────────────────────────
+
+    [HttpPost]
+    public async Task<IActionResult> CreateInvoice(int contractId, int billingYear,
+        int billingMonth, DateTime dueDate, string? notes,
+        [FromForm] List<int> feeConfigIds,
+        [FromForm] List<string> descriptions,
+        [FromForm] List<decimal?> quantities,
+        [FromForm] List<decimal> unitPrices,
+        [FromForm] List<decimal?> previousReadings,
+        [FromForm] List<decimal?> currentReadings)
+    {
+        var contract = await GetOwnedContractFull(contractId);
+        if (contract == null || contract.Status != ContractStatus.Active)
+            return NotFound();
+
+        // Check duplicate invoice for same month
+        var dup = await db.Invoices
+            .AnyAsync(i => i.ContractId == contractId
+                        && i.BillingYear == billingYear
+                        && i.BillingMonth == billingMonth);
+        if (dup)
+        {
+            TempData["Error"] = $"Đã có hoá đơn tháng {billingMonth}/{billingYear} cho hợp đồng này.";
+            return RedirectToAction(nameof(CreateInvoice), new { contractId });
+        }
+
+        // Active member count (primary + members) for split calculation
+        int activeMembers = 1 + contract.Members
+            .Count(m => !m.LeaveDate.HasValue || m.LeaveDate > DateTime.UtcNow);
+
+        var invoice = new Invoice
+        {
+            ContractId   = contractId,
+            BillingYear  = billingYear,
+            BillingMonth = billingMonth,
+            DueDate      = dueDate,
+            Notes        = notes,
+            Status       = InvoiceStatus.Draft
+        };
+
+        decimal total = 0;
+        for (int i = 0; i < descriptions.Count; i++)
+        {
+            if (string.IsNullOrWhiteSpace(descriptions[i])) continue;
+
+            // Tính amount
+            decimal amount;
+            if (quantities[i].HasValue && unitPrices[i] > 0)
+            {
+                decimal qty = quantities[i]!.Value;
+                // PerUnit (điện/nước): chia đều 1/N người ghép
+                int? cfId = i < feeConfigIds.Count ? feeConfigIds[i] : (int?)null;
+                bool isPerUnit = cfId > 0 && await db.FeeConfigs
+                    .AnyAsync(f => f.Id == cfId && f.CalcType == CalcType.PerUnit);
+                amount = isPerUnit
+                    ? Math.Round(qty * unitPrices[i] / activeMembers, 0)
+                    : qty * unitPrices[i];
+            }
+            else
+            {
+                amount = unitPrices[i];
+            }
+
+            invoice.Items.Add(new InvoiceItem
+            {
+                FeeConfigId      = i < feeConfigIds.Count && feeConfigIds[i] > 0 ? feeConfigIds[i] : null,
+                Description      = descriptions[i],
+                Quantity         = quantities[i],
+                UnitPrice        = unitPrices[i],
+                Amount           = amount,
+                PreviousReading  = i < previousReadings.Count ? previousReadings[i] : null,
+                CurrentReading   = i < currentReadings.Count ? currentReadings[i] : null
+            });
+            total += amount;
+        }
+
+        invoice.TotalAmount = total;
+        db.Invoices.Add(invoice);
+        await db.SaveChangesAsync();
+
+        TempData["Success"] = $"Đã tạo hoá đơn tháng {billingMonth}/{billingYear}.";
+        return RedirectToAction(nameof(InvoiceDetail), new { id = invoice.Id });
+    }
+
+    // Task 26 — Chi tiết hoá đơn ──────────────────────────────────────────────
+
+    public async Task<IActionResult> InvoiceDetail(int id)
+    {
+        ViewData["ActiveMenu"] = "Invoices";
+        var invoice = await GetOwnedInvoice(id);
+        if (invoice == null) return NotFound();
+        return View(invoice);
+    }
+
+    // Task 26 — Gửi hoá đơn cho Tenant (email) ────────────────────────────────
+
+    [HttpPost]
+    public async Task<IActionResult> SendInvoice(int id)
+    {
+        var invoice = await GetOwnedInvoice(id);
+        if (invoice == null) return NotFound();
+
+        if (invoice.Status == InvoiceStatus.Draft || invoice.Status == InvoiceStatus.Overdue)
+        {
+            invoice.Status = InvoiceStatus.Sent;
+            await db.SaveChangesAsync();
+        }
+
+        var tenant  = invoice.Contract.Tenant;
+        var room    = invoice.Contract.Room;
+        var subject = $"[StuRoom] Hoá đơn tháng {invoice.BillingMonth}/{invoice.BillingYear} — Phòng {room.RoomNumber}";
+        var body    = $@"
+<p>Xin chào <strong>{tenant.FullName ?? tenant.Email}</strong>,</p>
+<p>Bạn có hoá đơn tháng <strong>{invoice.BillingMonth}/{invoice.BillingYear}</strong> cho phòng <strong>{room.RoomNumber} — {room.Building.Name}</strong>.</p>
+<table border='1' cellpadding='6' cellspacing='0' style='border-collapse:collapse;font-family:sans-serif;font-size:14px'>
+  <thead><tr style='background:#f3f4f6'>
+    <th>Khoản phí</th><th>Số lượng</th><th>Đơn giá</th><th>Thành tiền</th>
+  </tr></thead>
+  <tbody>
+    {string.Join("", invoice.Items.Select(it =>
+        $"<tr><td>{it.Description}</td><td>{(it.Quantity.HasValue ? it.Quantity.Value.ToString("N2") : "—")}</td><td>{it.UnitPrice:N0} ₫</td><td>{it.Amount:N0} ₫</td></tr>"))}
+  </tbody>
+  <tfoot><tr><td colspan='3'><strong>Tổng cộng</strong></td><td><strong>{invoice.TotalAmount:N0} ₫</strong></td></tr></tfoot>
+</table>
+<p>Hạn thanh toán: <strong>{invoice.DueDate:dd/MM/yyyy}</strong></p>
+<p>Vui lòng liên hệ chủ trọ nếu có thắc mắc.</p>";
+
+        await emailSender.SendEmailAsync(tenant.Email!, subject, body);
+
+        TempData["Success"] = "Đã gửi hoá đơn đến tenant.";
+        return RedirectToAction(nameof(InvoiceDetail), new { id });
+    }
+
+    // Task 27 — Ghi nhận thanh toán ───────────────────────────────────────────
+
+    [HttpPost]
+    public async Task<IActionResult> RecordPayment(int invoiceId, decimal amount,
+        DateTime paymentDate, PaymentMethod method,
+        string? transactionRef, string? notes)
+    {
+        var invoice = await GetOwnedInvoice(invoiceId);
+        if (invoice == null) return NotFound();
+
+        var payment = new Payment
+        {
+            InvoiceId      = invoiceId,
+            Amount         = amount,
+            PaymentDate    = paymentDate,
+            Method         = method,
+            TransactionRef = transactionRef,
+            Notes          = notes,
+            RecordedById   = CurrentUserId
+        };
+        db.Payments.Add(payment);
+
+        // Tổng đã thanh toán
+        var totalPaid = invoice.Payments.Sum(p => p.Amount) + amount;
+        if (totalPaid >= invoice.TotalAmount)
+            invoice.Status = InvoiceStatus.Paid;
+        else if (invoice.Status == InvoiceStatus.Draft)
+            invoice.Status = InvoiceStatus.Sent;
+
+        await db.SaveChangesAsync();
+
+        TempData["Success"] = $"Đã ghi nhận thanh toán {amount:N0} ₫.";
+        return RedirectToAction(nameof(InvoiceDetail), new { id = invoiceId });
+    }
+
+    // Task 27 — Huỷ hoá đơn ──────────────────────────────────────────────────
+
+    [HttpPost]
+    public async Task<IActionResult> CancelInvoice(int id)
+    {
+        var invoice = await GetOwnedInvoice(id);
+        if (invoice == null) return NotFound();
+
+        if (invoice.Status != InvoiceStatus.Paid)
+        {
+            invoice.Status = InvoiceStatus.Cancelled;
+            await db.SaveChangesAsync();
+            TempData["Success"] = "Đã huỷ hoá đơn.";
+        }
+        return RedirectToAction(nameof(InvoiceDetail), new { id });
+    }
+
+    private async Task<Invoice?> GetOwnedInvoice(int id)
+    {
+        var myBuildingIds = await db.Buildings
+            .Where(b => b.LandlordId == CurrentUserId)
+            .Select(b => b.Id).ToListAsync();
+
+        return await db.Invoices
+            .Include(i => i.Contract).ThenInclude(c => c.Room).ThenInclude(r => r.Building)
+            .Include(i => i.Contract).ThenInclude(c => c.Tenant)
+            .Include(i => i.Contract).ThenInclude(c => c.Members)
+            .Include(i => i.Items).ThenInclude(it => it.FeeConfig)
+            .Include(i => i.Payments).ThenInclude(p => p.RecordedBy)
+            .FirstOrDefaultAsync(i => i.Id == id
+                && myBuildingIds.Contains(i.Contract.Room.BuildingId));
+    }
 }

@@ -1,0 +1,254 @@
+@using StuRoom.Models
+@{
+    ViewData["Title"] = "Tạo hoá đơn";
+    ViewData["ActiveMenu"] = "Invoices";
+    var contract      = (Contract)ViewBag.Contract;
+    var effectiveFees = (List<FeeConfig>)ViewBag.EffectiveFees;
+    var now           = (DateTime)ViewBag.Now;
+}
+
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb small">
+    <li class="breadcrumb-item"><a asp-action="Invoices">Hoá đơn</a></li>
+    <li class="breadcrumb-item">
+      <a asp-action="ContractDetail" asp-route-id="@contract.Id">
+        HĐ #@contract.Id — Phòng @contract.Room.RoomNumber
+      </a>
+    </li>
+    <li class="breadcrumb-item active">Tạo hoá đơn</li>
+  </ol>
+</nav>
+
+<div class="d-flex align-items-center mb-4">
+  <div>
+    <h4 class="fw-bold mb-0">Tạo hoá đơn</h4>
+    <p class="text-muted small mb-0">
+      Phòng @contract.Room.RoomNumber — @contract.Room.Building.Name —
+      Tenant: @contract.Tenant.FullName
+    </p>
+  </div>
+</div>
+
+@if (TempData["Error"] != null)
+{
+  <div class="alert alert-danger py-2 small">@TempData["Error"]</div>
+}
+
+<form asp-action="CreateInvoice" method="post" id="invoiceForm">
+  <input type="hidden" name="contractId" value="@contract.Id" />
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-3">
+      <label class="form-label small fw-semibold">Tháng</label>
+      <select name="billingMonth" class="form-select form-select-sm" required>
+        @for (int m = 1; m <= 12; m++)
+        {
+          if (m == now.Month) { <option value="@m" selected>Tháng @m</option> }
+          else { <option value="@m">Tháng @m</option> }
+        }
+      </select>
+    </div>
+    <div class="col-md-3">
+      <label class="form-label small fw-semibold">Năm</label>
+      <input type="number" name="billingYear" class="form-control form-control-sm"
+             value="@now.Year" min="2020" max="2099" required />
+    </div>
+    <div class="col-md-3">
+      <label class="form-label small fw-semibold">Hạn thanh toán</label>
+      <input type="date" name="dueDate" class="form-control form-control-sm"
+             value="@now.AddDays(15).ToString("yyyy-MM-dd")" required />
+    </div>
+    <div class="col-md-3">
+      <label class="form-label small fw-semibold">Ghi chú</label>
+      <input type="text" name="notes" class="form-control form-control-sm"
+             placeholder="Tuỳ chọn..." />
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm mb-3">
+    <div class="card-header bg-transparent d-flex align-items-center justify-content-between py-2">
+      <span class="fw-semibold small">Các khoản phí</span>
+      <button type="button" class="btn btn-sm btn-outline-primary" id="btnAddRow">
+        <i class="bi bi-plus-lg me-1"></i>Thêm dòng thủ công
+      </button>
+    </div>
+    <div class="card-body p-0">
+      <table class="table table-sm align-middle mb-0" id="feeTable">
+        <thead class="table-light">
+          <tr>
+            <th style="width:26%">Mô tả</th>
+            <th style="width:14%">Chỉ số trước</th>
+            <th style="width:14%">Chỉ số sau</th>
+            <th style="width:10%">Số lượng</th>
+            <th style="width:13%">Đơn giá (₫)</th>
+            <th style="width:13%">Thành tiền (₫)</th>
+            <th style="width:10%"></th>
+          </tr>
+        </thead>
+        <tbody id="feeBody">
+          @foreach (var fee in effectiveFees)
+          {
+            bool isPerUnit = fee.CalcType == CalcType.PerUnit;
+            bool isRent    = fee.FeeCategory == FeeCategory.Rent;
+            <tr class="fee-row" data-calctype="@fee.CalcType.ToString().ToLower()"
+                data-unitprice="@fee.UnitPrice">
+              <td>
+                <input type="hidden" name="feeConfigIds" value="@fee.Id" />
+                <input type="text" class="form-control form-control-sm"
+                       name="descriptions" value="@fee.Name" readonly />
+              </td>
+              <td>
+                @if (isPerUnit)
+                {
+                  <input type="number" class="form-control form-control-sm prev-reading"
+                         name="previousReadings" step="0.01" placeholder="0"
+                         oninput="calcRow(this.closest('tr'))" />
+                }
+                else
+                {
+                  <input type="hidden" name="previousReadings" value="" />
+                  <span class="text-muted small">—</span>
+                }
+              </td>
+              <td>
+                @if (isPerUnit)
+                {
+                  <input type="number" class="form-control form-control-sm curr-reading"
+                         name="currentReadings" step="0.01" placeholder="0"
+                         oninput="calcRow(this.closest('tr'))" />
+                }
+                else
+                {
+                  <input type="hidden" name="currentReadings" value="" />
+                  <span class="text-muted small">—</span>
+                }
+              </td>
+              <td>
+                @if (isPerUnit)
+                {
+                  <input type="number" class="form-control form-control-sm qty-input"
+                         name="quantities" step="0.01" placeholder="auto" readonly />
+                }
+                else if (isRent)
+                {
+                  <input type="hidden" name="quantities" value="" />
+                  <span class="text-muted small">1 tháng</span>
+                }
+                else
+                {
+                  <input type="number" class="form-control form-control-sm qty-input"
+                         name="quantities" step="0.01" min="0" placeholder="@fee.Unit"
+                         oninput="calcRow(this.closest('tr'))" />
+                }
+              </td>
+              <td>
+                <input type="number" class="form-control form-control-sm unit-price"
+                       name="unitPrices" value="@fee.UnitPrice" step="0.01" min="0"
+                       oninput="calcRow(this.closest('tr'))" required />
+              </td>
+              <td>
+                <input type="number" class="form-control form-control-sm amount-display"
+                       name="__amounts_display" value="@(isRent ? fee.UnitPrice : 0)"
+                       readonly tabindex="-1" />
+              </td>
+              <td></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <div class="card-footer bg-transparent d-flex justify-content-end align-items-center gap-3 py-2">
+      <span class="text-muted small">Tổng cộng:</span>
+      <span class="fw-bold fs-6" id="totalDisplay">0 ₫</span>
+    </div>
+  </div>
+
+  <div class="d-flex gap-2">
+    <button type="submit" class="btn btn-primary">
+      <i class="bi bi-save me-1"></i>Tạo hoá đơn
+    </button>
+    <a asp-action="ContractDetail" asp-route-id="@contract.Id"
+       class="btn btn-outline-secondary">Huỷ</a>
+  </div>
+</form>
+
+@section Scripts {
+<script>
+// Template for manual row
+const manualRowHtml = `
+<tr class="fee-row" data-calctype="fixed" data-unitprice="0">
+  <td>
+    <input type="hidden" name="feeConfigIds" value="0" />
+    <input type="text" class="form-control form-control-sm" name="descriptions"
+           placeholder="Mô tả khoản phí..." required />
+  </td>
+  <td><input type="hidden" name="previousReadings" value="" /><span class="text-muted small">—</span></td>
+  <td><input type="hidden" name="currentReadings"  value="" /><span class="text-muted small">—</span></td>
+  <td><input type="hidden" name="quantities" value="" /><span class="text-muted small">1</span></td>
+  <td>
+    <input type="number" class="form-control form-control-sm unit-price"
+           name="unitPrices" step="0.01" min="0" placeholder="0" required
+           oninput="calcRow(this.closest('tr'))" />
+  </td>
+  <td>
+    <input type="number" class="form-control form-control-sm amount-display"
+           name="__amounts_display" value="0" readonly tabindex="-1" />
+  </td>
+  <td>
+    <button type="button" class="btn btn-sm btn-outline-danger"
+            onclick="removeRow(this)"><i class="bi bi-trash"></i></button>
+  </td>
+</tr>`;
+
+document.getElementById('btnAddRow').addEventListener('click', () => {
+  document.getElementById('feeBody').insertAdjacentHTML('beforeend', manualRowHtml);
+  recalcTotal();
+});
+
+function removeRow(btn) {
+  btn.closest('tr').remove();
+  recalcTotal();
+}
+
+function calcRow(row) {
+  const type   = row.dataset.calctype;
+  const prev   = parseFloat(row.querySelector('.prev-reading')?.value) || 0;
+  const curr   = parseFloat(row.querySelector('.curr-reading')?.value) || 0;
+  const price  = parseFloat(row.querySelector('.unit-price')?.value)   || 0;
+  const qtyEl  = row.querySelector('.qty-input');
+  let amount   = 0;
+
+  if (type === 'perunit') {
+    const qty = Math.max(0, curr - prev);
+    if (qtyEl) qtyEl.value = qty.toFixed(2);
+    amount = qty * price;
+  } else {
+    const qty = parseFloat(qtyEl?.value) || 1;
+    amount = qty * price;
+  }
+
+  const amountEl = row.querySelector('.amount-display');
+  if (amountEl) amountEl.value = amount.toFixed(0);
+  recalcTotal();
+}
+
+function recalcTotal() {
+  let total = 0;
+  document.querySelectorAll('.amount-display').forEach(el => {
+    total += parseFloat(el.value) || 0;
+  });
+  document.getElementById('totalDisplay').textContent =
+    new Intl.NumberFormat('vi-VN').format(total) + ' ₫';
+}
+
+// Initialize totals on load
+document.querySelectorAll('.fee-row').forEach(row => calcRow(row));
+
+// On submit, copy amount-display → hidden unitPrices mapping is already fine.
+// We just need to ensure quantities for fixed/rent rows are sent correctly.
+document.getElementById('invoiceForm').addEventListener('submit', function () {
+  // amounts are in __amounts_display inputs with no backend binding — that's fine,
+  // backend recalculates. Nothing extra needed.
+});
+</script>
+}

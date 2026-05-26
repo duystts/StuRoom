@@ -63,7 +63,14 @@
         <i class="bi bi-x-circle me-1"></i>Chấm dứt HĐ
       </button>
     }
-    @* Export buttons — wired after Task 23+24 *@
+    @if (Model.Status == StuRoom.Models.ContractStatus.Active)
+    {
+      <a asp-action="CreateInvoice" asp-route-contractId="@Model.Id"
+         class="btn btn-sm btn-outline-success">
+        <i class="bi bi-receipt me-1"></i>Tạo hoá đơn
+      </a>
+    }
+    @* Export buttons *@
     <a asp-action="ExportContractPdf" asp-route-id="@Model.Id"
        class="btn btn-outline-secondary btn-sm">
       <i class="bi bi-file-earmark-pdf me-1"></i>PDF
