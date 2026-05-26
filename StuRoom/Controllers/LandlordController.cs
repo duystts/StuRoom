@@ -1,9 +1,15 @@
+using DocumentFormat.OpenXml;
+using DocumentFormat.OpenXml.Packaging;
+using DocumentFormat.OpenXml.Wordprocessing;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using QuestPDF.Fluent;
+using QuestPDF.Infrastructure;
+using WpDocument = DocumentFormat.OpenXml.Wordprocessing.Document;
 using StuRoom.Data;
 using StuRoom.Models;
 using StuRoom.Services;
@@ -1002,6 +1008,188 @@ public class LandlordController(
         return RedirectToAction(nameof(ContractDetail), new { id });
     }
 
+    // ── Task 23: Export PDF ───────────────────────────────────────────────────
+
+    public async Task<IActionResult> ExportContractPdf(int id)
+    {
+        var contract = await GetOwnedContractFull(id);
+        if (contract == null) return NotFound();
+
+        QuestPDF.Settings.License = LicenseType.Community;
+        var doc  = new ContractPdfDocument(contract);
+        var bytes = doc.GeneratePdf();
+        return File(bytes, "application/pdf", $"HopDong_{contract.Id:D4}.pdf");
+    }
+
+    // ── Task 24: Export Word ──────────────────────────────────────────────────
+
+    public async Task<IActionResult> ExportContractDocx(int id)
+    {
+        var contract = await GetOwnedContractFull(id);
+        if (contract == null) return NotFound();
+
+        using var ms = new MemoryStream();
+        BuildWordDocument(contract, ms);
+        ms.Position = 0;
+        return File(ms.ToArray(),
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            $"HopDong_{contract.Id:D4}.docx");
+    }
+
+    static void BuildWordDocument(Contract contract, Stream stream)
+    {
+        var room   = contract.Room;
+        var bldg   = room.Building;
+        var tenant = contract.Tenant;
+
+        using var wordDoc = WordprocessingDocument.Create(stream,
+            WordprocessingDocumentType.Document, true);
+
+        var mainPart = wordDoc.AddMainDocumentPart();
+        mainPart.Document = new WpDocument();
+        var body = mainPart.Document.AppendChild(new Body());
+
+        // page margins
+        var sectPr = new SectionProperties(
+            new PageMargin { Top = 1134, Bottom = 1134, Left = 1134, Right = 1134 });
+        body.AppendChild(sectPr);
+
+        static Paragraph CenteredPara(string text, bool bold = false, int fontSize = 24)
+        {
+            var rp = new RunProperties(new FontSize { Val = fontSize.ToString() });
+            if (bold) { rp.AppendChild(new Bold()); rp.AppendChild(new BoldComplexScript()); }
+            return new Paragraph(
+                new ParagraphProperties(new Justification { Val = JustificationValues.Center }),
+                new Run(rp, new Text(text)));
+        }
+
+        static Paragraph NormalPara(string text, int fontSize = 22)
+            => new(new Run(new RunProperties(new FontSize { Val = fontSize.ToString() }),
+                   new Text(text)));
+
+        static Paragraph InfoPara(string label, string value)
+            => new(new Run(
+                   new RunProperties(new FontSize { Val = "22" }),
+                   new Text($"    {label}: ")),
+               new Run(
+                   new RunProperties(new Bold(), new BoldComplexScript(),
+                       new FontSize { Val = "22" }),
+                   new Text(value)));
+
+        static Paragraph HeadingPara(string text)
+            => new(new Run(
+                   new RunProperties(new Bold(), new BoldComplexScript(),
+                       new FontSize { Val = "24" }),
+                   new Text(text)));
+
+        // Header
+        body.AppendChild(CenteredPara("CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM", true, 26));
+        body.AppendChild(CenteredPara("Độc lập - Tự do - Hạnh phúc", true, 24));
+        body.AppendChild(CenteredPara("━━━━━━━━━━━━━━━━━━━━━", false, 20));
+        body.AppendChild(CenteredPara("HỢP ĐỒNG THUÊ PHÒNG TRỌ", true, 28));
+        body.AppendChild(CenteredPara(
+            $"Số: {contract.Id:D4}/{DateTime.Now.Year}/HĐTT", false, 20));
+        body.AppendChild(NormalPara(""));
+
+        // Bên A
+        body.AppendChild(HeadingPara("ĐIỀU 1 – BÊN CHO THUÊ (BÊN A)"));
+        body.AppendChild(InfoPara("Họ và tên", bldg.Landlord?.FullName ?? bldg.Name));
+        body.AppendChild(InfoPara("Tòa nhà",   bldg.Name));
+        body.AppendChild(InfoPara("Địa chỉ",
+            $"{bldg.Address}, {bldg.Ward}, {bldg.District}, {bldg.Province}"));
+        body.AppendChild(NormalPara(""));
+
+        // Bên B
+        body.AppendChild(HeadingPara("ĐIỀU 2 – BÊN THUÊ (BÊN B)"));
+        body.AppendChild(InfoPara("Họ và tên",       tenant.FullName ?? tenant.UserName ?? "—"));
+        body.AppendChild(InfoPara("Email",            tenant.Email ?? "—"));
+        body.AppendChild(InfoPara("Số điện thoại",   tenant.PhoneNumber ?? "—"));
+        body.AppendChild(NormalPara(""));
+
+        // Tài sản
+        body.AppendChild(HeadingPara("ĐIỀU 3 – TÀI SẢN THUÊ"));
+        body.AppendChild(InfoPara("Phòng số",  room.RoomNumber));
+        body.AppendChild(InfoPara("Tòa nhà",   bldg.Name));
+        body.AppendChild(InfoPara("Địa chỉ",
+            $"{bldg.Address}, {bldg.Ward}, {bldg.District}, {bldg.Province}"));
+        body.AppendChild(InfoPara("Diện tích", $"{room.Area:N1} m²"));
+        body.AppendChild(InfoPara("Sức chứa",
+            room.Capacity.HasValue ? $"{room.Capacity} người" : "Không giới hạn"));
+        body.AppendChild(NormalPara(""));
+
+        // Thời hạn
+        body.AppendChild(HeadingPara("ĐIỀU 4 – THỜI HẠN VÀ GIÁ THUÊ"));
+        body.AppendChild(InfoPara("Ngày bắt đầu",    contract.StartDate.ToString("dd/MM/yyyy")));
+        body.AppendChild(InfoPara("Ngày kết thúc",
+            contract.EndDate.HasValue ? contract.EndDate.Value.ToString("dd/MM/yyyy") : "Không xác định"));
+        body.AppendChild(InfoPara("Giá thuê/tháng",  $"{contract.MonthlyRent:N0} đồng"));
+        body.AppendChild(InfoPara("Tiền cọc",        $"{contract.DepositAmount:N0} đồng"));
+        body.AppendChild(NormalPara(""));
+
+        // Điều khoản chung
+        body.AppendChild(HeadingPara("ĐIỀU 5 – ĐIỀU KHOẢN CHUNG"));
+        body.AppendChild(NormalPara("1. Bên B có trách nhiệm thanh toán tiền thuê đúng hạn vào đầu mỗi tháng."));
+        body.AppendChild(NormalPara("2. Bên B không được tự ý sửa chữa, cải tạo phòng khi chưa có sự đồng ý của Bên A."));
+        body.AppendChild(NormalPara("3. Bên B có trách nhiệm giữ gìn vệ sinh chung và tuân thủ nội quy tòa nhà."));
+        body.AppendChild(NormalPara("4. Khi chấm dứt hợp đồng, Bên B phải thông báo trước ít nhất 30 ngày."));
+        body.AppendChild(NormalPara("5. Tiền cọc sẽ được hoàn trả sau khi Bên B bàn giao phòng và thanh toán đầy đủ."));
+        body.AppendChild(NormalPara(""));
+
+        if (!string.IsNullOrWhiteSpace(contract.Notes))
+        {
+            body.AppendChild(HeadingPara("ĐIỀU 6 – GHI CHÚ THÊM"));
+            body.AppendChild(NormalPara(contract.Notes));
+            body.AppendChild(NormalPara(""));
+        }
+
+        // Ký tên (2 cột dùng table)
+        body.AppendChild(NormalPara(""));
+        var tbl = new Table(
+            new TableProperties(
+                new TableWidth { Width = "9638", Type = TableWidthUnitValues.Dxa },
+                new TableBorders(
+                    new TopBorder    { Val = BorderValues.None },
+                    new BottomBorder { Val = BorderValues.None },
+                    new LeftBorder   { Val = BorderValues.None },
+                    new RightBorder  { Val = BorderValues.None },
+                    new InsideHorizontalBorder { Val = BorderValues.None },
+                    new InsideVerticalBorder   { Val = BorderValues.None })));
+
+        var sigRow = new TableRow();
+        var cellA  = new TableCell(
+            new TableCellProperties(new TableCellWidth { Width = "4819", Type = TableWidthUnitValues.Dxa }),
+            new Paragraph(new ParagraphProperties(new Justification { Val = JustificationValues.Center }),
+                new Run(new RunProperties(new Bold(), new FontSize { Val = "22" }), new Text("BÊN A"))),
+            new Paragraph(new ParagraphProperties(new Justification { Val = JustificationValues.Center }),
+                new Run(new RunProperties(new FontSize { Val = "20" }), new Text("(Chủ trọ)"))),
+            new Paragraph(new Text("")),
+            new Paragraph(new Text("")),
+            new Paragraph(new Text("")),
+            new Paragraph(new ParagraphProperties(new Justification { Val = JustificationValues.Center }),
+                new Run(new RunProperties(new FontSize { Val = "20" }),
+                    new Text(bldg.Landlord?.FullName ?? bldg.Name))));
+
+        var cellB = new TableCell(
+            new TableCellProperties(new TableCellWidth { Width = "4819", Type = TableWidthUnitValues.Dxa }),
+            new Paragraph(new ParagraphProperties(new Justification { Val = JustificationValues.Center }),
+                new Run(new RunProperties(new Bold(), new FontSize { Val = "22" }), new Text("BÊN B"))),
+            new Paragraph(new ParagraphProperties(new Justification { Val = JustificationValues.Center }),
+                new Run(new RunProperties(new FontSize { Val = "20" }), new Text("(Người thuê)"))),
+            new Paragraph(new Text("")),
+            new Paragraph(new Text("")),
+            new Paragraph(new Text("")),
+            new Paragraph(new ParagraphProperties(new Justification { Val = JustificationValues.Center }),
+                new Run(new RunProperties(new FontSize { Val = "20" }),
+                    new Text(tenant.FullName ?? "—"))));
+
+        sigRow.AppendChild(cellA);
+        sigRow.AppendChild(cellB);
+        tbl.AppendChild(sigRow);
+        body.AppendChild(tbl);
+
+        mainPart.Document.Save();
+    }
+
     private async Task<Contract?> GetOwnedContract(int id)
     {
         var myBuildingIds = await db.Buildings
@@ -1011,6 +1199,19 @@ public class LandlordController(
         return await db.Contracts
             .Include(c => c.Room).ThenInclude(r => r.Building)
             .Include(c => c.Tenant)
+            .FirstOrDefaultAsync(c => c.Id == id && myBuildingIds.Contains(c.Room.BuildingId));
+    }
+
+    private async Task<Contract?> GetOwnedContractFull(int id)
+    {
+        var myBuildingIds = await db.Buildings
+            .Where(b => b.LandlordId == CurrentUserId)
+            .Select(b => b.Id).ToListAsync();
+
+        return await db.Contracts
+            .Include(c => c.Room).ThenInclude(r => r.Building).ThenInclude(b => b.Landlord)
+            .Include(c => c.Tenant)
+            .Include(c => c.Members).ThenInclude(m => m.Tenant)
             .FirstOrDefaultAsync(c => c.Id == id && myBuildingIds.Contains(c.Room.BuildingId));
     }
 }

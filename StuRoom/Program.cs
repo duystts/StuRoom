@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
+using QuestPDF.Infrastructure;
 using StuRoom.Authorization;
 using StuRoom.Data;
 using StuRoom.Models;
@@ -65,6 +66,8 @@ builder.Services.AddTransient<IEmailSender, SmtpEmailSender>();
 builder.Services.AddSingleton<ICloudinaryService, CloudinaryService>();
 
 builder.Services.AddControllersWithViews();
+
+QuestPDF.Settings.License = LicenseType.Community;
 
 var app = builder.Build();
 
