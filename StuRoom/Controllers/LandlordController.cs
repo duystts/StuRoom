@@ -658,6 +658,112 @@ public class LandlordController(
             .FirstOrDefaultAsync(v => v.Id == id && myBuildingIds.Contains(v.Room.BuildingId));
     }
 
+    // ════════════════════════════════════════════════════════
+    // BOOKING REQUESTS — Landlord side  (Task 19 + 20)
+    // ════════════════════════════════════════════════════════
+
+    public async Task<IActionResult> BookingRequests(string? filter)
+    {
+        ViewData["ActiveMenu"] = "BookingRequests";
+        ViewData["Filter"]     = filter ?? "pending";
+
+        var myBuildingIds = await db.Buildings
+            .Where(b => b.LandlordId == CurrentUserId)
+            .Select(b => b.Id).ToListAsync();
+
+        var query = db.BookingRequests
+            .Include(b => b.Room).ThenInclude(r => r.Building)
+            .Include(b => b.Tenant)
+            .Include(b => b.Contract)
+            .Where(b => myBuildingIds.Contains(b.Room.BuildingId));
+
+        query = filter switch
+        {
+            "approved" => query.Where(b => b.Status == BookingStatus.Approved),
+            "rejected" => query.Where(b => b.Status == BookingStatus.Rejected),
+            _          => query.Where(b => b.Status == BookingStatus.Pending)
+        };
+
+        var list = await query.OrderByDescending(b => b.CreatedAt).ToListAsync();
+        return View(list);
+    }
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> ApproveBooking(
+        int id, decimal depositAmount, decimal monthlyRent,
+        DateTime startDate, DateTime? endDate)
+    {
+        var booking = await db.BookingRequests
+            .Include(b => b.Room).ThenInclude(r => r.Building)
+            .Include(b => b.Tenant)
+            .FirstOrDefaultAsync(b => b.Id == id &&
+                db.Buildings.Any(bl => bl.LandlordId == CurrentUserId && bl.Id == b.Room.BuildingId));
+
+        if (booking == null) return NotFound();
+
+        // Create Contract (Status = Pending — Landlord finalises in Contract management)
+        var contract = new Contract
+        {
+            RoomId        = booking.RoomId,
+            TenantId      = booking.TenantId,
+            StartDate     = startDate,
+            EndDate       = endDate,
+            DepositAmount = depositAmount,
+            MonthlyRent   = monthlyRent,
+            Status        = ContractStatus.Pending
+        };
+        db.Contracts.Add(contract);
+
+        booking.Status = BookingStatus.Approved;
+        await db.SaveChangesAsync();
+
+        // Link contract back to booking
+        booking.ContractId = contract.Id;
+        await db.SaveChangesAsync();
+
+        // Task 20 — email
+        await emailSender.SendEmailAsync(booking.Tenant.Email!,
+            "Yêu cầu đặt phòng được chấp nhận — StuRoom",
+            $"Xin chào <strong>{booking.Tenant.FullName}</strong>,<br><br>" +
+            $"Yêu cầu đặt phòng <strong>{booking.Room.RoomNumber}</strong> tại " +
+            $"<strong>{booking.Room.Building.Name}</strong> đã được <strong>chấp nhận</strong>.<br>" +
+            $"Ngày vào ở dự kiến: <strong>{startDate:dd/MM/yyyy}</strong>.<br>" +
+            $"Tiền cọc: <strong>{depositAmount:N0} ₫</strong> — Giá thuê: <strong>{monthlyRent:N0} ₫/tháng</strong>.<br><br>" +
+            "Chủ trọ sẽ liên hệ để hoàn tất hợp đồng. Chúc mừng bạn!");
+
+        TempData["Success"] = $"Đã duyệt đặt phòng và tạo hợp đồng #{contract.Id}.";
+        return RedirectToAction(nameof(BookingRequests), new { filter = "approved" });
+    }
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> RejectBooking(int id, string? rejectionReason)
+    {
+        var booking = await db.BookingRequests
+            .Include(b => b.Room).ThenInclude(r => r.Building)
+            .Include(b => b.Tenant)
+            .FirstOrDefaultAsync(b => b.Id == id &&
+                db.Buildings.Any(bl => bl.LandlordId == CurrentUserId && bl.Id == b.Room.BuildingId));
+
+        if (booking == null) return NotFound();
+
+        booking.Status          = BookingStatus.Rejected;
+        booking.RejectionReason = string.IsNullOrWhiteSpace(rejectionReason) ? null : rejectionReason.Trim();
+        await db.SaveChangesAsync();
+
+        // Task 20 — email
+        var reason = string.IsNullOrWhiteSpace(rejectionReason) ? "không có lý do cụ thể" : rejectionReason;
+        await emailSender.SendEmailAsync(booking.Tenant.Email!,
+            "Yêu cầu đặt phòng không được chấp nhận — StuRoom",
+            $"Xin chào <strong>{booking.Tenant.FullName}</strong>,<br><br>" +
+            $"Rất tiếc, yêu cầu đặt phòng <strong>{booking.Room.RoomNumber}</strong> tại " +
+            $"<strong>{booking.Room.Building.Name}</strong> <strong>không được chấp nhận</strong>.<br>" +
+            $"Lý do: {reason}.<br><br>" +
+            "Bạn có thể tìm phòng khác trên StuRoom. Xin lỗi vì bất tiện!");
+
+        TempData["Warning"] = "Đã từ chối yêu cầu đặt phòng.";
+        return RedirectToAction(nameof(BookingRequests));
+    }
+
     // Helper: load FeeConfig only if it belongs to current landlord
     private async Task<FeeConfig?> GetOwnedFeeConfig(int id)
     {

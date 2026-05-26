@@ -1,0 +1,141 @@
+@model List<StuRoom.Models.BookingRequest>
+@using StuRoom.Models
+@{
+    ViewData["Title"] = "Đặt phòng của tôi";
+
+    var statusMap = new Dictionary<BookingStatus, (string label, string css, string icon)>
+    {
+        [BookingStatus.Pending]  = ("Đang chờ",  "bg-warning-subtle text-warning border border-warning-subtle",  "bi-hourglass-split"),
+        [BookingStatus.Approved] = ("Được duyệt","bg-success-subtle text-success border border-success-subtle",  "bi-check-circle-fill"),
+        [BookingStatus.Rejected] = ("Từ chối",   "bg-danger-subtle text-danger border border-danger-subtle",     "bi-x-circle-fill"),
+    };
+}
+
+<div class="container py-4">
+
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+      <h4 class="fw-bold mb-0">Đặt phòng của tôi</h4>
+      <p class="text-muted small mb-0">Theo dõi trạng thái yêu cầu đặt phòng</p>
+    </div>
+    <a asp-controller="Rooms" asp-action="Index" class="btn btn-outline-primary btn-sm">
+      <i class="bi bi-search me-1"></i>Tìm phòng mới
+    </a>
+  </div>
+
+  @if (TempData["Success"] != null)
+  {
+    <div class="alert alert-success alert-dismissible fade show py-2 small">
+      <i class="bi bi-check-circle me-1"></i>@TempData["Success"]
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  }
+  @if (TempData["Error"] != null)
+  {
+    <div class="alert alert-danger alert-dismissible fade show py-2 small">
+      <i class="bi bi-exclamation-circle me-1"></i>@TempData["Error"]
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  }
+
+  @if (!Model.Any())
+  {
+    <div class="text-center py-5 text-muted">
+      <i class="bi bi-bookmark-x fs-1 d-block mb-2"></i>
+      Bạn chưa có yêu cầu đặt phòng nào.
+      <div class="mt-2">
+        <a asp-controller="Rooms" asp-action="Index" class="btn btn-primary btn-sm">
+          Tìm phòng ngay
+        </a>
+      </div>
+    </div>
+  }
+  else
+  {
+    <div class="row g-3">
+      @foreach (var b in Model)
+      {
+        var (lbl, css, icon) = statusMap[b.Status];
+        var img = b.Room.Images?.FirstOrDefault(i => i.IsPrimary)
+               ?? b.Room.Images?.OrderBy(i => i.SortOrder).FirstOrDefault();
+        <div class="col-md-6 col-xl-4">
+          <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+              <div class="d-flex align-items-start gap-3 mb-3">
+                @if (img != null)
+                {
+                  <img src="@img.ImageUrl" class="rounded-2 flex-shrink-0"
+                       style="width:64px;height:64px;object-fit:cover" alt="room" />
+                }
+                else
+                {
+                  <div class="rounded-2 bg-light d-flex align-items-center justify-content-center flex-shrink-0"
+                       style="width:64px;height:64px">
+                    <i class="bi bi-door-open text-muted fs-4"></i>
+                  </div>
+                }
+                <div class="flex-grow-1 min-w-0">
+                  <div class="fw-bold text-truncate">Phòng @b.Room.RoomNumber</div>
+                  <div class="text-muted small text-truncate">@b.Room.Building.Name</div>
+                  <span class="badge @css mt-1" style="font-size:11px">
+                    <i class="bi @icon me-1"></i>@lbl
+                  </span>
+                </div>
+              </div>
+
+              <div class="small mb-1">
+                <i class="bi bi-calendar me-1 text-muted"></i>
+                <span class="fw-semibold">Ngày vào ở:</span>
+                @b.DesiredMoveIn.ToString("dd/MM/yyyy")
+              </div>
+
+              <div class="small text-muted mb-1">
+                <i class="bi bi-clock me-1"></i>Gửi lúc @b.CreatedAt.ToString("HH:mm dd/MM/yyyy")
+              </div>
+
+              @if (!string.IsNullOrWhiteSpace(b.Message))
+              {
+                <div class="small text-muted mt-1 p-2 bg-light rounded">
+                  <i class="bi bi-chat-left-text me-1"></i>@b.Message
+                </div>
+              }
+
+              @if (b.Status == BookingStatus.Approved && b.Contract != null)
+              {
+                <div class="mt-2 p-2 bg-success-subtle rounded small">
+                  <i class="bi bi-file-earmark-check me-1 text-success"></i>
+                  Hợp đồng #@b.Contract.Id đã được tạo.
+                  <span class="badge bg-success-subtle text-success border border-success-subtle ms-1">
+                    @b.Contract.Status
+                  </span>
+                </div>
+              }
+
+              @if (b.Status == BookingStatus.Rejected && !string.IsNullOrWhiteSpace(b.RejectionReason))
+              {
+                <div class="mt-2 p-2 bg-danger-subtle rounded small text-danger">
+                  <i class="bi bi-exclamation-circle me-1"></i>@b.RejectionReason
+                </div>
+              }
+
+              @if (b.Status == BookingStatus.Pending)
+              {
+                <div class="mt-3 pt-2 border-top">
+                  <form asp-action="Cancel" method="post" class="d-inline">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@b.Id" />
+                    <button type="submit" class="btn btn-sm btn-outline-danger"
+                            onclick="return confirm('Huỷ yêu cầu đặt phòng này?')">
+                      <i class="bi bi-x-circle me-1"></i>Huỷ yêu cầu
+                    </button>
+                  </form>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+</div>
