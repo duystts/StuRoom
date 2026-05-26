@@ -1,0 +1,126 @@
+@model List<StuRoom.Models.Contract>
+@using StuRoom.Models
+@{
+    ViewData["Title"] = "Hợp đồng";
+    var currentFilter = ViewData["Filter"]?.ToString() ?? "active";
+    var buildings     = (List<Building>)ViewBag.Buildings;
+    var buildingId    = (int?)ViewBag.BuildingId;
+
+    var statusMap = new Dictionary<ContractStatus, (string label, string css)>
+    {
+        [ContractStatus.Pending]    = ("Chờ kích hoạt", "bg-warning-subtle text-warning border border-warning-subtle"),
+        [ContractStatus.Active]     = ("Đang thuê",     "bg-success-subtle text-success border border-success-subtle"),
+        [ContractStatus.Expired]    = ("Hết hạn",       "bg-secondary-subtle text-secondary border border-secondary-subtle"),
+        [ContractStatus.Terminated] = ("Đã chấm dứt",   "bg-danger-subtle text-danger border border-danger-subtle"),
+    };
+}
+
+<div class="d-flex align-items-center justify-content-between mb-4">
+  <div>
+    <h4 class="fw-bold mb-0">Hợp đồng</h4>
+    <p class="text-muted small mb-0">Quản lý hợp đồng thuê phòng</p>
+  </div>
+  <div class="text-muted small">@Model.Count hợp đồng</div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+  <div class="alert alert-success alert-dismissible fade show py-2 small">
+    <i class="bi bi-check-circle me-1"></i>@Html.Raw(TempData["Success"])
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+}
+
+@* Filters *@
+<div class="d-flex flex-wrap gap-2 mb-3">
+  <div class="d-flex gap-1">
+    <a asp-action="Contracts" asp-route-filter="active" asp-route-buildingId="@buildingId"
+       class="btn btn-sm @(currentFilter == "active" ? "btn-success" : "btn-outline-secondary")">
+      Đang thuê
+    </a>
+    <a asp-action="Contracts" asp-route-filter="pending" asp-route-buildingId="@buildingId"
+       class="btn btn-sm @(currentFilter == "pending" ? "btn-warning" : "btn-outline-secondary")">
+      Chờ kích hoạt
+    </a>
+    <a asp-action="Contracts" asp-route-filter="expired" asp-route-buildingId="@buildingId"
+       class="btn btn-sm @(currentFilter == "expired" ? "btn-secondary" : "btn-outline-secondary")">
+      Đã kết thúc
+    </a>
+    <a asp-action="Contracts" asp-route-filter="all" asp-route-buildingId="@buildingId"
+       class="btn btn-sm @(currentFilter == "all" ? "btn-primary" : "btn-outline-secondary")">
+      Tất cả
+    </a>
+  </div>
+  @if (buildings.Any())
+  {
+    <div class="d-flex gap-1 ms-auto">
+      <a asp-action="Contracts" asp-route-filter="@currentFilter"
+         class="btn btn-sm @(buildingId == null ? "btn-primary" : "btn-outline-secondary")">
+        Tất cả tòa nhà
+      </a>
+      @foreach (var b in buildings)
+      {
+        <a asp-action="Contracts" asp-route-filter="@currentFilter" asp-route-buildingId="@b.Id"
+           class="btn btn-sm @(buildingId == b.Id ? "btn-primary" : "btn-outline-secondary")">
+          @b.Name
+        </a>
+      }
+    </div>
+  }
+</div>
+
+@if (!Model.Any())
+{
+  <div class="text-center py-5 text-muted">
+    <i class="bi bi-file-earmark-x fs-1 d-block mb-2"></i>
+    Không có hợp đồng nào.
+  </div>
+}
+else
+{
+  <div class="card border-0 shadow-sm">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-light">
+        <tr>
+          <th style="width:50px">#</th>
+          <th>Phòng</th>
+          <th>Tenant</th>
+          <th style="width:100px">Bắt đầu</th>
+          <th style="width:100px">Kết thúc</th>
+          <th style="width:110px">Giá thuê</th>
+          <th style="width:110px">Tiền cọc</th>
+          <th style="width:110px">Trạng thái</th>
+          <th style="width:60px"></th>
+        </tr>
+      </thead>
+      <tbody>
+        @foreach (var c in Model)
+        {
+          var (lbl, css) = statusMap[c.Status];
+          <tr>
+            <td class="text-muted small">@c.Id</td>
+            <td>
+              <div class="small fw-semibold">Phòng @c.Room.RoomNumber</div>
+              <div class="text-muted" style="font-size:11px">@c.Room.Building.Name</div>
+            </td>
+            <td>
+              <div class="small fw-semibold">@c.Tenant.FullName</div>
+              <div class="text-muted" style="font-size:11px">@c.Tenant.Email</div>
+            </td>
+            <td class="small">@c.StartDate.ToString("dd/MM/yyyy")</td>
+            <td class="small text-muted">@(c.EndDate.HasValue ? c.EndDate.Value.ToString("dd/MM/yyyy") : "—")</td>
+            <td class="small fw-semibold">@c.MonthlyRent.ToString("N0") ₫</td>
+            <td class="small">@c.DepositAmount.ToString("N0") ₫</td>
+            <td><span class="badge @css" style="font-size:11px">@lbl</span></td>
+            <td>
+              <a asp-action="ContractDetail" asp-route-id="@c.Id"
+                 class="btn btn-sm btn-outline-primary" title="Chi tiết">
+                <i class="bi bi-eye"></i>
+              </a>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+}

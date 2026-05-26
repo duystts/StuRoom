@@ -1,0 +1,366 @@
+@model StuRoom.Models.Contract
+@using StuRoom.Models
+@{
+    ViewData["Title"] = $"Hợp đồng #{Model.Id}";
+
+    var activeMembers   = Model.Members.Where(m => m.LeaveDate == null).ToList();
+    var inactiveMembers = Model.Members.Where(m => m.LeaveDate != null).ToList();
+
+    // Slots: DesiredOccupancy - 1 (primary tenant) - active members
+    int? slotsLeft = Model.DesiredOccupancy.HasValue
+        ? Model.DesiredOccupancy.Value - 1 - activeMembers.Count
+        : null;
+
+    var statusCss = Model.Status switch
+    {
+        ContractStatus.Active     => "bg-success-subtle text-success border border-success-subtle",
+        ContractStatus.Pending    => "bg-warning-subtle text-warning border border-warning-subtle",
+        ContractStatus.Terminated => "bg-danger-subtle text-danger border border-danger-subtle",
+        _                         => "bg-secondary-subtle text-secondary border border-secondary-subtle"
+    };
+    var statusLabel = Model.Status switch
+    {
+        ContractStatus.Active     => "Đang thuê",
+        ContractStatus.Pending    => "Chờ kích hoạt",
+        ContractStatus.Terminated => "Đã chấm dứt",
+        _                         => "Hết hạn"
+    };
+}
+
+<nav aria-label="breadcrumb" class="mb-2">
+  <ol class="breadcrumb small">
+    <li class="breadcrumb-item"><a asp-action="Contracts">Hợp đồng</a></li>
+    <li class="breadcrumb-item active">HĐ #@Model.Id</li>
+  </ol>
+</nav>
+
+<div class="d-flex align-items-center justify-content-between mb-4">
+  <div>
+    <h4 class="fw-bold mb-0">
+      Hợp đồng #@Model.Id
+      <span class="badge @statusCss ms-2" style="font-size:13px">@statusLabel</span>
+    </h4>
+    <p class="text-muted small mb-0">
+      Phòng @Model.Room.RoomNumber — @Model.Room.Building.Name
+    </p>
+  </div>
+  <div class="d-flex gap-2">
+    @if (Model.Status == ContractStatus.Pending)
+    {
+      <button class="btn btn-success btn-sm"
+              onclick="document.getElementById('activateForm').submit()">
+        <i class="bi bi-play-circle me-1"></i>Kích hoạt
+      </button>
+      <form id="activateForm" asp-action="ActivateContract"
+            asp-route-id="@Model.Id" method="post">
+        @Html.AntiForgeryToken()
+      </form>
+    }
+    @if (Model.Status == ContractStatus.Active || Model.Status == ContractStatus.Pending)
+    {
+      <button class="btn btn-outline-danger btn-sm"
+              data-bs-toggle="modal" data-bs-target="#terminateModal">
+        <i class="bi bi-x-circle me-1"></i>Chấm dứt HĐ
+      </button>
+    }
+    @* Export buttons — wired after Task 23+24 *@
+    <a asp-action="ExportContractPdf" asp-route-id="@Model.Id"
+       class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-file-earmark-pdf me-1"></i>PDF
+    </a>
+    <a asp-action="ExportContractDocx" asp-route-id="@Model.Id"
+       class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-file-earmark-word me-1"></i>Word
+    </a>
+  </div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+  <div class="alert alert-success alert-dismissible fade show py-2 small">
+    <i class="bi bi-check-circle me-1"></i>@Html.Raw(TempData["Success"])
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+}
+@if (TempData["Error"] != null)
+{
+  <div class="alert alert-danger alert-dismissible fade show py-2 small">
+    <i class="bi bi-exclamation-circle me-1"></i>@Html.Raw(TempData["Error"])
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+}
+
+<div class="row g-4">
+
+  @* ══ Cột trái: thông tin HĐ ══ *@
+  <div class="col-lg-6">
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-body">
+        <h6 class="fw-bold mb-3"><i class="bi bi-file-earmark-text me-2"></i>Thông tin hợp đồng</h6>
+        <table class="table table-sm mb-0">
+          <tbody>
+            <tr>
+              <td class="text-muted small" style="width:140px">Phòng</td>
+              <td class="small fw-semibold">@Model.Room.RoomNumber — @Model.Room.Building.Name</td>
+            </tr>
+            <tr>
+              <td class="text-muted small">Tenant chính</td>
+              <td class="small">
+                <div class="fw-semibold">@Model.Tenant.FullName</div>
+                <div class="text-muted">@Model.Tenant.Email</div>
+              </td>
+            </tr>
+            <tr>
+              <td class="text-muted small">Ngày bắt đầu</td>
+              <td class="small">@Model.StartDate.ToString("dd/MM/yyyy")</td>
+            </tr>
+            <tr>
+              <td class="text-muted small">Ngày kết thúc</td>
+              <td class="small">@(Model.EndDate.HasValue ? Model.EndDate.Value.ToString("dd/MM/yyyy") : "Không xác định")</td>
+            </tr>
+            @if (Model.ActualEndDate.HasValue)
+            {
+              <tr>
+                <td class="text-muted small">Ngày thực tế kết thúc</td>
+                <td class="small text-danger">@Model.ActualEndDate.Value.ToString("dd/MM/yyyy")</td>
+              </tr>
+            }
+            <tr>
+              <td class="text-muted small">Giá thuê</td>
+              <td class="small fw-semibold">@Model.MonthlyRent.ToString("N0") ₫/tháng</td>
+            </tr>
+            <tr>
+              <td class="text-muted small">Tiền cọc</td>
+              <td class="small">@Model.DepositAmount.ToString("N0") ₫</td>
+            </tr>
+            @if (!string.IsNullOrWhiteSpace(Model.TerminationReason))
+            {
+              <tr>
+                <td class="text-muted small">Lý do chấm dứt</td>
+                <td class="small text-danger">@Model.TerminationReason</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    @* Edit notes & DesiredOccupancy *@
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <h6 class="fw-bold mb-3"><i class="bi bi-pencil me-2"></i>Thông tin bổ sung</h6>
+        <form asp-action="UpdateContractInfo" asp-route-id="@Model.Id" method="post">
+          @Html.AntiForgeryToken()
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <label class="form-label fw-semibold small">Số người mong muốn</label>
+              <input type="number" name="desiredOccupancy" class="form-control form-control-sm"
+                     value="@Model.DesiredOccupancy" min="1"
+                     placeholder="Để trống = không giới hạn" />
+            </div>
+            <div class="col-6 d-flex align-items-end">
+              @if (slotsLeft.HasValue)
+              {
+                <div class="alert alert-info py-1 px-2 small mb-0 w-100">
+                  <i class="bi bi-people me-1"></i>Còn <strong>@(slotsLeft < 0 ? 0 : slotsLeft)</strong> chỗ
+                </div>
+              }
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold small">Ghi chú</label>
+            <textarea name="notes" class="form-control form-control-sm" rows="2">@Model.Notes</textarea>
+          </div>
+          <button type="submit" class="btn btn-sm btn-primary">
+            <i class="bi bi-check-lg me-1"></i>Lưu
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  @* ══ Cột phải: người ghép ══ *@
+  <div class="col-lg-6">
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-body">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <h6 class="fw-bold mb-0">
+            <i class="bi bi-people me-2"></i>Người ghép phòng
+            @if (activeMembers.Any())
+            {
+              <span class="badge bg-primary ms-1">@activeMembers.Count</span>
+            }
+          </h6>
+          @* Toggle SeekingRoommates *@
+          <form asp-action="ToggleSeekingRoommates" asp-route-id="@Model.Id" method="post">
+            @Html.AntiForgeryToken()
+            <button type="submit"
+                    class="btn btn-sm @(Model.SeekingRoommates ? "btn-success" : "btn-outline-secondary")"
+                    title="@(Model.SeekingRoommates ? "Tắt tìm ghép" : "Bật tìm ghép")">
+              <i class="bi @(Model.SeekingRoommates ? "bi-person-fill-add" : "bi-person-plus") me-1"></i>
+              @(Model.SeekingRoommates ? "Đang tìm ghép" : "Tìm ghép: Tắt")
+            </button>
+          </form>
+        </div>
+
+        @* Primary tenant *@
+        <div class="d-flex align-items-center gap-2 mb-2 p-2 bg-primary-subtle rounded">
+          <div class="rounded-circle bg-primary d-flex align-items-center justify-content-center flex-shrink-0"
+               style="width:32px;height:32px;color:#fff;font-size:14px">
+            @Model.Tenant.FullName.FirstOrDefault()
+          </div>
+          <div class="flex-grow-1 min-w-0">
+            <div class="small fw-semibold text-truncate">@Model.Tenant.FullName</div>
+            <div class="text-muted" style="font-size:11px">Tenant chính · @Model.StartDate.ToString("dd/MM/yyyy")</div>
+          </div>
+          <span class="badge bg-primary" style="font-size:10px">Chính</span>
+        </div>
+
+        @* Active members *@
+        @foreach (var m in activeMembers)
+        {
+          <div class="d-flex align-items-center gap-2 mb-2 p-2 border rounded">
+            <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center flex-shrink-0"
+                 style="width:32px;height:32px;color:#fff;font-size:14px">
+              @m.Tenant.FullName.FirstOrDefault()
+            </div>
+            <div class="flex-grow-1 min-w-0">
+              <div class="small fw-semibold text-truncate">@m.Tenant.FullName</div>
+              <div class="text-muted" style="font-size:11px">
+                Vào @m.JoinDate.ToString("dd/MM/yyyy")
+                @if (!string.IsNullOrWhiteSpace(m.Note))
+                {
+                  <span> · @m.Note</span>
+                }
+              </div>
+            </div>
+            <button class="btn btn-sm btn-outline-warning flex-shrink-0"
+                    title="Ghi nhận ngày ra"
+                    onclick="openRemoveMember(@m.Id)">
+              <i class="bi bi-box-arrow-right"></i>
+            </button>
+          </div>
+        }
+
+        @* Add member form *@
+        @if (Model.Status == ContractStatus.Active || Model.Status == ContractStatus.Pending)
+        {
+          <hr class="my-3" />
+          <form asp-action="AddMember" asp-route-contractId="@Model.Id" method="post">
+            @Html.AntiForgeryToken()
+            <div class="row g-2 mb-2">
+              <div class="col-8">
+                <input type="email" name="tenantEmail" class="form-control form-control-sm"
+                       placeholder="Email Tenant ghép phòng" required />
+              </div>
+              <div class="col-4">
+                <input type="date" name="joinDate" class="form-control form-control-sm"
+                       value="@DateTime.Today.ToString("yyyy-MM-dd")" required />
+              </div>
+            </div>
+            <div class="row g-2">
+              <div class="col-8">
+                <input type="text" name="note" class="form-control form-control-sm"
+                       placeholder="Ghi chú (tuỳ chọn)" />
+              </div>
+              <div class="col-4">
+                <button type="submit" class="btn btn-sm btn-primary w-100">
+                  <i class="bi bi-person-plus me-1"></i>Thêm
+                </button>
+              </div>
+            </div>
+          </form>
+        }
+
+        @* Inactive members *@
+        @if (inactiveMembers.Any())
+        {
+          <hr class="my-3" />
+          <div class="text-muted small mb-2">Đã rời phòng</div>
+          @foreach (var m in inactiveMembers)
+          {
+            <div class="d-flex align-items-center gap-2 mb-1 p-2 text-muted" style="font-size:12px">
+              <i class="bi bi-person-dash me-1"></i>
+              <span>@m.Tenant.FullName</span>
+              <span class="ms-auto">Ra @m.LeaveDate!.Value.ToString("dd/MM/yyyy")</span>
+            </div>
+          }
+        }
+      </div>
+    </div>
+  </div>
+
+</div>
+
+@* Modal: Chấm dứt HĐ *@
+<div class="modal fade" id="terminateModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form asp-action="TerminateContract" asp-route-id="@Model.Id" method="post">
+        @Html.AntiForgeryToken()
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold text-danger">Chấm dứt hợp đồng</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="alert alert-warning small py-2 mb-3">
+            <i class="bi bi-exclamation-triangle me-1"></i>
+            Phòng sẽ trở về trạng thái <strong>Trống</strong> sau khi chấm dứt.
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold small">Ngày thực tế kết thúc</label>
+            <input type="date" name="actualEndDate" class="form-control form-control-sm"
+                   value="@DateTime.Today.ToString("yyyy-MM-dd")" />
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold small">Lý do chấm dứt</label>
+            <textarea name="terminationReason" class="form-control form-control-sm" rows="2"
+                      placeholder="VD: Tenant yêu cầu chấm dứt sớm, hai bên thỏa thuận..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer py-2">
+          <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Huỷ</button>
+          <button type="submit" class="btn btn-sm btn-danger">
+            <i class="bi bi-x-circle me-1"></i>Xác nhận chấm dứt
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+@* Modal: Ghi nhận ngày ra của member *@
+<div class="modal fade" id="removeMemberModal" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <form asp-action="RemoveMember" method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="memberId" id="removeMemberId" />
+        <div class="modal-header">
+          <h6 class="modal-title fw-bold">Ghi nhận ngày ra</h6>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <label class="form-label fw-semibold small">Ngày rời phòng</label>
+          <input type="date" name="leaveDate" class="form-control form-control-sm"
+                 value="@DateTime.Today.ToString("yyyy-MM-dd")" required />
+        </div>
+        <div class="modal-footer py-2">
+          <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Huỷ</button>
+          <button type="submit" class="btn btn-sm btn-warning">
+            <i class="bi bi-box-arrow-right me-1"></i>Xác nhận
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+@section Scripts {
+<script>
+  function openRemoveMember(memberId) {
+    document.getElementById('removeMemberId').value = memberId;
+    new bootstrap.Modal(document.getElementById('removeMemberModal')).show();
+  }
+</script>
+}

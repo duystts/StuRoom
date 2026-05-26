@@ -783,4 +783,234 @@ public class LandlordController(
                     .Contains(f.RoomId.Value))
             ));
     }
+
+    // ════════════════════════════════════════════════════════
+    // CONTRACTS  (Task 21)
+    // ════════════════════════════════════════════════════════
+
+    public async Task<IActionResult> Contracts(string? filter, int? buildingId)
+    {
+        ViewData["ActiveMenu"] = "Contracts";
+        ViewData["Filter"]     = filter ?? "active";
+
+        var myBuildingIds = await db.Buildings
+            .Where(b => b.LandlordId == CurrentUserId)
+            .Select(b => b.Id).ToListAsync();
+
+        var myBuildings = await db.Buildings
+            .Where(b => b.LandlordId == CurrentUserId)
+            .OrderBy(b => b.Name).ToListAsync();
+
+        var query = db.Contracts
+            .Include(c => c.Room).ThenInclude(r => r.Building)
+            .Include(c => c.Tenant)
+            .Where(c => myBuildingIds.Contains(c.Room.BuildingId));
+
+        if (buildingId.HasValue)
+            query = query.Where(c => c.Room.BuildingId == buildingId.Value);
+
+        query = filter switch
+        {
+            "pending"    => query.Where(c => c.Status == ContractStatus.Pending),
+            "expired"    => query.Where(c => c.Status == ContractStatus.Expired || c.Status == ContractStatus.Terminated),
+            "all"        => query,
+            _            => query.Where(c => c.Status == ContractStatus.Active)
+        };
+
+        var list = await query
+            .OrderByDescending(c => c.CreatedAt)
+            .ToListAsync();
+
+        ViewBag.Buildings  = myBuildings;
+        ViewBag.BuildingId = buildingId;
+        return View(list);
+    }
+
+    public async Task<IActionResult> ContractDetail(int id)
+    {
+        ViewData["ActiveMenu"] = "Contracts";
+
+        var myBuildingIds = await db.Buildings
+            .Where(b => b.LandlordId == CurrentUserId)
+            .Select(b => b.Id).ToListAsync();
+
+        var contract = await db.Contracts
+            .Include(c => c.Room).ThenInclude(r => r.Building)
+            .Include(c => c.Tenant)
+            .Include(c => c.Members).ThenInclude(m => m.Tenant)
+            .FirstOrDefaultAsync(c => c.Id == id && myBuildingIds.Contains(c.Room.BuildingId));
+
+        if (contract == null) return NotFound();
+
+        return View(contract);
+    }
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> ActivateContract(int id)
+    {
+        var contract = await GetOwnedContract(id);
+        if (contract == null) return NotFound();
+
+        if (contract.Status != ContractStatus.Pending)
+        {
+            TempData["Error"] = "Chỉ có thể kích hoạt hợp đồng đang Pending.";
+            return RedirectToAction(nameof(ContractDetail), new { id });
+        }
+
+        contract.Status = ContractStatus.Active;
+
+        // Set room to Occupied
+        var room = await db.Rooms.FindAsync(contract.RoomId);
+        if (room != null) room.Status = RoomStatus.Occupied;
+
+        await db.SaveChangesAsync();
+
+        TempData["Success"] = "Hợp đồng đã được kích hoạt. Phòng chuyển sang trạng thái Đã thuê.";
+        return RedirectToAction(nameof(ContractDetail), new { id });
+    }
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> TerminateContract(int id, string? terminationReason, DateTime? actualEndDate)
+    {
+        var contract = await GetOwnedContract(id);
+        if (contract == null) return NotFound();
+
+        if (contract.Status != ContractStatus.Active && contract.Status != ContractStatus.Pending)
+        {
+            TempData["Error"] = "Hợp đồng đã chấm dứt hoặc hết hạn.";
+            return RedirectToAction(nameof(ContractDetail), new { id });
+        }
+
+        contract.Status            = ContractStatus.Terminated;
+        contract.TerminationReason = string.IsNullOrWhiteSpace(terminationReason) ? null : terminationReason.Trim();
+        contract.ActualEndDate     = actualEndDate ?? DateTime.UtcNow;
+
+        // Free up the room
+        var room = await db.Rooms.FindAsync(contract.RoomId);
+        if (room != null) room.Status = RoomStatus.Available;
+
+        await db.SaveChangesAsync();
+
+        TempData["Success"] = "Đã chấm dứt hợp đồng. Phòng trở về trạng thái Trống.";
+        return RedirectToAction(nameof(ContractDetail), new { id });
+    }
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> UpdateContractInfo(int id, int? desiredOccupancy, string? notes)
+    {
+        var contract = await GetOwnedContract(id);
+        if (contract == null) return NotFound();
+
+        contract.DesiredOccupancy = desiredOccupancy;
+        contract.Notes            = string.IsNullOrWhiteSpace(notes) ? null : notes.Trim();
+        await db.SaveChangesAsync();
+
+        TempData["Success"] = "Đã cập nhật thông tin hợp đồng.";
+        return RedirectToAction(nameof(ContractDetail), new { id });
+    }
+
+    // ════════════════════════════════════════════════════════
+    // CONTRACT MEMBERS  (Task 22)
+    // ════════════════════════════════════════════════════════
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> AddMember(int contractId, string tenantEmail, DateTime joinDate, string? note)
+    {
+        var contract = await GetOwnedContract(contractId);
+        if (contract == null) return NotFound();
+
+        if (contract.Status != ContractStatus.Active && contract.Status != ContractStatus.Pending)
+        {
+            TempData["Error"] = "Chỉ có thể thêm thành viên vào hợp đồng Pending hoặc Active.";
+            return RedirectToAction(nameof(ContractDetail), new { id = contractId });
+        }
+
+        var tenant = await db.Users.FirstOrDefaultAsync(u => u.Email == tenantEmail.Trim());
+        if (tenant == null)
+        {
+            TempData["Error"] = $"Không tìm thấy tài khoản Tenant với email <strong>{tenantEmail}</strong>.";
+            return RedirectToAction(nameof(ContractDetail), new { id = contractId });
+        }
+
+        // Check capacity
+        if (contract.DesiredOccupancy.HasValue)
+        {
+            var activeCount = await db.ContractMembers
+                .CountAsync(m => m.ContractId == contractId && m.LeaveDate == null);
+            if (activeCount + 1 >= contract.DesiredOccupancy.Value) // +1 for primary tenant
+            {
+                TempData["Error"] = "Phòng đã đủ số người theo DesiredOccupancy.";
+                return RedirectToAction(nameof(ContractDetail), new { id = contractId });
+            }
+        }
+
+        // Prevent duplicate active member
+        var duplicate = await db.ContractMembers.AnyAsync(m =>
+            m.ContractId == contractId && m.TenantId == tenant.Id && m.LeaveDate == null);
+        if (duplicate)
+        {
+            TempData["Error"] = $"<strong>{tenant.FullName}</strong> đã là thành viên active của hợp đồng này.";
+            return RedirectToAction(nameof(ContractDetail), new { id = contractId });
+        }
+
+        db.ContractMembers.Add(new ContractMember
+        {
+            ContractId = contractId,
+            TenantId   = tenant.Id,
+            JoinDate   = joinDate,
+            Note       = string.IsNullOrWhiteSpace(note) ? null : note.Trim()
+        });
+        await db.SaveChangesAsync();
+
+        TempData["Success"] = $"Đã thêm <strong>{tenant.FullName}</strong> vào hợp đồng.";
+        return RedirectToAction(nameof(ContractDetail), new { id = contractId });
+    }
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> RemoveMember(int memberId, DateTime leaveDate)
+    {
+        var member = await db.ContractMembers
+            .Include(m => m.Contract).ThenInclude(c => c.Room).ThenInclude(r => r.Building)
+            .FirstOrDefaultAsync(m => m.Id == memberId);
+
+        if (member == null) return NotFound();
+
+        // Verify ownership
+        var myBuildingIds = await db.Buildings
+            .Where(b => b.LandlordId == CurrentUserId)
+            .Select(b => b.Id).ToListAsync();
+        if (!myBuildingIds.Contains(member.Contract.Room.BuildingId)) return Forbid();
+
+        member.LeaveDate = leaveDate;
+        await db.SaveChangesAsync();
+
+        TempData["Success"] = "Đã ghi nhận ngày ra của thành viên.";
+        return RedirectToAction(nameof(ContractDetail), new { id = member.ContractId });
+    }
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> ToggleSeekingRoommates(int id)
+    {
+        var contract = await GetOwnedContract(id);
+        if (contract == null) return NotFound();
+
+        contract.SeekingRoommates = !contract.SeekingRoommates;
+        await db.SaveChangesAsync();
+
+        TempData["Success"] = contract.SeekingRoommates
+            ? "Đã bật tìm ghép phòng." : "Đã tắt tìm ghép phòng.";
+        return RedirectToAction(nameof(ContractDetail), new { id });
+    }
+
+    private async Task<Contract?> GetOwnedContract(int id)
+    {
+        var myBuildingIds = await db.Buildings
+            .Where(b => b.LandlordId == CurrentUserId)
+            .Select(b => b.Id).ToListAsync();
+
+        return await db.Contracts
+            .Include(c => c.Room).ThenInclude(r => r.Building)
+            .Include(c => c.Tenant)
+            .FirstOrDefaultAsync(c => c.Id == id && myBuildingIds.Contains(c.Room.BuildingId));
+    }
 }

@@ -43,7 +43,8 @@
       <span>Đặt phòng</span>
     </a>
 
-    <a class="sidebar-link @(active == "Contracts" ? "active" : "")" href="#">
+    <a class="sidebar-link @(active == "Contracts" ? "active" : "")"
+       asp-controller="Landlord" asp-action="Contracts">
       <i class="bi bi-file-earmark-text"></i>
       <span>Hợp đồng</span>
     </a>
@@ -97,7 +98,8 @@
          asp-controller="Landlord" asp-action="BookingRequests">
         <i class="bi bi-bookmark-check"></i><span>Đặt phòng</span>
       </a>
-      <a class="sidebar-link @(active == "Contracts" ? "active" : "")" href="#">
+      <a class="sidebar-link @(active == "Contracts" ? "active" : "")"
+         asp-controller="Landlord" asp-action="Contracts">
         <i class="bi bi-file-earmark-text"></i><span>Hợp đồng</span>
       </a>
       <a class="sidebar-link @(active == "Invoices" ? "active" : "")" href="#">
