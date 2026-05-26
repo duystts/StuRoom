@@ -1,0 +1,260 @@
+@model StuRoom.Models.Room
+@using StuRoom.Models
+@{
+    ViewData["Title"] = $"Phòng {Model.RoomNumber}";
+    var allAmenities   = (List<Amenity>)ViewBag.AllAmenities;
+    var assignedIds    = Model.RoomAmenities.Select(ra => ra.AmenityId).ToHashSet();
+    var primaryImage   = Model.Images.FirstOrDefault(i => i.IsPrimary) ?? Model.Images.FirstOrDefault();
+
+    var statusMap = new Dictionary<RoomStatus, (string label, string css)>
+    {
+        [RoomStatus.Available]   = ("Trống",            "bg-success-subtle text-success border border-success-subtle"),
+        [RoomStatus.Occupied]    = ("Đã thuê",           "bg-primary-subtle text-primary border border-primary-subtle"),
+        [RoomStatus.Maintenance] = ("Bảo trì",           "bg-warning-subtle text-warning border border-warning-subtle"),
+        [RoomStatus.Inactive]    = ("Không hoạt động",   "bg-secondary-subtle text-secondary border border-secondary-subtle"),
+    };
+    var (statusLbl, statusCss) = statusMap[Model.Status];
+}
+
+@* ── Breadcrumb + header ── *@
+<nav aria-label="breadcrumb" class="mb-1">
+  <ol class="breadcrumb small">
+    <li class="breadcrumb-item">
+      <a asp-action="Rooms" asp-route-buildingId="@Model.BuildingId">Phòng</a>
+    </li>
+    <li class="breadcrumb-item active">@Model.RoomNumber</li>
+  </ol>
+</nav>
+
+<div class="d-flex align-items-center justify-content-between mb-4">
+  <div>
+    <h4 class="fw-bold mb-0">
+      Phòng @Model.RoomNumber
+      <span class="badge @statusCss ms-2" style="font-size:13px">@statusLbl</span>
+    </h4>
+    <p class="text-muted small mb-0">
+      <i class="bi bi-building me-1"></i>@Model.Building.Name
+      @if (Model.FloorNumber.HasValue)
+      {
+        <span class="ms-2"><i class="bi bi-layers me-1"></i>Tầng @Model.FloorNumber</span>
+      }
+      <span class="ms-2"><i class="bi bi-rulers me-1"></i>@Model.Area m²</span>
+      @if (Model.Capacity.HasValue)
+      {
+        <span class="ms-2"><i class="bi bi-people me-1"></i>Tối đa @Model.Capacity người</span>
+      }
+    </p>
+  </div>
+  <a asp-action="Rooms" asp-route-buildingId="@Model.BuildingId"
+     class="btn btn-outline-secondary btn-sm">
+    <i class="bi bi-arrow-left me-1"></i>Quay lại
+  </a>
+</div>
+
+@if (TempData["Success"] != null)
+{
+  <div class="alert alert-success alert-dismissible fade show py-2 small">
+    <i class="bi bi-check-circle me-1"></i>@Html.Raw(TempData["Success"])
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+}
+@if (TempData["Error"] != null)
+{
+  <div class="alert alert-danger alert-dismissible fade show py-2 small">
+    <i class="bi bi-exclamation-circle me-1"></i>@Html.Raw(TempData["Error"])
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+}
+
+@* ── Tabs ── *@
+<ul class="nav nav-tabs mb-4" id="roomDetailTab">
+  <li class="nav-item">
+    <button class="nav-link active fw-semibold" data-bs-toggle="tab" data-bs-target="#tabImages">
+      <i class="bi bi-images me-1"></i>Hình ảnh
+      <span class="badge bg-secondary ms-1">@Model.Images.Count</span>
+    </button>
+  </li>
+  <li class="nav-item">
+    <button class="nav-link fw-semibold" data-bs-toggle="tab" data-bs-target="#tabAmenities">
+      <i class="bi bi-tags me-1"></i>Tiện ích
+      <span class="badge bg-secondary ms-1">@assignedIds.Count</span>
+    </button>
+  </li>
+</ul>
+
+<div class="tab-content">
+
+  @* ══════════════ Tab: Hình ảnh ══════════════ *@
+  <div class="tab-pane fade show active" id="tabImages">
+
+    @* Upload form *@
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-body">
+        <h6 class="fw-bold mb-3">
+          <i class="bi bi-cloud-upload me-1"></i>Tải ảnh lên
+          <small class="text-muted fw-normal">(tối đa 10 ảnh, mỗi lần chọn nhiều file)</small>
+        </h6>
+        <form asp-action="UploadImages" asp-route-id="@Model.Id"
+              method="post" enctype="multipart/form-data">
+          @Html.AntiForgeryToken()
+          <div class="d-flex gap-2 align-items-start flex-wrap">
+            <div class="flex-grow-1">
+              <input type="file" name="files" id="imageFileInput"
+                     class="form-control"
+                     accept="image/*" multiple
+                     onchange="previewImages(this)" />
+            </div>
+            <button type="submit" class="btn btn-primary" id="uploadBtn" disabled>
+              <i class="bi bi-upload me-1"></i>Upload
+            </button>
+          </div>
+          @* Preview strip *@
+          <div id="previewStrip" class="d-flex flex-wrap gap-2 mt-3"></div>
+        </form>
+      </div>
+    </div>
+
+    @* Image gallery *@
+    @if (!Model.Images.Any())
+    {
+      <div class="text-center py-5 text-muted">
+        <i class="bi bi-camera fs-1 d-block mb-2"></i>
+        Phòng này chưa có ảnh nào.
+      </div>
+    }
+    else
+    {
+      <div class="row g-3">
+        @foreach (var img in Model.Images.OrderBy(i => i.SortOrder))
+        {
+          <div class="col-6 col-md-4 col-xl-3">
+            <div class="card border-0 shadow-sm h-100 @(img.IsPrimary ? "border border-primary border-2" : "")">
+              <div class="position-relative">
+                <img src="@img.ImageUrl" alt="Room image"
+                     class="card-img-top"
+                     style="height:160px;object-fit:cover" />
+                @if (img.IsPrimary)
+                {
+                  <span class="position-absolute top-0 start-0 m-2 badge bg-primary">
+                    <i class="bi bi-star-fill me-1"></i>Đại diện
+                  </span>
+                }
+              </div>
+              <div class="card-body p-2 d-flex gap-1">
+                @if (!img.IsPrimary)
+                {
+                  <form asp-action="SetPrimaryImage" method="post" class="flex-grow-1">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="imageId" value="@img.Id" />
+                    <input type="hidden" name="roomId" value="@Model.Id" />
+                    <button type="submit" class="btn btn-sm btn-outline-primary w-100"
+                            title="Đặt làm ảnh đại diện">
+                      <i class="bi bi-star me-1"></i>Đặt đại diện
+                    </button>
+                  </form>
+                }
+                else
+                {
+                  <div class="flex-grow-1"></div>
+                }
+                <form asp-action="DeleteImage" method="post">
+                  @Html.AntiForgeryToken()
+                  <input type="hidden" name="imageId" value="@img.Id" />
+                  <input type="hidden" name="roomId" value="@Model.Id" />
+                  <button type="submit" class="btn btn-sm btn-outline-danger"
+                          title="Xoá ảnh"
+                          onclick="return confirm('Xoá ảnh này?')">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  </div>
+
+  @* ══════════════ Tab: Tiện ích ══════════════ *@
+  <div class="tab-pane fade" id="tabAmenities">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <form asp-action="SaveAmenities" asp-route-id="@Model.Id" method="post">
+          @Html.AntiForgeryToken()
+
+          @if (!allAmenities.Any())
+          {
+            <p class="text-muted small mb-0">
+              Chưa có tiện ích nào. Admin có thể thêm tại trang
+              <a href="#">Amenities</a>.
+            </p>
+          }
+          else
+          {
+            <div class="row g-3 mb-4">
+              @foreach (var amenity in allAmenities)
+              {
+                <div class="col-6 col-md-4 col-xl-3">
+                  <div class="form-check amenity-card p-3 rounded border @(assignedIds.Contains(amenity.Id) ? "border-primary bg-primary-subtle" : "border-light-subtle")">
+                    <input class="form-check-input" type="checkbox"
+                           name="amenityIds" value="@amenity.Id"
+                           id="amenity_@amenity.Id"
+                           @(assignedIds.Contains(amenity.Id) ? "checked" : "")
+                           onchange="this.closest('.amenity-card').classList.toggle('border-primary', this.checked); this.closest('.amenity-card').classList.toggle('bg-primary-subtle', this.checked); this.closest('.amenity-card').classList.toggle('border-light-subtle', !this.checked);" />
+                    <label class="form-check-label d-flex align-items-center gap-2 w-100"
+                           for="amenity_@amenity.Id" style="cursor:pointer">
+                      <i class="bi @amenity.IconClass fs-5"></i>
+                      <span>@amenity.Name</span>
+                    </label>
+                  </div>
+                </div>
+              }
+            </div>
+            <div class="d-flex justify-content-end">
+              <button type="submit" class="btn btn-primary">
+                <i class="bi bi-check-lg me-1"></i>Lưu tiện ích
+              </button>
+            </div>
+          }
+        </form>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+@section Scripts {
+  <script>
+    // Restore active tab from sessionStorage
+    const tabKey = 'roomDetailTab_@Model.Id';
+    const savedTab = sessionStorage.getItem(tabKey);
+    if (savedTab) {
+      const el = document.querySelector(`[data-bs-target="${savedTab}"]`);
+      if (el) bootstrap.Tab.getOrCreateInstance(el).show();
+    }
+    document.querySelectorAll('#roomDetailTab [data-bs-toggle="tab"]').forEach(btn => {
+      btn.addEventListener('shown.bs.tab', e => {
+        sessionStorage.setItem(tabKey, e.target.getAttribute('data-bs-target'));
+      });
+    });
+
+    // Image preview
+    function previewImages(input) {
+      const strip  = document.getElementById('previewStrip');
+      const btn    = document.getElementById('uploadBtn');
+      strip.innerHTML = '';
+      if (!input.files.length) { btn.disabled = true; return; }
+      btn.disabled = false;
+      Array.from(input.files).forEach(file => {
+        const reader = new FileReader();
+        reader.onload = e => {
+          const img = document.createElement('img');
+          img.src   = e.target.result;
+          img.style.cssText = 'height:80px;width:80px;object-fit:cover;border-radius:6px;border:2px solid #6c8fff';
+          strip.appendChild(img);
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+  </script>
+}

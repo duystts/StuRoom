@@ -5,13 +5,15 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using StuRoom.Data;
 using StuRoom.Models;
+using StuRoom.Services;
 
 namespace StuRoom.Controllers;
 
 [Authorize(Policy = "LandlordOnly")]
 public class LandlordController(
     UserManager<ApplicationUser> userManager,
-    ApplicationDbContext db) : Controller
+    ApplicationDbContext db,
+    ICloudinaryService cloudinary) : Controller
 {
     private string CurrentUserId =>
         userManager.GetUserId(User)!;
@@ -223,5 +225,160 @@ public class LandlordController(
 
         TempData["Success"] = $"Đã xoá phòng <strong>{room.RoomNumber}</strong>.";
         return RedirectToAction(nameof(Rooms), new { buildingId = returnBuildingId });
+    }
+
+    // ════════════════════════════════════════════════════════
+    // ROOM DETAIL — images + amenities  (Task 9 + 10)
+    // ════════════════════════════════════════════════════════
+
+    public async Task<IActionResult> RoomDetail(int id)
+    {
+        ViewData["ActiveMenu"] = "Rooms";
+
+        var room = await db.Rooms
+            .Include(r => r.Building)
+            .Include(r => r.Images.OrderBy(i => i.SortOrder))
+            .Include(r => r.RoomAmenities)
+                .ThenInclude(ra => ra.Amenity)
+            .FirstOrDefaultAsync(r => r.Id == id && r.Building.LandlordId == CurrentUserId);
+
+        if (room == null) return NotFound();
+
+        ViewBag.AllAmenities = await db.Amenities.OrderBy(a => a.Name).ToListAsync();
+        return View(room);
+    }
+
+    // ── Images (Task 9) ──────────────────────────────────────
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> UploadImages(int id, List<IFormFile> files)
+    {
+        var room = await db.Rooms
+            .Include(r => r.Building)
+            .Include(r => r.Images)
+            .FirstOrDefaultAsync(r => r.Id == id && r.Building.LandlordId == CurrentUserId);
+        if (room == null) return NotFound();
+
+        const int maxImages = 10;
+        var remaining = maxImages - room.Images.Count;
+        if (remaining <= 0)
+        {
+            TempData["Error"] = $"Phòng đã đạt giới hạn {maxImages} ảnh.";
+            return RedirectToAction(nameof(RoomDetail), new { id });
+        }
+
+        var toUpload = files.Where(f => f.Length > 0).Take(remaining).ToList();
+        if (!toUpload.Any())
+        {
+            TempData["Error"] = "Vui lòng chọn ít nhất một ảnh.";
+            return RedirectToAction(nameof(RoomDetail), new { id });
+        }
+
+        var nextOrder = room.Images.Any() ? room.Images.Max(i => i.SortOrder) + 1 : 0;
+        var isFirst   = !room.Images.Any();
+
+        foreach (var file in toUpload)
+        {
+            try
+            {
+                var (url, publicId) = await cloudinary.UploadAsync(file);
+                db.RoomImages.Add(new RoomImage
+                {
+                    RoomId            = id,
+                    ImageUrl          = url,
+                    CloudinaryPublicId = publicId,
+                    IsPrimary         = isFirst,
+                    SortOrder         = nextOrder++
+                });
+                isFirst = false;
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = $"Lỗi upload ảnh: {ex.Message}";
+                return RedirectToAction(nameof(RoomDetail), new { id });
+            }
+        }
+
+        await db.SaveChangesAsync();
+        TempData["Success"] = $"Đã tải lên {toUpload.Count} ảnh.";
+        return RedirectToAction(nameof(RoomDetail), new { id });
+    }
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> SetPrimaryImage(int imageId, int roomId)
+    {
+        var room = await db.Rooms
+            .Include(r => r.Building)
+            .Include(r => r.Images)
+            .FirstOrDefaultAsync(r => r.Id == roomId && r.Building.LandlordId == CurrentUserId);
+        if (room == null) return NotFound();
+
+        foreach (var img in room.Images)
+            img.IsPrimary = img.Id == imageId;
+
+        await db.SaveChangesAsync();
+        TempData["Success"] = "Đã đặt ảnh đại diện.";
+        return RedirectToAction(nameof(RoomDetail), new { id = roomId });
+    }
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteImage(int imageId, int roomId)
+    {
+        var room = await db.Rooms
+            .Include(r => r.Building)
+            .FirstOrDefaultAsync(r => r.Id == roomId && r.Building.LandlordId == CurrentUserId);
+        if (room == null) return NotFound();
+
+        var image = await db.RoomImages.FindAsync(imageId);
+        if (image == null || image.RoomId != roomId) return NotFound();
+
+        // Delete from Cloudinary
+        if (!string.IsNullOrWhiteSpace(image.CloudinaryPublicId))
+            await cloudinary.DeleteAsync(image.CloudinaryPublicId);
+
+        var wasPrimary = image.IsPrimary;
+        db.RoomImages.Remove(image);
+        await db.SaveChangesAsync();
+
+        // If deleted image was primary, promote the first remaining image
+        if (wasPrimary)
+        {
+            var next = await db.RoomImages
+                .Where(i => i.RoomId == roomId)
+                .OrderBy(i => i.SortOrder)
+                .FirstOrDefaultAsync();
+            if (next != null)
+            {
+                next.IsPrimary = true;
+                await db.SaveChangesAsync();
+            }
+        }
+
+        TempData["Success"] = "Đã xoá ảnh.";
+        return RedirectToAction(nameof(RoomDetail), new { id = roomId });
+    }
+
+    // ── Amenities (Task 10) ──────────────────────────────────
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> SaveAmenities(int id, List<int> amenityIds)
+    {
+        var room = await db.Rooms
+            .Include(r => r.Building)
+            .Include(r => r.RoomAmenities)
+            .FirstOrDefaultAsync(r => r.Id == id && r.Building.LandlordId == CurrentUserId);
+        if (room == null) return NotFound();
+
+        // Remove all current, then re-add selected
+        db.RoomAmenities.RemoveRange(room.RoomAmenities);
+
+        foreach (var amenityId in amenityIds.Distinct())
+        {
+            db.RoomAmenities.Add(new RoomAmenity { RoomId = id, AmenityId = amenityId });
+        }
+
+        await db.SaveChangesAsync();
+        TempData["Success"] = "Đã lưu tiện ích phòng.";
+        return RedirectToAction(nameof(RoomDetail), new { id });
     }
 }
