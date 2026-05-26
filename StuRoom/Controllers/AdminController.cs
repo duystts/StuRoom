@@ -16,7 +16,100 @@ public class AdminController(
     ApplicationDbContext db) : Controller
 {
     // ════════════════════════════════════════════════════════
-    // LANDLORD APPROVAL
+    // DASHBOARD  (Task 33)
+    // ════════════════════════════════════════════════════════
+
+    public async Task<IActionResult> Dashboard()
+    {
+        ViewData["ActiveMenu"] = "AdminDashboard";
+
+        var landlords = await userManager.GetUsersInRoleAsync("Landlord");
+        var tenants   = await userManager.GetUsersInRoleAsync("Tenant");
+
+        var vm = new AdminDashboardViewModel
+        {
+            TotalRooms      = await db.Rooms.CountAsync(),
+            AvailableRooms  = await db.Rooms.CountAsync(r => r.Status == RoomStatus.Available),
+            OccupiedRooms   = await db.Rooms.CountAsync(r => r.Status == RoomStatus.Occupied),
+
+            TotalUsers      = await db.Users.CountAsync(),
+            TotalTenants    = tenants.Count,
+            TotalLandlords  = landlords.Count,
+            ActiveLandlords = landlords.Count(u => u.IsApproved),
+            PendingLandlords = landlords.Count(u =>
+                !u.IsApproved &&
+                !(u.LockoutEnd.HasValue && u.LockoutEnd > DateTimeOffset.UtcNow)),
+
+            TotalContracts  = await db.Contracts.CountAsync(),
+            ActiveContracts = await db.Contracts.CountAsync(c => c.Status == ContractStatus.Active),
+            TotalRevenue    = await db.Payments.SumAsync(p => (decimal?)p.Amount) ?? 0,
+
+            PendingReviews  = await db.RoomReviews.CountAsync(r => !r.IsApproved),
+        };
+
+        return View(vm);
+    }
+
+    // ════════════════════════════════════════════════════════
+    // REVIEW MODERATION  (Task 29)
+    // ════════════════════════════════════════════════════════
+
+    public async Task<IActionResult> ReviewModeration(string? filter)
+    {
+        ViewData["ActiveMenu"] = "ReviewModeration";
+        ViewData["Filter"]     = filter ?? "all";
+
+        var query = db.RoomReviews
+            .Include(r => r.Reviewer)
+            .Include(r => r.Room)
+                .ThenInclude(r => r.Building)
+            .AsQueryable();
+
+        query = filter switch
+        {
+            "approved" => query.Where(r => r.IsApproved),
+            "hidden"   => query.Where(r => !r.IsApproved),
+            _          => query
+        };
+
+        var reviews = await query
+            .OrderByDescending(r => r.CreatedAt)
+            .ToListAsync();
+
+        return View(reviews);
+    }
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> ToggleReview(int id, string? returnFilter)
+    {
+        var review = await db.RoomReviews.FindAsync(id);
+        if (review == null) return NotFound();
+
+        review.IsApproved = !review.IsApproved;
+        await db.SaveChangesAsync();
+
+        TempData["Success"] = review.IsApproved
+            ? "Đã hiển thị review."
+            : "Đã ẩn review.";
+
+        return RedirectToAction(nameof(ReviewModeration), new { filter = returnFilter });
+    }
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteReview(int id, string? returnFilter)
+    {
+        var review = await db.RoomReviews.FindAsync(id);
+        if (review == null) return NotFound();
+
+        db.RoomReviews.Remove(review);
+        await db.SaveChangesAsync();
+
+        TempData["Success"] = "Đã xoá review.";
+        return RedirectToAction(nameof(ReviewModeration), new { filter = returnFilter });
+    }
+
+    // ════════════════════════════════════════════════════════
+    // LANDLORD APPROVAL  (Task 31)
     // ════════════════════════════════════════════════════════
 
     public async Task<IActionResult> LandlordApproval()
@@ -87,10 +180,9 @@ public class AdminController(
     }
 
     // ════════════════════════════════════════════════════════
-    // AMENITY CRUD
+    // AMENITY CRUD  (Task 6)
     // ════════════════════════════════════════════════════════
 
-    // GET /Admin/Amenities
     public async Task<IActionResult> Amenities()
     {
         ViewData["ActiveMenu"] = "Amenities";
@@ -98,7 +190,6 @@ public class AdminController(
         return View(list);
     }
 
-    // POST /Admin/CreateAmenity
     [HttpPost, ValidateAntiForgeryToken]
     public async Task<IActionResult> CreateAmenity(string name, string iconClass)
     {
@@ -108,18 +199,13 @@ public class AdminController(
             return RedirectToAction(nameof(Amenities));
         }
 
-        db.Amenities.Add(new Amenity
-        {
-            Name      = name.Trim(),
-            IconClass = iconClass.Trim()
-        });
+        db.Amenities.Add(new Amenity { Name = name.Trim(), IconClass = iconClass.Trim() });
         await db.SaveChangesAsync();
 
         TempData["Success"] = $"Đã thêm tiện ích <strong>{name.Trim()}</strong>.";
         return RedirectToAction(nameof(Amenities));
     }
 
-    // POST /Admin/EditAmenity
     [HttpPost, ValidateAntiForgeryToken]
     public async Task<IActionResult> EditAmenity(int id, string name, string iconClass)
     {
@@ -140,14 +226,12 @@ public class AdminController(
         return RedirectToAction(nameof(Amenities));
     }
 
-    // POST /Admin/DeleteAmenity
     [HttpPost, ValidateAntiForgeryToken]
     public async Task<IActionResult> DeleteAmenity(int id)
     {
         var amenity = await db.Amenities.FindAsync(id);
         if (amenity == null) return NotFound();
 
-        // Kiểm tra xem tiện ích có đang được dùng không
         var inUse = await db.RoomAmenities.AnyAsync(ra => ra.AmenityId == id);
         if (inUse)
         {

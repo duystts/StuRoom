@@ -1,0 +1,125 @@
+@model List<StuRoom.Models.RoomReview>
+@{
+    ViewData["Title"] = "Kiểm duyệt Review";
+    var currentFilter = ViewData["Filter"]?.ToString() ?? "all";
+}
+
+<div class="d-flex align-items-center justify-content-between mb-4">
+  <div>
+    <h4 class="fw-bold mb-0">Kiểm duyệt Review</h4>
+    <p class="text-muted small mb-0">Ẩn/hiện review vi phạm trên toàn hệ thống</p>
+  </div>
+  <div class="text-muted small">@Model.Count review</div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+  <div class="alert alert-success alert-dismissible fade show py-2 small">
+    <i class="bi bi-check-circle me-1"></i>@TempData["Success"]
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+}
+
+@* ── Bộ lọc ── *@
+<div class="d-flex gap-2 mb-3">
+  <a asp-action="ReviewModeration" asp-route-filter="all"
+     class="btn btn-sm @(currentFilter == "all" ? "btn-primary" : "btn-outline-secondary")">
+    Tất cả
+  </a>
+  <a asp-action="ReviewModeration" asp-route-filter="approved"
+     class="btn btn-sm @(currentFilter == "approved" ? "btn-success" : "btn-outline-secondary")">
+    <i class="bi bi-eye me-1"></i>Hiển thị
+  </a>
+  <a asp-action="ReviewModeration" asp-route-filter="hidden"
+     class="btn btn-sm @(currentFilter == "hidden" ? "btn-danger" : "btn-outline-secondary")">
+    <i class="bi bi-eye-slash me-1"></i>Đang ẩn
+  </a>
+</div>
+
+@if (!Model.Any())
+{
+  <div class="text-center py-5 text-muted">
+    <i class="bi bi-star fs-1 d-block mb-2"></i>
+    Không có review nào @(currentFilter == "hidden" ? "đang bị ẩn" : "").
+  </div>
+}
+else
+{
+  <div class="card border-0 shadow-sm">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>Phòng</th>
+          <th>Người đánh giá</th>
+          <th style="width:100px">Rating</th>
+          <th>Nội dung</th>
+          <th style="width:90px">Ngày</th>
+          <th style="width:80px">Trạng thái</th>
+          <th style="width:100px"></th>
+        </tr>
+      </thead>
+      <tbody>
+        @foreach (var r in Model)
+        {
+          <tr class="@(!r.IsApproved ? "table-warning" : "")">
+            <td>
+              <div class="small fw-semibold">@r.Room?.RoomNumber</div>
+              <div class="text-muted" style="font-size:11px">@r.Room?.Building?.Name</div>
+            </td>
+            <td>
+              <div class="small fw-semibold">@r.Reviewer?.FullName</div>
+              <div class="text-muted" style="font-size:11px">@r.Reviewer?.Email</div>
+            </td>
+            <td>
+              @for (int i = 1; i <= 5; i++)
+              {
+                <i class="bi @(i <= r.Rating ? "bi-star-fill" : "bi-star")"
+                   style="color:#f59e0b;font-size:12px"></i>
+              }
+            </td>
+            <td>
+              <span class="small" style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">
+                @(string.IsNullOrWhiteSpace(r.Content) ? "—" : r.Content)
+              </span>
+            </td>
+            <td class="text-muted small">@r.CreatedAt.ToString("dd/MM/yy")</td>
+            <td>
+              @if (r.IsApproved)
+              {
+                <span class="badge bg-success-subtle text-success border border-success-subtle">Hiển thị</span>
+              }
+              else
+              {
+                <span class="badge bg-danger-subtle text-danger border border-danger-subtle">Ẩn</span>
+              }
+            </td>
+            <td>
+              <div class="d-flex gap-1">
+                @* Toggle ẩn/hiện *@
+                <form asp-action="ToggleReview" method="post">
+                  <input type="hidden" name="id" value="@r.Id" />
+                  <input type="hidden" name="returnFilter" value="@currentFilter" />
+                  <button type="submit"
+                          class="btn btn-sm @(r.IsApproved ? "btn-outline-warning" : "btn-outline-success")"
+                          title="@(r.IsApproved ? "Ẩn review" : "Hiện review")">
+                    <i class="bi @(r.IsApproved ? "bi-eye-slash" : "bi-eye")"></i>
+                  </button>
+                </form>
+                @* Xoá *@
+                <form asp-action="DeleteReview" method="post">
+                  <input type="hidden" name="id" value="@r.Id" />
+                  <input type="hidden" name="returnFilter" value="@currentFilter" />
+                  <button type="submit" class="btn btn-sm btn-outline-danger"
+                          title="Xoá review"
+                          onclick="return confirm('Xoá review này vĩnh viễn?')">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+}

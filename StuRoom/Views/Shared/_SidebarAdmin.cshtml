@@ -6,7 +6,8 @@
   <nav>
     <div class="sidebar-section-label">Tổng quan</div>
 
-    <a class="sidebar-link @(active == "AdminDashboard" ? "active" : "")" href="#">
+    <a class="sidebar-link @(active == "AdminDashboard" ? "active" : "")"
+       asp-controller="Admin" asp-action="Dashboard">
       <i class="bi bi-bar-chart-line"></i>
       <span>Dashboard</span>
     </a>
@@ -25,7 +26,8 @@
       <span>Amenities</span>
     </a>
 
-    <a class="sidebar-link @(active == "ReviewModeration" ? "active" : "")" href="#">
+    <a class="sidebar-link @(active == "ReviewModeration" ? "active" : "")"
+       asp-controller="Admin" asp-action="ReviewModeration">
       <i class="bi bi-star-half"></i>
       <span>Kiểm duyệt Review</span>
     </a>
@@ -58,7 +60,8 @@
   <div class="offcanvas-body p-0">
     <nav>
       <div class="sidebar-section-label">Tổng quan</div>
-      <a class="sidebar-link @(active == "AdminDashboard" ? "active" : "")" href="#">
+      <a class="sidebar-link @(active == "AdminDashboard" ? "active" : "")"
+         asp-controller="Admin" asp-action="Dashboard">
         <i class="bi bi-bar-chart-line"></i><span>Dashboard</span>
       </a>
       <div class="sidebar-section-label mt-3">Quản trị</div>
@@ -70,7 +73,8 @@
          asp-controller="Admin" asp-action="Amenities">
         <i class="bi bi-tags"></i><span>Amenities</span>
       </a>
-      <a class="sidebar-link @(active == "ReviewModeration" ? "active" : "")" href="#">
+      <a class="sidebar-link @(active == "ReviewModeration" ? "active" : "")"
+         asp-controller="Admin" asp-action="ReviewModeration">
         <i class="bi bi-star-half"></i><span>Kiểm duyệt Review</span>
       </a>
       <div class="sidebar-section-label mt-3">Hệ thống</div>
