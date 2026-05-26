@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using StuRoom.Authorization;
 using StuRoom.Data;
 using StuRoom.Models;
+using Microsoft.AspNetCore.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
 

@@ -731,7 +731,7 @@
   <!-- ── Task List ── -->
   <section id="tasks">
     <h2>Task List</h2>
-    <p style="font-size:13px;color:#6b7280;margin-bottom:20px">Sắp xếp theo thứ tự implement. Làm từ trên xuống — nhóm sau phụ thuộc nhóm trước.</p>
+    <p style="font-size:13px;color:#6b7280;margin-bottom:20px">Sắp xếp theo thứ tự implement. Làm từ trên xuống — nhóm sau phụ thuộc nhóm trước. Số thứ tự task giữ nguyên để không lệch Jira.</p>
 
     <div style="display:flex;gap:8px;margin-bottom:24px;flex-wrap:wrap">
       <span class="tag tag-be" style="font-size:12px;padding:4px 10px">BE — Backend: Controller, Service, DB</span>
@@ -739,7 +739,7 @@
       <span class="tag tag-both" style="font-size:12px;padding:4px 10px">BE+FE — Cả hai</span>
     </div>
 
-    <!-- Group 1 -->
+    <!-- Group 1 — Foundation -->
     <div class="task-group">
       <div class="task-group-title">Nhóm 1 — Foundation</div>
 
@@ -789,18 +789,52 @@
       </div>
     </div>
 
-    <!-- Group 2 -->
+    <!-- Group 2 — Admin Panel -->
     <div class="task-group">
-      <div class="task-group-title">Nhóm 2 — Property Management</div>
+      <div class="task-group-title">Nhóm 2 — Admin Panel</div>
+      <p style="font-size:12px;color:#9ca3af;margin:-4px 0 10px">Tất cả chức năng Admin gom vào đây — có thể assign cho 1 người làm toàn bộ</p>
+
+      <div class="task-item">
+        <div class="task-num">31</div>
+        <div class="task-body">
+          <div class="task-title">Admin — duyệt tài khoản Landlord</div>
+          <div class="task-desc">Danh sách Landlord chờ duyệt, Approve/Reject, gửi email thông báo kết quả</div>
+        </div>
+        <span class="tag tag-both">BE+FE</span>
+      </div>
 
       <div class="task-item">
         <div class="task-num">6</div>
         <div class="task-body">
-          <div class="task-title">Amenity CRUD (Admin)</div>
+          <div class="task-title">Amenity CRUD</div>
           <div class="task-desc">Admin thêm/sửa/xoá tiện ích dùng chung toàn hệ thống với icon class</div>
         </div>
         <span class="tag tag-both">BE+FE</span>
       </div>
+
+      <div class="task-item">
+        <div class="task-num">29</div>
+        <div class="task-body">
+          <div class="task-title">Admin — kiểm duyệt review</div>
+          <div class="task-desc">Admin ẩn/hiện review vi phạm (IsApproved), danh sách review toàn hệ thống</div>
+        </div>
+        <span class="tag tag-both">BE+FE</span>
+      </div>
+
+      <div class="task-item">
+        <div class="task-num">33</div>
+        <div class="task-body">
+          <div class="task-title">Admin Dashboard</div>
+          <div class="task-desc">Thống kê tổng: số phòng, users, Landlord active, doanh thu toàn platform</div>
+        </div>
+        <span class="tag tag-both">BE+FE</span>
+      </div>
+    </div>
+
+    <!-- Group 3 — Property Management -->
+    <div class="task-group">
+      <div class="task-group-title">Nhóm 3 — Property Management</div>
+      <p style="font-size:12px;color:#9ca3af;margin:-4px 0 10px">Phụ thuộc: Nhóm 2 (cần Amenity CRUD trước khi gán amenity cho phòng)</p>
 
       <div class="task-item">
         <div class="task-num">7</div>
@@ -833,7 +867,7 @@
         <div class="task-num">10</div>
         <div class="task-body">
           <div class="task-title">Room — gán Amenities</div>
-          <div class="task-desc">Landlord chọn tiện ích cho từng phòng từ danh mục Admin tạo</div>
+          <div class="task-desc">Landlord chọn tiện ích cho từng phòng từ danh mục Admin tạo (phụ thuộc task 6)</div>
         </div>
         <span class="tag tag-both">BE+FE</span>
       </div>
@@ -848,9 +882,10 @@
       </div>
     </div>
 
-    <!-- Group 3 -->
+    <!-- Group 4 — Marketplace -->
     <div class="task-group">
-      <div class="task-group-title">Nhóm 3 — Marketplace</div>
+      <div class="task-group-title">Nhóm 4 — Marketplace (Tenant-facing)</div>
+      <p style="font-size:12px;color:#9ca3af;margin:-4px 0 10px">Phụ thuộc: Nhóm 3 (cần có phòng + ảnh + amenities)</p>
 
       <div class="task-item">
         <div class="task-num">12</div>
@@ -880,9 +915,10 @@
       </div>
     </div>
 
-    <!-- Group 4 -->
+    <!-- Group 5 — Booking Flow -->
     <div class="task-group">
-      <div class="task-group-title">Nhóm 4 — Booking Flow</div>
+      <div class="task-group-title">Nhóm 5 — Booking Flow</div>
+      <p style="font-size:12px;color:#9ca3af;margin:-4px 0 10px">Luồng đầy đủ: xem phòng → đặt phòng → tạo hợp đồng. Phụ thuộc Nhóm 4</p>
 
       <div class="task-item">
         <div class="task-num">15</div>
@@ -939,9 +975,10 @@
       </div>
     </div>
 
-    <!-- Group 5 -->
+    <!-- Group 6 — Contract -->
     <div class="task-group">
-      <div class="task-group-title">Nhóm 5 — Contract</div>
+      <div class="task-group-title">Nhóm 6 — Contract</div>
+      <p style="font-size:12px;color:#9ca3af;margin:-4px 0 10px">Phụ thuộc: Nhóm 5 (Contract được tạo từ BookingRequest.Approve)</p>
 
       <div class="task-item">
         <div class="task-num">21</div>
@@ -980,9 +1017,10 @@
       </div>
     </div>
 
-    <!-- Group 6 -->
+    <!-- Group 7 — Finance & Landlord Dashboard -->
     <div class="task-group">
-      <div class="task-group-title">Nhóm 6 — Finance</div>
+      <div class="task-group-title">Nhóm 7 — Finance &amp; Landlord Dashboard</div>
+      <p style="font-size:12px;color:#9ca3af;margin:-4px 0 10px">Dashboard dùng cùng dữ liệu Invoice/Payment nên gom chung. Phụ thuộc Nhóm 6</p>
 
       <div class="task-item">
         <div class="task-num">25</div>
@@ -1010,11 +1048,21 @@
         </div>
         <span class="tag tag-both">BE+FE</span>
       </div>
+
+      <div class="task-item">
+        <div class="task-num">32</div>
+        <div class="task-body">
+          <div class="task-title">Landlord Dashboard</div>
+          <div class="task-desc">Biểu đồ doanh thu theo tháng, tỷ lệ lấp đầy phòng, danh sách hoá đơn quá hạn</div>
+        </div>
+        <span class="tag tag-both">BE+FE</span>
+      </div>
     </div>
 
-    <!-- Group 7 -->
+    <!-- Group 8 — Reviews & Notifications -->
     <div class="task-group">
-      <div class="task-group-title">Nhóm 7 — Reviews &amp; Notifications</div>
+      <div class="task-group-title">Nhóm 8 — Reviews &amp; Notifications</div>
+      <p style="font-size:12px;color:#9ca3af;margin:-4px 0 10px">Có thể làm song song với Nhóm 7. Review cần Contract đã Expired/Terminated</p>
 
       <div class="task-item">
         <div class="task-num">28</div>
@@ -1026,51 +1074,10 @@
       </div>
 
       <div class="task-item">
-        <div class="task-num">29</div>
-        <div class="task-body">
-          <div class="task-title">Admin — kiểm duyệt review</div>
-          <div class="task-desc">Admin ẩn/hiện review vi phạm (IsApproved), danh sách review toàn hệ thống</div>
-        </div>
-        <span class="tag tag-both">BE+FE</span>
-      </div>
-
-      <div class="task-item">
         <div class="task-num">30</div>
         <div class="task-body">
           <div class="task-title">In-app Notifications</div>
           <div class="task-desc">Bell icon trên navbar, dropdown danh sách thông báo chưa đọc, đánh dấu đã đọc</div>
-        </div>
-        <span class="tag tag-both">BE+FE</span>
-      </div>
-    </div>
-
-    <!-- Group 8 -->
-    <div class="task-group">
-      <div class="task-group-title">Nhóm 8 — Dashboard &amp; Admin</div>
-
-      <div class="task-item">
-        <div class="task-num">31</div>
-        <div class="task-body">
-          <div class="task-title">Admin — duyệt tài khoản Landlord</div>
-          <div class="task-desc">Danh sách Landlord chờ duyệt, Approve/Reject, gửi email thông báo kết quả</div>
-        </div>
-        <span class="tag tag-both">BE+FE</span>
-      </div>
-
-      <div class="task-item">
-        <div class="task-num">32</div>
-        <div class="task-body">
-          <div class="task-title">Landlord Dashboard</div>
-          <div class="task-desc">Biểu đồ doanh thu theo tháng, tỷ lệ lấp đầy phòng, danh sách hoá đơn quá hạn</div>
-        </div>
-        <span class="tag tag-both">BE+FE</span>
-      </div>
-
-      <div class="task-item">
-        <div class="task-num">33</div>
-        <div class="task-body">
-          <div class="task-title">Admin Dashboard</div>
-          <div class="task-desc">Thống kê tổng: số phòng, users, Landlord active, doanh thu toàn platform</div>
         </div>
         <span class="tag tag-both">BE+FE</span>
       </div>

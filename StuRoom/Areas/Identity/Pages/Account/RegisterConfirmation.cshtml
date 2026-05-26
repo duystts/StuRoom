@@ -1,0 +1,53 @@
+@page
+@model RegisterConfirmationModel
+@{
+    ViewData["Title"] = "Xác nhận tài khoản";
+}
+
+<div class="container d-flex align-items-center justify-content-center" style="min-height: 70vh;">
+  <div class="text-center" style="max-width: 480px;">
+
+    <div class="mb-4">
+      <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" fill="none" viewBox="0 0 24 24"
+           stroke="#22c55e" stroke-width="1.5">
+        <path stroke-linecap="round" stroke-linejoin="round"
+              d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+      </svg>
+    </div>
+
+    <h2 class="fw-bold mb-2">Đăng ký thành công!</h2>
+
+    @if (Model.DisplayConfirmAccountLink)
+    {
+      <div class="alert alert-warning text-start small mb-3" role="alert">
+        <strong>Chế độ dev:</strong> Chưa cấu hình SMTP — link xác nhận hiển thị trực tiếp bên dưới thay vì gửi email.
+      </div>
+      <p class="text-muted mb-3">
+        Nhấn vào link bên dưới để xác nhận email <strong>@Model.Email</strong>:
+      </p>
+      <a id="confirm-link" href="@Model.EmailConfirmationUrl" class="btn btn-success mb-4">
+        Xác nhận tài khoản
+      </a>
+    }
+    else
+    {
+      <p class="text-muted mb-4">
+        Chúng tôi đã gửi email xác nhận đến <strong>@Model.Email</strong>.<br>
+        Vui lòng kiểm tra hộp thư và nhấn vào link xác nhận để kích hoạt tài khoản.
+      </p>
+    }
+
+    @if (Model.IsLandlord)
+    {
+      <div class="alert alert-info text-start small">
+        <strong>Lưu ý dành cho Chủ trọ:</strong> Sau khi xác nhận email, tài khoản của bạn sẽ cần được
+        Admin xét duyệt trước khi có thể đăng phòng — thường trong vòng <strong>1–2 ngày làm việc</strong>.
+      </div>
+    }
+
+    <p class="text-muted small mt-3">
+      <a asp-page="./Login">Quay lại trang đăng nhập</a>
+    </p>
+
+  </div>
+</div>

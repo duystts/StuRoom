@@ -1,0 +1,121 @@
+@page
+@model RegisterModel
+@{
+    ViewData["Title"] = "Đăng ký tài khoản";
+}
+
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+
+      <div class="text-center mb-4">
+        <h2 class="fw-bold mb-1">Tạo tài khoản mới</h2>
+        <p class="text-muted small">Điền thông tin bên dưới để bắt đầu sử dụng StuRoom</p>
+      </div>
+
+      <div class="card border-0 shadow-sm">
+        <div class="card-body p-4">
+
+          <form id="registerForm" asp-route-returnUrl="@Model.ReturnUrl" method="post">
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small" role="alert"></div>
+
+            @* ── Loại tài khoản ── *@
+            <div class="mb-4">
+              <label class="form-label fw-semibold">Bạn là</label>
+              <div class="row g-2">
+                <div class="col-6">
+                  <input type="radio" class="btn-check" name="Input.Role" id="roleTenant"
+                         value="Tenant" autocomplete="off"
+                         @(Model.Input?.Role == "Landlord" ? "" : "checked") />
+                  <label class="btn btn-outline-primary w-100 d-flex flex-column align-items-center py-3 gap-1" for="roleTenant">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+                    </svg>
+                    <span class="fw-semibold" style="font-size:14px">Người thuê</span>
+                    <span class="text-muted" style="font-size:11px">Tìm & thuê phòng</span>
+                  </label>
+                </div>
+                <div class="col-6">
+                  <input type="radio" class="btn-check" name="Input.Role" id="roleLandlord"
+                         value="Landlord" autocomplete="off"
+                         @(Model.Input?.Role == "Landlord" ? "checked" : "") />
+                  <label class="btn btn-outline-primary w-100 d-flex flex-column align-items-center py-3 gap-1" for="roleLandlord">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12 11.204 3.045c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
+                    </svg>
+                    <span class="fw-semibold" style="font-size:14px">Chủ trọ</span>
+                    <span class="text-muted" style="font-size:11px">Đăng & quản lý phòng</span>
+                  </label>
+                </div>
+              </div>
+              <span asp-validation-for="Input.Role" class="text-danger small"></span>
+
+              @* Thông báo chờ duyệt cho Landlord *@
+              <div id="landlordNotice" class="alert alert-warning py-2 mt-2 small mb-0" style="display:none">
+                <strong>Lưu ý:</strong> Tài khoản chủ trọ cần được Admin xét duyệt trước khi đăng phòng (thường 1–2 ngày).
+              </div>
+            </div>
+
+            @* ── Họ tên ── *@
+            <div class="mb-3">
+              <label asp-for="Input.FullName" class="form-label fw-semibold">Họ và tên</label>
+              <input asp-for="Input.FullName" class="form-control" placeholder="Nguyễn Văn A" autocomplete="name" />
+              <span asp-validation-for="Input.FullName" class="text-danger small"></span>
+            </div>
+
+            @* ── Email ── *@
+            <div class="mb-3">
+              <label asp-for="Input.Email" class="form-label fw-semibold">Email</label>
+              <input asp-for="Input.Email" class="form-control" placeholder="example@email.com"
+                     autocomplete="username" type="email" />
+              <span asp-validation-for="Input.Email" class="text-danger small"></span>
+            </div>
+
+            @* ── Mật khẩu ── *@
+            <div class="mb-3">
+              <label asp-for="Input.Password" class="form-label fw-semibold">Mật khẩu</label>
+              <input asp-for="Input.Password" class="form-control" placeholder="Tối thiểu 6 ký tự"
+                     autocomplete="new-password" type="password" />
+              <span asp-validation-for="Input.Password" class="text-danger small"></span>
+            </div>
+
+            <div class="mb-4">
+              <label asp-for="Input.ConfirmPassword" class="form-label fw-semibold">Xác nhận mật khẩu</label>
+              <input asp-for="Input.ConfirmPassword" class="form-control" placeholder="Nhập lại mật khẩu"
+                     autocomplete="new-password" type="password" />
+              <span asp-validation-for="Input.ConfirmPassword" class="text-danger small"></span>
+            </div>
+
+            <button id="registerSubmit" type="submit" class="btn btn-primary w-100 py-2 fw-semibold">
+              Tạo tài khoản
+            </button>
+          </form>
+
+        </div>
+      </div>
+
+      <p class="text-center text-muted small mt-3">
+        Đã có tài khoản?
+        <a asp-page="./Login" asp-route-returnUrl="@Model.ReturnUrl">Đăng nhập</a>
+      </p>
+
+    </div>
+  </div>
+</div>
+
+@section Scripts {
+  <partial name="_ValidationScriptsPartial" />
+  <script>
+    const landlordRadio = document.getElementById('roleLandlord');
+    const tenantRadio   = document.getElementById('roleTenant');
+    const notice        = document.getElementById('landlordNotice');
+
+    function toggleNotice() {
+      notice.style.display = landlordRadio.checked ? 'block' : 'none';
+    }
+
+    landlordRadio.addEventListener('change', toggleNotice);
+    tenantRadio.addEventListener('change', toggleNotice);
+    toggleNotice(); // init
+  </script>
+}
