@@ -49,7 +49,8 @@
       <span>Hợp đồng</span>
     </a>
 
-    <a class="sidebar-link @(active == "Invoices" ? "active" : "")" href="#">
+    <a class="sidebar-link @(active == "Invoices" ? "active" : "")"
+       asp-controller="Landlord" asp-action="Invoices">
       <i class="bi bi-receipt"></i>
       <span>Hoá đơn</span>
     </a>

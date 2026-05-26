@@ -1,0 +1,286 @@
+@model StuRoom.Models.Invoice
+@using StuRoom.Models
+@{
+    ViewData["Title"] = $"Hoá đơn #{Model.Id}";
+    ViewData["ActiveMenu"] = "Invoices";
+
+    var statusMap = new Dictionary<InvoiceStatus, (string label, string css)>
+    {
+        [InvoiceStatus.Draft]     = ("Nháp",          "bg-secondary text-white"),
+        [InvoiceStatus.Sent]      = ("Đã gửi",        "bg-info text-white"),
+        [InvoiceStatus.Paid]      = ("Đã thanh toán", "bg-success text-white"),
+        [InvoiceStatus.Overdue]   = ("Quá hạn",       "bg-danger text-white"),
+        [InvoiceStatus.Cancelled] = ("Đã huỷ",        "bg-light text-muted"),
+    };
+    var (lbl, css) = statusMap[Model.Status];
+    var totalPaid  = Model.Payments.Where(p => p.Amount > 0).Sum(p => p.Amount);
+    var remaining  = Model.TotalAmount - totalPaid;
+    bool canPay    = Model.Status != InvoiceStatus.Paid && Model.Status != InvoiceStatus.Cancelled;
+    bool canSend   = Model.Status == InvoiceStatus.Draft || Model.Status == InvoiceStatus.Overdue;
+    bool canCancel = Model.Status != InvoiceStatus.Paid && Model.Status != InvoiceStatus.Cancelled;
+}
+
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb small">
+    <li class="breadcrumb-item"><a asp-action="Invoices">Hoá đơn</a></li>
+    <li class="breadcrumb-item active">Hoá đơn #@Model.Id</li>
+  </ol>
+</nav>
+
+@if (TempData["Success"] != null)
+{
+  <div class="alert alert-success alert-dismissible fade show py-2 small">
+    <i class="bi bi-check-circle me-1"></i>@TempData["Success"]
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+}
+
+@* Header *@
+<div class="d-flex align-items-start justify-content-between mb-4 flex-wrap gap-2">
+  <div>
+    <h4 class="fw-bold mb-1">
+      Hoá đơn tháng @Model.BillingMonth/@Model.BillingYear
+      <span class="badge @css ms-2" style="font-size:13px">@lbl</span>
+    </h4>
+    <p class="text-muted small mb-0">
+      Phòng <strong>@Model.Contract.Room.RoomNumber</strong> —
+      @Model.Contract.Room.Building.Name —
+      Tenant: <strong>@Model.Contract.Tenant.FullName</strong>
+    </p>
+  </div>
+  <div class="d-flex gap-2">
+    @if (canSend)
+    {
+      <form asp-action="SendInvoice" method="post" class="d-inline">
+        <input type="hidden" name="id" value="@Model.Id" />
+        <button class="btn btn-sm btn-info text-white"
+                onclick="return confirm('Gửi hoá đơn đến tenant?')">
+          <i class="bi bi-send me-1"></i>Gửi hoá đơn
+        </button>
+      </form>
+    }
+    @if (canPay)
+    {
+      <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#payModal">
+        <i class="bi bi-cash-coin me-1"></i>Ghi nhận thanh toán
+      </button>
+    }
+    @if (canCancel)
+    {
+      <form asp-action="CancelInvoice" method="post" class="d-inline">
+        <input type="hidden" name="id" value="@Model.Id" />
+        <button class="btn btn-sm btn-outline-danger"
+                onclick="return confirm('Huỷ hoá đơn này?')">
+          <i class="bi bi-x-circle me-1"></i>Huỷ
+        </button>
+      </form>
+    }
+    <a asp-action="ContractDetail" asp-route-id="@Model.ContractId"
+       class="btn btn-sm btn-outline-secondary">
+      <i class="bi bi-arrow-left me-1"></i>Hợp đồng
+    </a>
+  </div>
+</div>
+
+<div class="row g-4">
+
+  @* Left: Invoice items *@
+  <div class="col-lg-8">
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-transparent py-2 fw-semibold small">
+        <i class="bi bi-list-ul me-1"></i>Chi tiết các khoản phí
+      </div>
+      <div class="card-body p-0">
+        <table class="table table-sm align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Khoản phí</th>
+              <th class="text-end" style="width:90px">Chỉ số cũ</th>
+              <th class="text-end" style="width:90px">Chỉ số mới</th>
+              <th class="text-end" style="width:70px">SL</th>
+              <th class="text-end" style="width:110px">Đơn giá</th>
+              <th class="text-end" style="width:110px">Thành tiền</th>
+            </tr>
+          </thead>
+          <tbody>
+            @foreach (var item in Model.Items)
+            {
+              <tr>
+                <td class="small">
+                  @item.Description
+                  @if (item.FeeConfig != null)
+                  {
+                    <span class="text-muted" style="font-size:10px">(@item.FeeConfig.Name)</span>
+                  }
+                </td>
+                <td class="small text-end text-muted">
+                  @(item.PreviousReading.HasValue ? item.PreviousReading.Value.ToString("N2") : "—")
+                </td>
+                <td class="small text-end text-muted">
+                  @(item.CurrentReading.HasValue ? item.CurrentReading.Value.ToString("N2") : "—")
+                </td>
+                <td class="small text-end">
+                  @(item.Quantity.HasValue ? item.Quantity.Value.ToString("N2") : "—")
+                </td>
+                <td class="small text-end">@item.UnitPrice.ToString("N0") ₫</td>
+                <td class="small text-end fw-semibold">@item.Amount.ToString("N0") ₫</td>
+              </tr>
+            }
+          </tbody>
+          <tfoot class="table-light">
+            <tr>
+              <td colspan="5" class="text-end fw-bold small">Tổng cộng</td>
+              <td class="text-end fw-bold">@Model.TotalAmount.ToString("N0") ₫</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+    @* Payments history *@
+    @if (Model.Payments.Any())
+    {
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-transparent py-2 fw-semibold small">
+          <i class="bi bi-cash-stack me-1"></i>Lịch sử thanh toán
+        </div>
+        <div class="card-body p-0">
+          <table class="table table-sm align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Ngày</th>
+                <th>Phương thức</th>
+                <th>Mã GD</th>
+                <th class="text-end" style="width:120px">Số tiền</th>
+                <th>Ghi nhận bởi</th>
+              </tr>
+            </thead>
+            <tbody>
+              @foreach (var p in Model.Payments.OrderByDescending(x => x.PaymentDate))
+              {
+                <tr>
+                  <td class="small">@p.PaymentDate.ToString("dd/MM/yyyy")</td>
+                  <td class="small">@p.Method</td>
+                  <td class="small text-muted">@(p.TransactionRef ?? "—")</td>
+                  <td class="small text-end fw-semibold text-success">
+                    @p.Amount.ToString("N0") ₫
+                  </td>
+                  <td class="small text-muted">
+                    @(p.RecordedBy?.FullName ?? p.RecordedBy?.Email ?? "—")
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    }
+  </div>
+
+  @* Right: Summary *@
+  <div class="col-lg-4">
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-body">
+        <h6 class="fw-bold mb-3">Thông tin thanh toán</h6>
+        <div class="d-flex justify-content-between small mb-2">
+          <span class="text-muted">Tổng hoá đơn</span>
+          <span class="fw-semibold">@Model.TotalAmount.ToString("N0") ₫</span>
+        </div>
+        <div class="d-flex justify-content-between small mb-2">
+          <span class="text-muted">Đã thanh toán</span>
+          <span class="text-success fw-semibold">@totalPaid.ToString("N0") ₫</span>
+        </div>
+        <hr class="my-2" />
+        <div class="d-flex justify-content-between small">
+          <span class="fw-bold">Còn lại</span>
+          <span class="fw-bold @(remaining > 0 ? "text-danger" : "text-success")">
+            @remaining.ToString("N0") ₫
+          </span>
+        </div>
+        <div class="d-flex justify-content-between small mt-2">
+          <span class="text-muted">Hạn thanh toán</span>
+          <span class="@(Model.DueDate < DateTime.Now && Model.Status != InvoiceStatus.Paid ? "text-danger fw-semibold" : "")">
+            @Model.DueDate.ToString("dd/MM/yyyy")
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <h6 class="fw-bold mb-3">Hợp đồng</h6>
+        <div class="small text-muted mb-1">
+          <i class="bi bi-file-earmark-text me-1"></i>
+          <a asp-action="ContractDetail" asp-route-id="@Model.ContractId">
+            Hợp đồng #@Model.ContractId
+          </a>
+        </div>
+        <div class="small text-muted mb-1">
+          <i class="bi bi-door-open me-1"></i>
+          Phòng @Model.Contract.Room.RoomNumber — @Model.Contract.Room.Building.Name
+        </div>
+        <div class="small text-muted">
+          <i class="bi bi-person me-1"></i>
+          @Model.Contract.Tenant.FullName
+        </div>
+        @if (!string.IsNullOrEmpty(Model.Notes))
+        {
+          <hr class="my-2" />
+          <div class="small text-muted">@Model.Notes</div>
+        }
+      </div>
+    </div>
+  </div>
+</div>
+
+@* Modal ghi nhận thanh toán *@
+<div class="modal fade" id="payModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header py-2">
+        <h6 class="modal-title fw-bold">Ghi nhận thanh toán</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form asp-action="RecordPayment" method="post">
+        <input type="hidden" name="invoiceId" value="@Model.Id" />
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Số tiền <span class="text-danger">*</span></label>
+            <input type="number" name="amount" class="form-control form-control-sm"
+                   value="@remaining" step="1000" min="1000" required />
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Ngày thanh toán <span class="text-danger">*</span></label>
+            <input type="date" name="paymentDate" class="form-control form-control-sm"
+                   value="@DateTime.Now.ToString("yyyy-MM-dd")" required />
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Phương thức <span class="text-danger">*</span></label>
+            <select name="method" class="form-select form-select-sm" required>
+              <option value="Cash">Tiền mặt</option>
+              <option value="BankTransfer">Chuyển khoản</option>
+              <option value="MoMo">MoMo</option>
+              <option value="VNPay">VNPay</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Mã giao dịch</label>
+            <input type="text" name="transactionRef" class="form-control form-control-sm"
+                   placeholder="Tuỳ chọn..." />
+          </div>
+          <div class="mb-2">
+            <label class="form-label small fw-semibold">Ghi chú</label>
+            <textarea name="notes" class="form-control form-control-sm" rows="2"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer py-2">
+          <button type="button" class="btn btn-sm btn-outline-secondary"
+                  data-bs-dismiss="modal">Huỷ</button>
+          <button type="submit" class="btn btn-sm btn-success">
+            <i class="bi bi-check-lg me-1"></i>Xác nhận
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
