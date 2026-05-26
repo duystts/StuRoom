@@ -1,0 +1,208 @@
+@model List<StuRoom.Models.Amenity>
+@{
+    ViewData["Title"] = "Quản lý Amenities";
+}
+
+<div class="d-flex align-items-center justify-content-between mb-4">
+  <div>
+    <h4 class="mb-0 fw-bold">Amenities</h4>
+    <p class="text-muted small mb-0">Danh mục tiện ích dùng chung cho toàn hệ thống</p>
+  </div>
+  <button class="btn btn-primary btn-sm px-3"
+          data-bs-toggle="modal" data-bs-target="#amenityModal"
+          onclick="openCreate()">
+    <i class="bi bi-plus-lg me-1"></i>Thêm tiện ích
+  </button>
+</div>
+
+@* Alerts *@
+@if (TempData["Success"] != null)
+{
+  <div class="alert alert-success alert-dismissible fade show py-2 small" role="alert">
+    <i class="bi bi-check-circle me-1"></i>@Html.Raw(TempData["Success"])
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+}
+@if (TempData["Error"] != null)
+{
+  <div class="alert alert-danger alert-dismissible fade show py-2 small" role="alert">
+    <i class="bi bi-exclamation-circle me-1"></i>@Html.Raw(TempData["Error"])
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+}
+
+@* ── Danh sách ── *@
+@if (!Model.Any())
+{
+  <div class="text-center py-5 text-muted">
+    <i class="bi bi-tags fs-1 d-block mb-2"></i>
+    Chưa có tiện ích nào. Nhấn <strong>Thêm tiện ích</strong> để bắt đầu.
+  </div>
+}
+else
+{
+  <div class="card border-0 shadow-sm">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-light">
+        <tr>
+          <th style="width:56px" class="text-center">Icon</th>
+          <th>Tên tiện ích</th>
+          <th>Icon class</th>
+          <th style="width:56px">Dùng</th>
+          <th style="width:100px"></th>
+        </tr>
+      </thead>
+      <tbody>
+        @foreach (var a in Model)
+        {
+          <tr>
+            <td class="text-center">
+              <i class="bi @a.IconClass fs-5 text-primary"></i>
+            </td>
+            <td class="fw-semibold small">@a.Name</td>
+            <td><code class="small">@a.IconClass</code></td>
+            <td class="text-center text-muted small">@a.RoomAmenities.Count</td>
+            <td>
+              <div class="d-flex gap-1 justify-content-end">
+                <button class="btn btn-outline-secondary btn-sm"
+                        onclick="openEdit(@a.Id, '@Html.Raw(a.Name.Replace("'","\\\'"))', '@a.IconClass')"
+                        data-bs-toggle="modal" data-bs-target="#amenityModal"
+                        title="Sửa">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <form asp-action="DeleteAmenity" asp-controller="Admin" method="post" class="d-inline">
+                  <input type="hidden" name="id" value="@a.Id" />
+                  <button type="submit" class="btn btn-outline-danger btn-sm"
+                          title="Xoá"
+                          onclick="return confirm('Xoá tiện ích \'@a.Name\'?')">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+}
+
+@* ── Modal Thêm / Sửa ── *@
+<div class="modal fade" id="amenityModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      <form id="amenityForm" method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="id" id="amenityId" />
+
+        <div class="modal-header border-0 pb-0">
+          <h5 class="modal-title fw-bold" id="amenityModalTitle">Thêm tiện ích</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+
+        <div class="modal-body">
+          @* Tên *@
+          <div class="mb-3">
+            <label class="form-label fw-semibold small">Tên tiện ích <span class="text-danger">*</span></label>
+            <input type="text" name="name" id="amenityName" class="form-control"
+                   placeholder="VD: WiFi, Điều hoà, Bãi xe..." required />
+          </div>
+
+          @* Icon class *@
+          <div class="mb-2">
+            <label class="form-label fw-semibold small">Bootstrap Icon class</label>
+            <div class="input-group">
+              <span class="input-group-text" id="iconPreviewArea">
+                <i id="iconPreview" class="bi bi-question-circle text-muted"></i>
+              </span>
+              <input type="text" name="iconClass" id="amenityIcon" class="form-control"
+                     placeholder="bi-wifi" />
+            </div>
+            <div class="text-muted" style="font-size:11px;margin-top:4px">
+              Nhập class từ
+              <a href="https://icons.getbootstrap.com" target="_blank" class="text-decoration-none">icons.getbootstrap.com</a>
+              hoặc chọn nhanh bên dưới.
+            </div>
+          </div>
+
+          @* Icon presets *@
+          <div class="d-flex flex-wrap gap-2 mt-2" id="iconPresets">
+            @foreach (var preset in new[] {
+              ("bi-wifi","WiFi"), ("bi-snow2","Điều hoà"), ("bi-droplet","Nước nóng"),
+              ("bi-lightning-charge","Điện riêng"), ("bi-car-front","Bãi xe"),
+              ("bi-bicycle","Bãi xe đạp"), ("bi-tv","Truyền hình"),
+              ("bi-camera-video","Camera"), ("bi-shield-check","Bảo vệ"),
+              ("bi-fire","Bếp"), ("bi-washing-machine","Máy giặt"),
+              ("bi-hospital","Nhà vệ sinh riêng"), ("bi-door-open","Chìa khoá thẻ"),
+              ("bi-sunlight","Cửa sổ"), ("bi-house-heart","Nội thất"),
+              ("bi-arrow-up-square","Thang máy")
+            })
+            {
+              <button type="button"
+                      class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1 icon-preset"
+                      data-icon="@preset.Item1"
+                      title="@preset.Item2"
+                      style="font-size:12px">
+                <i class="bi @preset.Item1"></i>
+                <span>@preset.Item2</span>
+              </button>
+            }
+          </div>
+        </div>
+
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Huỷ</button>
+          <button type="submit" class="btn btn-primary btn-sm px-4" id="amenitySaveBtn">Lưu</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+@section Scripts {
+<script>
+  const form       = document.getElementById('amenityForm');
+  const titleEl    = document.getElementById('amenityModalTitle');
+  const idInput    = document.getElementById('amenityId');
+  const nameInput  = document.getElementById('amenityName');
+  const iconInput  = document.getElementById('amenityIcon');
+  const iconPreview = document.getElementById('iconPreview');
+  const saveBtn    = document.getElementById('amenitySaveBtn');
+
+  function openCreate() {
+    titleEl.textContent = 'Thêm tiện ích';
+    saveBtn.textContent = 'Thêm';
+    form.action = '@Url.Action("CreateAmenity", "Admin")';
+    idInput.value = '';
+    nameInput.value = '';
+    iconInput.value = '';
+    updatePreview('bi-question-circle');
+  }
+
+  function openEdit(id, name, icon) {
+    titleEl.textContent = 'Sửa tiện ích';
+    saveBtn.textContent = 'Lưu thay đổi';
+    form.action = '@Url.Action("EditAmenity", "Admin")';
+    idInput.value = id;
+    nameInput.value = name;
+    iconInput.value = icon;
+    updatePreview(icon);
+  }
+
+  function updatePreview(cls) {
+    iconPreview.className = 'bi ' + (cls || 'bi-question-circle');
+  }
+
+  // Live preview khi gõ icon class
+  iconInput.addEventListener('input', () => updatePreview(iconInput.value.trim()));
+
+  // Click preset icon
+  document.querySelectorAll('.icon-preset').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const icon = btn.dataset.icon;
+      iconInput.value = icon;
+      updatePreview(icon);
+    });
+  });
+</script>
+}
