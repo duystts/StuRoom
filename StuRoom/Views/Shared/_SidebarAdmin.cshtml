@@ -13,7 +13,8 @@
 
     <div class="sidebar-section-label mt-3">Quản trị</div>
 
-    <a class="sidebar-link @(active == "ApproveLandlord" ? "active" : "")" href="#">
+    <a class="sidebar-link @(active == "ApproveLandlord" ? "active" : "")"
+       asp-controller="Admin" asp-action="LandlordApproval">
       <i class="bi bi-person-check"></i>
       <span>Duyệt Landlord</span>
     </a>
@@ -60,7 +61,8 @@
         <i class="bi bi-bar-chart-line"></i><span>Dashboard</span>
       </a>
       <div class="sidebar-section-label mt-3">Quản trị</div>
-      <a class="sidebar-link @(active == "ApproveLandlord" ? "active" : "")" href="#">
+      <a class="sidebar-link @(active == "ApproveLandlord" ? "active" : "")"
+         asp-controller="Admin" asp-action="LandlordApproval">
         <i class="bi bi-person-check"></i><span>Duyệt Landlord</span>
       </a>
       <a class="sidebar-link @(active == "Amenities" ? "active" : "")" href="#">
