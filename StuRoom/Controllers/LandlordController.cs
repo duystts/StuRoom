@@ -27,6 +27,92 @@ public class LandlordController(
         userManager.GetUserId(User)!;
 
     // ════════════════════════════════════════════════════════
+    // DASHBOARD  (Task 32)
+    // ════════════════════════════════════════════════════════
+
+    public async Task<IActionResult> Dashboard()
+    {
+        ViewData["ActiveMenu"] = "Dashboard";
+
+        var myBuildingIds = await db.Buildings
+            .Where(b => b.LandlordId == CurrentUserId)
+            .Select(b => b.Id).ToListAsync();
+
+        // ── Stats cards ──────────────────────────────────────
+        int totalRooms     = await db.Rooms.CountAsync(r => myBuildingIds.Contains(r.BuildingId));
+        int occupiedRooms  = await db.Rooms.CountAsync(r => myBuildingIds.Contains(r.BuildingId)
+                                 && r.Status == RoomStatus.Occupied);
+        int activeContracts = await db.Contracts.CountAsync(c =>
+                                 myBuildingIds.Contains(c.Room.BuildingId)
+                                 && c.Status == ContractStatus.Active);
+        int unpaidInvoices = await db.Invoices.CountAsync(i =>
+                                 myBuildingIds.Contains(i.Contract.Room.BuildingId)
+                                 && (i.Status == InvoiceStatus.Sent
+                                  || i.Status == InvoiceStatus.Overdue));
+
+        // ── Revenue chart — last 12 months ───────────────────
+        var now         = DateTime.Now;
+        var since       = new DateTime(now.Year, now.Month, 1).AddMonths(-11);
+        var paidPayments = await db.Payments
+            .Include(p => p.Invoice).ThenInclude(i => i.Contract).ThenInclude(c => c.Room)
+            .Where(p => myBuildingIds.Contains(p.Invoice.Contract.Room.BuildingId)
+                     && p.PaymentDate >= since)
+            .Select(p => new { p.PaymentDate.Year, p.PaymentDate.Month, p.Amount })
+            .ToListAsync();
+
+        var revenueLabels = new List<string>();
+        var revenueData   = new List<decimal>();
+        for (int i = 11; i >= 0; i--)
+        {
+            var m    = now.AddMonths(-i);
+            revenueLabels.Add($"{m.Month:D2}/{m.Year}");
+            revenueData.Add(paidPayments
+                .Where(p => p.Year == m.Year && p.Month == m.Month)
+                .Sum(p => p.Amount));
+        }
+
+        // ── Overdue invoices ──────────────────────────────────
+        var overdueInvoices = await db.Invoices
+            .Include(i => i.Contract).ThenInclude(c => c.Room).ThenInclude(r => r.Building)
+            .Include(i => i.Contract).ThenInclude(c => c.Tenant)
+            .Where(i => myBuildingIds.Contains(i.Contract.Room.BuildingId)
+                     && (i.Status == InvoiceStatus.Overdue
+                      || (i.Status == InvoiceStatus.Sent && i.DueDate < DateTime.Now)))
+            .OrderBy(i => i.DueDate)
+            .Take(10)
+            .ToListAsync();
+
+        // Mark sent-past-due as Overdue
+        foreach (var inv in overdueInvoices.Where(i => i.Status == InvoiceStatus.Sent))
+            inv.Status = InvoiceStatus.Overdue;
+        if (overdueInvoices.Any(i => i.Status == InvoiceStatus.Overdue))
+            await db.SaveChangesAsync();
+
+        // ── Recent contracts ──────────────────────────────────
+        var recentContracts = await db.Contracts
+            .Include(c => c.Room).ThenInclude(r => r.Building)
+            .Include(c => c.Tenant)
+            .Where(c => myBuildingIds.Contains(c.Room.BuildingId)
+                     && c.Status == ContractStatus.Active)
+            .OrderByDescending(c => c.StartDate)
+            .Take(5)
+            .ToListAsync();
+
+        ViewBag.TotalRooms       = totalRooms;
+        ViewBag.OccupiedRooms    = occupiedRooms;
+        ViewBag.ActiveContracts  = activeContracts;
+        ViewBag.UnpaidInvoices   = unpaidInvoices;
+        ViewBag.RevenueLabels    = revenueLabels;
+        ViewBag.RevenueData      = revenueData;
+        ViewBag.OverdueInvoices  = overdueInvoices;
+        ViewBag.RecentContracts  = recentContracts;
+        ViewBag.OccupancyRate    = totalRooms > 0
+            ? Math.Round(100.0 * occupiedRooms / totalRooms, 1) : 0.0;
+
+        return View();
+    }
+
+    // ════════════════════════════════════════════════════════
     // BUILDINGS  (Task 7)
     // ════════════════════════════════════════════════════════
 
