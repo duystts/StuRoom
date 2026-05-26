@@ -1,0 +1,28 @@
+@{
+    ViewData["Title"] = "Không có quyền truy cập";
+}
+
+<div class="container d-flex align-items-center justify-content-center" style="min-height: 70vh;">
+    <div class="text-center" style="max-width: 480px;">
+        <div class="mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" width="72" height="72" fill="none" viewBox="0 0 24 24"
+                 stroke="#ef4444" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                      d="M18.364 18.364A9 9 0 0 0 5.636 5.636m12.728 12.728A9 9 0 0 1 5.636 5.636m12.728 12.728L5.636 5.636" />
+            </svg>
+        </div>
+        <h2 class="fw-semibold mb-2">Không có quyền truy cập</h2>
+        <p class="text-muted mb-4">
+            Bạn không có quyền xem trang này.<br>
+            Nếu bạn cho rằng đây là lỗi, vui lòng liên hệ Admin.
+        </p>
+        <div class="d-flex gap-2 justify-content-center">
+            <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary">
+                Về trang chủ
+            </a>
+            <a href="javascript:history.back()" class="btn btn-outline-primary">
+                Quay lại
+            </a>
+        </div>
+    </div>
+</div>

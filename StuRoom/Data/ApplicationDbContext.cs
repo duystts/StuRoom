@@ -125,3 +125,4 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         builder.Entity<Room>().Property(r => r.Area).HasPrecision(10, 2);
     }
 }
+
