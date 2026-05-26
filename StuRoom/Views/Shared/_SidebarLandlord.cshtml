@@ -31,7 +31,8 @@
 
     <div class="sidebar-section-label mt-3">Nghiệp vụ</div>
 
-    <a class="sidebar-link @(active == "ViewingRequests" ? "active" : "")" href="#">
+    <a class="sidebar-link @(active == "ViewingRequests" ? "active" : "")"
+       asp-controller="Landlord" asp-action="ViewingRequests">
       <i class="bi bi-calendar-check"></i>
       <span>Lịch hẹn xem</span>
     </a>
@@ -87,7 +88,8 @@
         <i class="bi bi-sliders"></i><span>Cấu hình phí</span>
       </a>
       <div class="sidebar-section-label mt-3">Nghiệp vụ</div>
-      <a class="sidebar-link @(active == "ViewingRequests" ? "active" : "")" href="#">
+      <a class="sidebar-link @(active == "ViewingRequests" ? "active" : "")"
+         asp-controller="Landlord" asp-action="ViewingRequests">
         <i class="bi bi-calendar-check"></i><span>Lịch hẹn xem</span>
       </a>
       <a class="sidebar-link @(active == "BookingRequests" ? "active" : "")" href="#">

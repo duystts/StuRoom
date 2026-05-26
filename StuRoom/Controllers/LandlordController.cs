@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
@@ -13,7 +14,8 @@ namespace StuRoom.Controllers;
 public class LandlordController(
     UserManager<ApplicationUser> userManager,
     ApplicationDbContext db,
-    ICloudinaryService cloudinary) : Controller
+    ICloudinaryService cloudinary,
+    IEmailSender emailSender) : Controller
 {
     private string CurrentUserId =>
         userManager.GetUserId(User)!;
@@ -539,6 +541,121 @@ public class LandlordController(
             ? $"Đã kích hoạt <strong>{config.Name}</strong>."
             : $"Đã tắt <strong>{config.Name}</strong>.";
         return RedirectToAction(nameof(FeeConfigs), new { buildingId = returnBuildingId });
+    }
+
+    // ════════════════════════════════════════════════════════
+    // VIEWING REQUESTS — Landlord side  (Task 16 + 17)
+    // ════════════════════════════════════════════════════════
+
+    public async Task<IActionResult> ViewingRequests(string? filter)
+    {
+        ViewData["ActiveMenu"] = "ViewingRequests";
+        ViewData["Filter"]     = filter ?? "pending";
+
+        var myBuildingIds = await db.Buildings
+            .Where(b => b.LandlordId == CurrentUserId)
+            .Select(b => b.Id).ToListAsync();
+
+        var query = db.ViewingRequests
+            .Include(v => v.Room).ThenInclude(r => r.Building)
+            .Include(v => v.Tenant)
+            .Where(v => myBuildingIds.Contains(v.Room.BuildingId));
+
+        query = filter switch
+        {
+            "confirmed"  => query.Where(v => v.Status == ViewingStatus.Confirmed || v.Status == ViewingStatus.Rescheduled),
+            "completed"  => query.Where(v => v.Status == ViewingStatus.Completed || v.Status == ViewingStatus.Cancelled),
+            _            => query.Where(v => v.Status == ViewingStatus.Pending)
+        };
+
+        var list = await query.OrderBy(v => v.ProposedTime).ToListAsync();
+        return View(list);
+    }
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> ConfirmViewing(int id, DateTime? confirmedTime)
+    {
+        var v = await GetOwnedViewing(id);
+        if (v == null) return NotFound();
+
+        v.Status        = ViewingStatus.Confirmed;
+        v.ConfirmedTime = confirmedTime ?? v.ProposedTime;
+        await db.SaveChangesAsync();
+
+        // Task 17 — email Tenant
+        await emailSender.SendEmailAsync(v.Tenant.Email!,
+            "Lịch xem phòng đã được xác nhận — StuRoom",
+            $"Xin chào <strong>{v.Tenant.FullName}</strong>,<br><br>" +
+            $"Lịch xem phòng <strong>{v.Room.RoomNumber}</strong> tại <strong>{v.Room.Building.Name}</strong> " +
+            $"đã được xác nhận vào lúc <strong>{v.ConfirmedTime:dd/MM/yyyy HH:mm}</strong>.<br><br>" +
+            "Vui lòng đến đúng giờ. Cảm ơn bạn!");
+
+        TempData["Success"] = "Đã xác nhận lịch hẹn và gửi email cho Tenant.";
+        return RedirectToAction(nameof(ViewingRequests));
+    }
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> RescheduleViewing(int id, DateTime newTime, string? landlordNote)
+    {
+        var v = await GetOwnedViewing(id);
+        if (v == null) return NotFound();
+
+        v.Status        = ViewingStatus.Rescheduled;
+        v.ConfirmedTime = newTime;
+        v.LandlordNote  = string.IsNullOrWhiteSpace(landlordNote) ? null : landlordNote.Trim();
+        await db.SaveChangesAsync();
+
+        // Task 17 — email Tenant
+        await emailSender.SendEmailAsync(v.Tenant.Email!,
+            "Chủ trọ đề xuất đổi giờ xem phòng — StuRoom",
+            $"Xin chào <strong>{v.Tenant.FullName}</strong>,<br><br>" +
+            $"Chủ trọ đề xuất đổi lịch xem phòng <strong>{v.Room.RoomNumber}</strong> " +
+            $"tại <strong>{v.Room.Building.Name}</strong> sang " +
+            $"<strong>{newTime:dd/MM/yyyy HH:mm}</strong>." +
+            (string.IsNullOrWhiteSpace(landlordNote) ? "" : $"<br>Ghi chú: {landlordNote}") +
+            "<br><br>Vui lòng vào StuRoom để xác nhận hoặc huỷ lịch.");
+
+        TempData["Success"] = "Đã đề xuất đổi giờ và gửi email cho Tenant.";
+        return RedirectToAction(nameof(ViewingRequests), new { filter = "confirmed" });
+    }
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> CancelViewing(int id, string? landlordNote)
+    {
+        var v = await GetOwnedViewing(id);
+        if (v == null) return NotFound();
+
+        v.Status       = ViewingStatus.Cancelled;
+        v.LandlordNote = string.IsNullOrWhiteSpace(landlordNote) ? null : landlordNote.Trim();
+        await db.SaveChangesAsync();
+
+        TempData["Warning"] = "Đã huỷ lịch hẹn.";
+        return RedirectToAction(nameof(ViewingRequests));
+    }
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> CompleteViewing(int id)
+    {
+        var v = await GetOwnedViewing(id);
+        if (v == null) return NotFound();
+
+        v.Status = ViewingStatus.Completed;
+        await db.SaveChangesAsync();
+
+        TempData["Success"] = "Đã đánh dấu lịch hẹn hoàn thành.";
+        return RedirectToAction(nameof(ViewingRequests), new { filter = "confirmed" });
+    }
+
+    private async Task<ViewingRequest?> GetOwnedViewing(int id)
+    {
+        var myBuildingIds = await db.Buildings
+            .Where(b => b.LandlordId == CurrentUserId)
+            .Select(b => b.Id).ToListAsync();
+
+        return await db.ViewingRequests
+            .Include(v => v.Room).ThenInclude(r => r.Building)
+            .Include(v => v.Tenant)
+            .FirstOrDefaultAsync(v => v.Id == id && myBuildingIds.Contains(v.Room.BuildingId));
     }
 
     // Helper: load FeeConfig only if it belongs to current landlord
