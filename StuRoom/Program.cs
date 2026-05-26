@@ -1,29 +1,70 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
+using StuRoom.Authorization;
 using StuRoom.Data;
 using StuRoom.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+// ── Database ───────────────────────────────────────────────────────────
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString));
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
-builder.Services.AddDefaultIdentity<ApplicationUser>(options => options.SignIn.RequireConfirmedAccount = true)
-    .AddRoles<Microsoft.AspNetCore.Identity.IdentityRole>()
-    .AddEntityFrameworkStores<ApplicationDbContext>();
+// ── Identity ───────────────────────────────────────────────────────────
+builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
+{
+    options.SignIn.RequireConfirmedAccount = true;
+})
+.AddRoles<Microsoft.AspNetCore.Identity.IdentityRole>()
+.AddEntityFrameworkStores<ApplicationDbContext>();
+
+// Cookie: redirect về trang AccessDenied tùy chỉnh
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.AccessDeniedPath = "/AccountStatus/AccessDenied";
+    options.LoginPath = "/Identity/Account/Login";
+});
+
+// ── Authorization ──────────────────────────────────────────────────────
+builder.Services.AddScoped<IAuthorizationHandler, LandlordApprovedHandler>();
+
+builder.Services.AddAuthorization(options =>
+{
+    // Chỉ Admin
+    options.AddPolicy("AdminOnly", policy =>
+        policy.RequireRole("Admin"));
+
+    // Landlord đã được Admin duyệt
+    options.AddPolicy("LandlordOnly", policy =>
+    {
+        policy.RequireRole("Landlord");
+        policy.AddRequirements(new LandlordApprovedRequirement());
+    });
+
+    // Tenant (chỉ cần role, không cần duyệt)
+    options.AddPolicy("TenantOnly", policy =>
+        policy.RequireRole("Tenant"));
+
+    // Landlord hoặc Admin — dùng cho các màn hình quản lý chung
+    options.AddPolicy("LandlordOrAdmin", policy =>
+        policy.RequireRole("Landlord", "Admin"));
+});
+
 builder.Services.AddControllersWithViews();
 
 var app = builder.Build();
 
-// ── Seed database ──────────────────────────────────────────────────
+// ── Seed database ──────────────────────────────────────────────────────
 using (var scope = app.Services.CreateScope())
 {
     await DbInitializer.SeedAsync(scope.ServiceProvider);
 }
 
-// Configure the HTTP request pipeline.
+// ── Pipeline ───────────────────────────────────────────────────────────
 if (app.Environment.IsDevelopment())
 {
     app.UseMigrationsEndPoint();
@@ -31,13 +72,13 @@ if (app.Environment.IsDevelopment())
 else
 {
     app.UseExceptionHandler("/Home/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 
 app.UseHttpsRedirection();
 app.UseRouting();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapStaticAssets();
