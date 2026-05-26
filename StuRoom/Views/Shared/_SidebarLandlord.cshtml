@@ -11,12 +11,14 @@
       <span>Dashboard</span>
     </a>
 
-    <a class="sidebar-link @(active == "Buildings" ? "active" : "")" href="#">
+    <a class="sidebar-link @(active == "Buildings" ? "active" : "")"
+       asp-controller="Landlord" asp-action="Buildings">
       <i class="bi bi-building"></i>
       <span>Tòa nhà</span>
     </a>
 
-    <a class="sidebar-link @(active == "Rooms" ? "active" : "")" href="#">
+    <a class="sidebar-link @(active == "Rooms" ? "active" : "")"
+       asp-controller="Landlord" asp-action="Rooms">
       <i class="bi bi-door-open"></i>
       <span>Phòng</span>
     </a>
@@ -71,10 +73,12 @@
       <a class="sidebar-link @(active == "Dashboard" ? "active" : "")" href="#">
         <i class="bi bi-grid-1x2"></i><span>Dashboard</span>
       </a>
-      <a class="sidebar-link @(active == "Buildings" ? "active" : "")" href="#">
+      <a class="sidebar-link @(active == "Buildings" ? "active" : "")"
+         asp-controller="Landlord" asp-action="Buildings">
         <i class="bi bi-building"></i><span>Tòa nhà</span>
       </a>
-      <a class="sidebar-link @(active == "Rooms" ? "active" : "")" href="#">
+      <a class="sidebar-link @(active == "Rooms" ? "active" : "")"
+         asp-controller="Landlord" asp-action="Rooms">
         <i class="bi bi-door-open"></i><span>Phòng</span>
       </a>
       <a class="sidebar-link @(active == "FeeConfigs" ? "active" : "")" href="#">

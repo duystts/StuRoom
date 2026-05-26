@@ -1,0 +1,212 @@
+@model List<StuRoom.Models.Building>
+@{
+    ViewData["Title"] = "Tòa nhà";
+}
+
+<div class="d-flex align-items-center justify-content-between mb-4">
+  <div>
+    <h4 class="fw-bold mb-0">Tòa nhà</h4>
+    <p class="text-muted small mb-0">Quản lý danh sách tòa nhà của bạn</p>
+  </div>
+  <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createBuildingModal">
+    <i class="bi bi-plus-lg me-1"></i>Thêm tòa nhà
+  </button>
+</div>
+
+@if (TempData["Success"] != null)
+{
+  <div class="alert alert-success alert-dismissible fade show py-2 small">
+    <i class="bi bi-check-circle me-1"></i>@Html.Raw(TempData["Success"])
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+}
+@if (TempData["Error"] != null)
+{
+  <div class="alert alert-danger alert-dismissible fade show py-2 small">
+    <i class="bi bi-exclamation-circle me-1"></i>@Html.Raw(TempData["Error"])
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+}
+
+@if (!Model.Any())
+{
+  <div class="text-center py-5 text-muted">
+    <i class="bi bi-building fs-1 d-block mb-2"></i>
+    Chưa có tòa nhà nào. Hãy thêm tòa nhà đầu tiên!
+  </div>
+}
+else
+{
+  <div class="row g-3">
+    @foreach (var b in Model)
+    {
+      <div class="col-md-6 col-xl-4">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-body">
+            <div class="d-flex align-items-start justify-content-between mb-2">
+              <div>
+                <h6 class="fw-bold mb-0">@b.Name</h6>
+                <div class="text-muted small mt-1">
+                  <i class="bi bi-geo-alt me-1"></i>@b.Address
+                </div>
+                @if (!string.IsNullOrWhiteSpace(b.Ward) || !string.IsNullOrWhiteSpace(b.District) || !string.IsNullOrWhiteSpace(b.Province))
+                {
+                  <div class="text-muted" style="font-size:11px">
+                    @(new[] { b.Ward, b.District, b.Province }.Where(s => !string.IsNullOrWhiteSpace(s)).Aggregate((a, c) => $"{a}, {c}"))
+                  </div>
+                }
+              </div>
+              <div class="d-flex gap-1">
+                <button class="btn btn-sm btn-outline-secondary"
+                        title="Sửa"
+                        onclick="openEditBuilding(@b.Id, '@Html.Raw(Html.Encode(b.Name))', '@Html.Raw(Html.Encode(b.Address))', '@Html.Raw(Html.Encode(b.Province))', '@Html.Raw(Html.Encode(b.District))', '@Html.Raw(Html.Encode(b.Ward))', '@Html.Raw(Html.Encode(b.Description ?? ""))')">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <form asp-action="DeleteBuilding" method="post" class="d-inline">
+                  <input type="hidden" name="id" value="@b.Id" />
+                  <button type="submit" class="btn btn-sm btn-outline-danger"
+                          title="Xoá"
+                          onclick="return confirm('Xoá tòa nhà @Html.Encode(b.Name)?')">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </form>
+              </div>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(b.Description))
+            {
+              <p class="small text-muted mb-2" style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">
+                @b.Description
+              </p>
+            }
+
+            <div class="d-flex align-items-center justify-content-between mt-3 pt-2 border-top">
+              <span class="small text-muted">
+                <i class="bi bi-door-open me-1"></i>@b.Rooms.Count phòng
+              </span>
+              <a asp-action="Rooms" asp-route-buildingId="@b.Id"
+                 class="btn btn-sm btn-outline-primary">
+                Xem phòng
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+  </div>
+}
+
+@* ── Modal: Thêm tòa nhà ── *@
+<div class="modal fade" id="createBuildingModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form asp-action="CreateBuilding" method="post">
+        @Html.AntiForgeryToken()
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold">Thêm tòa nhà</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Tên tòa nhà <span class="text-danger">*</span></label>
+            <input type="text" name="name" class="form-control" placeholder="VD: Nhà trọ Minh Tâm" required />
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Địa chỉ <span class="text-danger">*</span></label>
+            <input type="text" name="address" class="form-control" placeholder="Số nhà, tên đường" required />
+          </div>
+          <div class="row g-2 mb-3">
+            <div class="col-4">
+              <label class="form-label fw-semibold">Phường/Xã</label>
+              <input type="text" name="ward" class="form-control" placeholder="Phường/Xã" />
+            </div>
+            <div class="col-4">
+              <label class="form-label fw-semibold">Quận/Huyện</label>
+              <input type="text" name="district" class="form-control" placeholder="Quận/Huyện" />
+            </div>
+            <div class="col-4">
+              <label class="form-label fw-semibold">Tỉnh/Thành</label>
+              <input type="text" name="province" class="form-control" placeholder="Tỉnh/Thành" />
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Mô tả</label>
+            <textarea name="description" class="form-control" rows="2"
+                      placeholder="Ghi chú thêm về tòa nhà (tuỳ chọn)"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Huỷ</button>
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-plus-lg me-1"></i>Thêm
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+@* ── Modal: Sửa tòa nhà ── *@
+<div class="modal fade" id="editBuildingModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form asp-action="EditBuilding" method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="id" id="editBuildingId" />
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold">Sửa tòa nhà</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Tên tòa nhà <span class="text-danger">*</span></label>
+            <input type="text" name="name" id="editBuildingName" class="form-control" required />
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Địa chỉ <span class="text-danger">*</span></label>
+            <input type="text" name="address" id="editBuildingAddress" class="form-control" required />
+          </div>
+          <div class="row g-2 mb-3">
+            <div class="col-4">
+              <label class="form-label fw-semibold">Phường/Xã</label>
+              <input type="text" name="ward" id="editBuildingWard" class="form-control" />
+            </div>
+            <div class="col-4">
+              <label class="form-label fw-semibold">Quận/Huyện</label>
+              <input type="text" name="district" id="editBuildingDistrict" class="form-control" />
+            </div>
+            <div class="col-4">
+              <label class="form-label fw-semibold">Tỉnh/Thành</label>
+              <input type="text" name="province" id="editBuildingProvince" class="form-control" />
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Mô tả</label>
+            <textarea name="description" id="editBuildingDesc" class="form-control" rows="2"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Huỷ</button>
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-check-lg me-1"></i>Lưu
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+@section Scripts {
+  <script>
+    function openEditBuilding(id, name, address, province, district, ward, description) {
+      document.getElementById('editBuildingId').value      = id;
+      document.getElementById('editBuildingName').value    = name;
+      document.getElementById('editBuildingAddress').value = address;
+      document.getElementById('editBuildingProvince').value = province;
+      document.getElementById('editBuildingDistrict').value = district;
+      document.getElementById('editBuildingWard').value    = ward;
+      document.getElementById('editBuildingDesc').value    = description;
+      new bootstrap.Modal(document.getElementById('editBuildingModal')).show();
+    }
+  </script>
+}
