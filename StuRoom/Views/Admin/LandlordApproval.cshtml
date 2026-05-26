@@ -1,0 +1,250 @@
+@model StuRoom.Models.ViewModels.LandlordApprovalViewModel
+@{
+    ViewData["Title"] = "Duyệt tài khoản Landlord";
+}
+
+<div class="d-flex align-items-center justify-content-between mb-4">
+  <div>
+    <h4 class="mb-0 fw-bold">Duyệt tài khoản Landlord</h4>
+    <p class="text-muted small mb-0">Xem xét và phê duyệt tài khoản chủ trọ đăng ký mới</p>
+  </div>
+  <div class="d-flex gap-2">
+    <span class="badge bg-warning text-dark fs-6">@Model.Pending.Count chờ duyệt</span>
+    <span class="badge bg-success fs-6">@Model.Approved.Count đã duyệt</span>
+    <span class="badge bg-danger fs-6">@Model.Rejected.Count từ chối</span>
+  </div>
+</div>
+
+@* Toast thông báo *@
+@if (TempData["Success"] != null)
+{
+  <div class="alert alert-success alert-dismissible fade show py-2" role="alert">
+    <i class="bi bi-check-circle me-2"></i>@Html.Raw(TempData["Success"])
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+}
+@if (TempData["Warning"] != null)
+{
+  <div class="alert alert-warning alert-dismissible fade show py-2" role="alert">
+    <i class="bi bi-exclamation-triangle me-2"></i>@Html.Raw(TempData["Warning"])
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+}
+
+@* ── Tab navigation ── *@
+<ul class="nav nav-tabs mb-4" id="approvalTabs">
+  <li class="nav-item">
+    <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#pending">
+      Chờ duyệt
+      @if (Model.Pending.Count > 0)
+      {
+        <span class="badge bg-warning text-dark ms-1">@Model.Pending.Count</span>
+      }
+    </button>
+  </li>
+  <li class="nav-item">
+    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#approved">
+      Đã duyệt <span class="badge bg-secondary ms-1">@Model.Approved.Count</span>
+    </button>
+  </li>
+  <li class="nav-item">
+    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#rejected">
+      Từ chối <span class="badge bg-secondary ms-1">@Model.Rejected.Count</span>
+    </button>
+  </li>
+</ul>
+
+<div class="tab-content">
+
+  @* ── Tab: Chờ duyệt ── *@
+  <div class="tab-pane fade show active" id="pending">
+    @if (!Model.Pending.Any())
+    {
+      <div class="text-center py-5 text-muted">
+        <i class="bi bi-check2-all fs-1 d-block mb-2 text-success"></i>
+        Không có tài khoản nào đang chờ duyệt.
+      </div>
+    }
+    else
+    {
+      <div class="card border-0 shadow-sm">
+        <table class="table table-hover mb-0 align-middle">
+          <thead class="table-light">
+            <tr>
+              <th style="width:40px"></th>
+              <th>Họ tên / Email</th>
+              <th class="d-none d-md-table-cell">Ngày đăng ký</th>
+              <th style="width:220px">Hành động</th>
+            </tr>
+          </thead>
+          <tbody>
+            @foreach (var item in Model.Pending)
+            {
+              <tr>
+                <td>
+                  <img src="@(string.IsNullOrEmpty(item.AvatarUrl) ? "/img/avatar-default.svg" : item.AvatarUrl)"
+                       onerror="this.src='/img/avatar-default.svg'"
+                       class="rounded-circle border" width="36" height="36"
+                       style="object-fit:cover" alt="" />
+                </td>
+                <td>
+                  <div class="fw-semibold small">@item.FullName</div>
+                  <div class="text-muted" style="font-size:12px">@item.Email</div>
+                </td>
+                <td class="d-none d-md-table-cell text-muted small">
+                  @item.CreatedAt.ToString("dd/MM/yyyy")
+                </td>
+                <td>
+                  <div class="d-flex gap-2">
+                    @* Approve *@
+                    <form asp-action="ApproveLandlord" asp-controller="Admin" method="post">
+                      <input type="hidden" name="id" value="@item.Id" />
+                      <button type="submit" class="btn btn-success btn-sm"
+                              onclick="return confirm('Duyệt tài khoản @item.FullName?')">
+                        <i class="bi bi-check-lg me-1"></i>Duyệt
+                      </button>
+                    </form>
+
+                    @* Reject — modal trigger *@
+                    <button type="button" class="btn btn-outline-danger btn-sm"
+                            data-bs-toggle="modal"
+                            data-bs-target="#rejectModal"
+                            data-id="@item.Id"
+                            data-name="@item.FullName">
+                      <i class="bi bi-x-lg me-1"></i>Từ chối
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+
+  @* ── Tab: Đã duyệt ── *@
+  <div class="tab-pane fade" id="approved">
+    @if (!Model.Approved.Any())
+    {
+      <div class="text-center py-5 text-muted">
+        <i class="bi bi-people fs-1 d-block mb-2"></i>Chưa có tài khoản nào được duyệt.
+      </div>
+    }
+    else
+    {
+      <div class="card border-0 shadow-sm">
+        <table class="table table-hover mb-0 align-middle">
+          <thead class="table-light">
+            <tr>
+              <th style="width:40px"></th>
+              <th>Họ tên / Email</th>
+              <th>Trạng thái</th>
+            </tr>
+          </thead>
+          <tbody>
+            @foreach (var item in Model.Approved)
+            {
+              <tr>
+                <td>
+                  <img src="@(string.IsNullOrEmpty(item.AvatarUrl) ? "/img/avatar-default.svg" : item.AvatarUrl)"
+                       onerror="this.src='/img/avatar-default.svg'"
+                       class="rounded-circle border" width="36" height="36"
+                       style="object-fit:cover" alt="" />
+                </td>
+                <td>
+                  <div class="fw-semibold small">@item.FullName</div>
+                  <div class="text-muted" style="font-size:12px">@item.Email</div>
+                </td>
+                <td><span class="badge bg-success">Đã duyệt</span></td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+
+  @* ── Tab: Từ chối ── *@
+  <div class="tab-pane fade" id="rejected">
+    @if (!Model.Rejected.Any())
+    {
+      <div class="text-center py-5 text-muted">
+        <i class="bi bi-slash-circle fs-1 d-block mb-2"></i>Chưa có tài khoản nào bị từ chối.
+      </div>
+    }
+    else
+    {
+      <div class="card border-0 shadow-sm">
+        <table class="table table-hover mb-0 align-middle">
+          <thead class="table-light">
+            <tr>
+              <th style="width:40px"></th>
+              <th>Họ tên / Email</th>
+              <th>Trạng thái</th>
+            </tr>
+          </thead>
+          <tbody>
+            @foreach (var item in Model.Rejected)
+            {
+              <tr>
+                <td>
+                  <img src="@(string.IsNullOrEmpty(item.AvatarUrl) ? "/img/avatar-default.svg" : item.AvatarUrl)"
+                       onerror="this.src='/img/avatar-default.svg'"
+                       class="rounded-circle border" width="36" height="36"
+                       style="object-fit:cover" alt="" />
+                </td>
+                <td>
+                  <div class="fw-semibold small">@item.FullName</div>
+                  <div class="text-muted" style="font-size:12px">@item.Email</div>
+                </td>
+                <td><span class="badge bg-danger">Bị từ chối</span></td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+
+</div>
+
+@* ── Modal: Lý do từ chối ── *@
+<div class="modal fade" id="rejectModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      <form asp-action="RejectLandlord" asp-controller="Admin" method="post">
+        <input type="hidden" id="rejectUserId" name="id" />
+        <div class="modal-header border-0 pb-0">
+          <h5 class="modal-title fw-bold">Từ chối tài khoản</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p class="text-muted small mb-3">
+            Tài khoản của <strong id="rejectUserName"></strong> sẽ bị khoá và nhận email thông báo.
+          </p>
+          <label class="form-label fw-semibold small">Lý do từ chối <span class="text-muted fw-normal">(tuỳ chọn)</span></label>
+          <textarea name="reason" class="form-control" rows="3"
+                    placeholder="VD: Thông tin không đầy đủ, không đủ điều kiện..."></textarea>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Huỷ</button>
+          <button type="submit" class="btn btn-danger btn-sm">
+            <i class="bi bi-x-lg me-1"></i>Xác nhận từ chối
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+@section Scripts {
+  <script>
+    // Truyền id + name vào modal từ chối
+    document.getElementById('rejectModal')?.addEventListener('show.bs.modal', function (e) {
+      const btn = e.relatedTarget;
+      document.getElementById('rejectUserId').value  = btn.dataset.id;
+      document.getElementById('rejectUserName').textContent = btn.dataset.name;
+    });
+  </script>
+}
