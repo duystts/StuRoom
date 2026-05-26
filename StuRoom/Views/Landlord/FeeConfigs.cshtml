@@ -1,0 +1,454 @@
+@model List<StuRoom.Models.FeeConfig>
+@using StuRoom.Models
+@{
+    ViewData["Title"] = "Cấu hình phí";
+    var buildings  = (List<Building>)ViewBag.Buildings;
+    var buildingId = (int?)ViewBag.BuildingId;
+    var rooms      = (IEnumerable<dynamic>)ViewBag.Rooms;
+
+    var categoryLabel = new Dictionary<FeeCategory, (string name, string icon, string css)>
+    {
+        [FeeCategory.Rent]        = ("Tiền thuê",  "bi-house",          "bg-primary-subtle text-primary"),
+        [FeeCategory.Electricity] = ("Điện",        "bi-lightning",      "bg-warning-subtle text-warning"),
+        [FeeCategory.Water]       = ("Nước",         "bi-droplet",        "bg-info-subtle text-info"),
+        [FeeCategory.Internet]    = ("Internet",     "bi-wifi",           "bg-success-subtle text-success"),
+        [FeeCategory.Parking]     = ("Đỗ xe",        "bi-car-front",      "bg-secondary-subtle text-secondary"),
+        [FeeCategory.Other]       = ("Khác",         "bi-three-dots",     "bg-light text-muted"),
+    };
+}
+
+<div class="d-flex align-items-center justify-content-between mb-4">
+  <div>
+    <h4 class="fw-bold mb-0">Cấu hình phí</h4>
+    <p class="text-muted small mb-0">Thiết lập giá thuê và các loại phí cho tòa nhà / phòng</p>
+  </div>
+  @if (buildings.Any())
+  {
+    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createFeeModal">
+      <i class="bi bi-plus-lg me-1"></i>Thêm cấu hình
+    </button>
+  }
+</div>
+
+@if (TempData["Success"] != null)
+{
+  <div class="alert alert-success alert-dismissible fade show py-2 small">
+    <i class="bi bi-check-circle me-1"></i>@Html.Raw(TempData["Success"])
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+}
+@if (TempData["Error"] != null)
+{
+  <div class="alert alert-danger alert-dismissible fade show py-2 small">
+    <i class="bi bi-exclamation-circle me-1"></i>@Html.Raw(TempData["Error"])
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+}
+
+@* ── Bộ lọc tòa nhà ── *@
+@if (buildings.Any())
+{
+  <div class="d-flex flex-wrap gap-2 mb-3">
+    <a asp-action="FeeConfigs"
+       class="btn btn-sm @(buildingId == null ? "btn-primary" : "btn-outline-secondary")">
+      Tất cả
+    </a>
+    @foreach (var b in buildings)
+    {
+      <a asp-action="FeeConfigs" asp-route-buildingId="@b.Id"
+         class="btn btn-sm @(buildingId == b.Id ? "btn-primary" : "btn-outline-secondary")">
+        @b.Name
+      </a>
+    }
+  </div>
+}
+
+@if (!buildings.Any())
+{
+  <div class="text-center py-5 text-muted">
+    <i class="bi bi-building fs-1 d-block mb-2"></i>
+    Bạn chưa có tòa nhà nào. <a asp-controller="Landlord" asp-action="Buildings">Thêm tòa nhà trước</a>.
+  </div>
+}
+else if (!Model.Any())
+{
+  <div class="text-center py-5 text-muted">
+    <i class="bi bi-sliders fs-1 d-block mb-2"></i>
+    Chưa có cấu hình phí nào@(buildingId.HasValue ? " cho tòa nhà này" : "").
+  </div>
+}
+else
+{
+  <div class="card border-0 shadow-sm">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>Tên phí</th>
+          <th style="width:110px">Loại phí</th>
+          <th style="width:110px">Cách tính</th>
+          <th style="width:120px">Đơn giá</th>
+          <th style="width:70px">Đơn vị</th>
+          <th>Áp dụng cho</th>
+          <th style="width:80px">Trạng thái</th>
+          <th style="width:110px"></th>
+        </tr>
+      </thead>
+      <tbody>
+        @foreach (var f in Model)
+        {
+          var (catName, catIcon, catCss) = categoryLabel[f.FeeCategory];
+          var scopeLabel = f.BuildingId.HasValue
+              ? $"<i class='bi bi-building me-1'></i>{f.Building?.Name}"
+              : $"<i class='bi bi-door-open me-1'></i>{f.Room?.Building?.Name} — {f.Room?.RoomNumber}";
+          <tr class="@(!f.IsActive ? "text-muted" : "")">
+            <td class="fw-semibold @(!f.IsActive ? "text-decoration-line-through" : "")">@f.Name</td>
+            <td>
+              <span class="badge @catCss" style="font-size:11px">
+                <i class="bi @catIcon me-1"></i>@catName
+              </span>
+            </td>
+            <td class="small">
+              @if (f.CalcType == CalcType.Fixed)
+              {
+                <span><i class="bi bi-tag me-1"></i>Cố định</span>
+              }
+              else
+              {
+                <span><i class="bi bi-calculator me-1"></i>Theo số đo</span>
+              }
+            </td>
+            <td class="fw-semibold">
+              @f.UnitPrice.ToString("N0") <span class="text-muted fw-normal small">₫</span>
+            </td>
+            <td class="small text-muted">/@f.Unit</td>
+            <td class="small">@Html.Raw(scopeLabel)</td>
+            <td>
+              @if (f.IsActive)
+              {
+                <span class="badge bg-success-subtle text-success border border-success-subtle">Đang dùng</span>
+              }
+              else
+              {
+                <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">Tắt</span>
+              }
+            </td>
+            <td>
+              <div class="d-flex gap-1">
+                @* Toggle *@
+                <form asp-action="ToggleFeeConfig" method="post">
+                  @Html.AntiForgeryToken()
+                  <input type="hidden" name="id" value="@f.Id" />
+                  <input type="hidden" name="returnBuildingId" value="@buildingId" />
+                  <button type="submit"
+                          class="btn btn-sm @(f.IsActive ? "btn-outline-warning" : "btn-outline-success")"
+                          title="@(f.IsActive ? "Tắt" : "Bật")">
+                    <i class="bi @(f.IsActive ? "bi-pause" : "bi-play")"></i>
+                  </button>
+                </form>
+                @* Edit *@
+                <button class="btn btn-sm btn-outline-secondary" title="Sửa"
+                        onclick="openEditFee(@f.Id, '@(f.BuildingId.HasValue ? "building" : "room")', @(f.BuildingId?.ToString() ?? "null"), @(f.RoomId?.ToString() ?? "null"), '@Html.Encode(f.Name)', '@f.FeeCategory', '@f.CalcType', @f.UnitPrice.ToString("G", System.Globalization.CultureInfo.InvariantCulture), '@Html.Encode(f.Unit)', @f.IsActive.ToString().ToLower(), @f.SortOrder)">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                @* Delete *@
+                <form asp-action="DeleteFeeConfig" method="post" class="d-inline">
+                  @Html.AntiForgeryToken()
+                  <input type="hidden" name="id" value="@f.Id" />
+                  <input type="hidden" name="returnBuildingId" value="@buildingId" />
+                  <button type="submit" class="btn btn-sm btn-outline-danger" title="Xoá"
+                          onclick="return confirm('Xoá cấu hình @Html.Encode(f.Name)?')">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+}
+
+@* ══════ Modal: Thêm cấu hình ══════ *@
+<div class="modal fade" id="createFeeModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form asp-action="CreateFeeConfig" method="post" id="createFeeForm">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="returnBuildingId" value="@buildingId" />
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold">Thêm cấu hình phí</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+
+          @* Scope *@
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Áp dụng cho</label>
+            <div class="d-flex gap-3">
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="scope" id="scopeBuildingC"
+                       value="building" checked onchange="toggleScopeCreate()" />
+                <label class="form-check-label" for="scopeBuildingC">
+                  <i class="bi bi-building me-1"></i>Tòa nhà
+                </label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="scope" id="scopeRoomC"
+                       value="room" onchange="toggleScopeCreate()" />
+                <label class="form-check-label" for="scopeRoomC">
+                  <i class="bi bi-door-open me-1"></i>Phòng (ghi đè)
+                </label>
+              </div>
+            </div>
+          </div>
+
+          @* Building select *@
+          <div class="mb-3" id="createBuildingWrap">
+            <label class="form-label fw-semibold">Tòa nhà <span class="text-danger">*</span></label>
+            <select name="buildingId" id="createFeeBuildingSelect" class="form-select" required
+                    onchange="filterCreateRooms(this.value)">
+              <option value="">— Chọn tòa nhà —</option>
+              @foreach (var b in buildings)
+              {
+                if (buildingId == b.Id)
+                {
+                  <option value="@b.Id" selected>@b.Name</option>
+                }
+                else
+                {
+                  <option value="@b.Id">@b.Name</option>
+                }
+              }
+            </select>
+          </div>
+
+          @* Room select (hidden by default) *@
+          <div class="mb-3 d-none" id="createRoomWrap">
+            <label class="form-label fw-semibold">Phòng <span class="text-danger">*</span></label>
+            <select name="roomId" id="createFeeRoomSelect" class="form-select">
+              <option value="">— Chọn tòa nhà trước —</option>
+            </select>
+          </div>
+
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <label class="form-label fw-semibold">Loại phí <span class="text-danger">*</span></label>
+              <select name="feeCategory" id="createFeeCategory" class="form-select"
+                      onchange="applyDefaultUnit('create', this.value)">
+                <option value="Rent">🏠 Tiền thuê</option>
+                <option value="Electricity">⚡ Điện</option>
+                <option value="Water">💧 Nước</option>
+                <option value="Internet">📶 Internet</option>
+                <option value="Parking">🚗 Đỗ xe</option>
+                <option value="Other">➕ Khác</option>
+              </select>
+            </div>
+            <div class="col-6">
+              <label class="form-label fw-semibold">Cách tính <span class="text-danger">*</span></label>
+              <select name="calcType" id="createCalcType" class="form-select">
+                <option value="Fixed">Cố định</option>
+                <option value="PerUnit">Theo số đo</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Tên hiển thị <span class="text-danger">*</span></label>
+            <input type="text" name="name" id="createFeeName" class="form-control"
+                   placeholder="VD: Tiền điện tháng" required />
+          </div>
+
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <label class="form-label fw-semibold">Đơn giá (₫) <span class="text-danger">*</span></label>
+              <input type="number" name="unitPrice" class="form-control"
+                     placeholder="VD: 3500" min="0" step="100" required />
+            </div>
+            <div class="col-3">
+              <label class="form-label fw-semibold">Đơn vị</label>
+              <input type="text" name="unit" id="createFeeUnit" class="form-control"
+                     placeholder="kWh" />
+            </div>
+            <div class="col-3">
+              <label class="form-label fw-semibold">Thứ tự</label>
+              <input type="number" name="sortOrder" class="form-control" value="0" min="0" />
+            </div>
+          </div>
+
+          <div class="form-check mb-2">
+            <input class="form-check-input" type="checkbox" name="isActive" id="createIsActive"
+                   value="true" checked />
+            <label class="form-check-label" for="createIsActive">Kích hoạt ngay</label>
+          </div>
+
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Huỷ</button>
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-plus-lg me-1"></i>Thêm
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+@* ══════ Modal: Sửa cấu hình ══════ *@
+<div class="modal fade" id="editFeeModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form asp-action="EditFeeConfig" method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="id" id="editFeeId" />
+        <input type="hidden" name="returnBuildingId" value="@buildingId" />
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold">Sửa cấu hình phí</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-2">
+            <span class="badge bg-secondary-subtle text-secondary" id="editScopeLabel"></span>
+          </div>
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <label class="form-label fw-semibold">Loại phí</label>
+              <select name="feeCategory" id="editFeeCategory" class="form-select"
+                      onchange="applyDefaultUnit('edit', this.value)">
+                <option value="Rent">🏠 Tiền thuê</option>
+                <option value="Electricity">⚡ Điện</option>
+                <option value="Water">💧 Nước</option>
+                <option value="Internet">📶 Internet</option>
+                <option value="Parking">🚗 Đỗ xe</option>
+                <option value="Other">➕ Khác</option>
+              </select>
+            </div>
+            <div class="col-6">
+              <label class="form-label fw-semibold">Cách tính</label>
+              <select name="calcType" id="editCalcType" class="form-select">
+                <option value="Fixed">Cố định</option>
+                <option value="PerUnit">Theo số đo</option>
+              </select>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Tên hiển thị <span class="text-danger">*</span></label>
+            <input type="text" name="name" id="editFeeName" class="form-control" required />
+          </div>
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <label class="form-label fw-semibold">Đơn giá (₫)</label>
+              <input type="number" name="unitPrice" id="editUnitPrice" class="form-control"
+                     min="0" step="100" required />
+            </div>
+            <div class="col-3">
+              <label class="form-label fw-semibold">Đơn vị</label>
+              <input type="text" name="unit" id="editFeeUnit" class="form-control" />
+            </div>
+            <div class="col-3">
+              <label class="form-label fw-semibold">Thứ tự</label>
+              <input type="number" name="sortOrder" id="editSortOrder" class="form-control" min="0" />
+            </div>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="isActive" id="editIsActive" value="true" />
+            <label class="form-check-label" for="editIsActive">Đang kích hoạt</label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Huỷ</button>
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-check-lg me-1"></i>Lưu
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+@* Rooms data for JS *@
+<script id="roomsData" type="application/json">
+@Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+    ((IEnumerable<dynamic>)ViewBag.Rooms).Select(r => new {
+        id         = (int)r.Id,
+        roomNumber = (string)r.RoomNumber,
+        buildingId = (int)r.BuildingId,
+        buildingName = (string)r.BuildingName
+    })
+))
+</script>
+
+@section Scripts {
+<script>
+  // ── Room data ─────────────────────────────
+  const allRooms = JSON.parse(document.getElementById('roomsData').textContent);
+
+  // ── Default units by category ─────────────
+  const defaultUnits = {
+    Rent: 'tháng', Electricity: 'kWh', Water: 'm³',
+    Internet: 'tháng', Parking: 'tháng', Other: ''
+  };
+
+  function applyDefaultUnit(prefix, cat) {
+    const unitEl = document.getElementById(prefix + 'FeeUnit');
+    if (unitEl && !unitEl.dataset.userEdited) {
+      unitEl.value = defaultUnits[cat] ?? '';
+    }
+  }
+
+  // Mark unit as user-edited so we don't overwrite
+  ['createFeeUnit', 'editFeeUnit'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input', () => { el.dataset.userEdited = '1'; });
+  });
+
+  // ── Create modal: scope toggle ─────────────
+  function toggleScopeCreate() {
+    const isRoom = document.getElementById('scopeRoomC').checked;
+    document.getElementById('createBuildingWrap').classList.toggle('d-none', isRoom);
+    document.getElementById('createRoomWrap').classList.toggle('d-none', !isRoom);
+    document.querySelector('[name="buildingId"]').required = !isRoom;
+  }
+
+  // ── Create modal: filter rooms by building ──
+  function filterCreateRooms(buildingId) {
+    const sel = document.getElementById('createFeeRoomSelect');
+    sel.innerHTML = '<option value="">— Chọn phòng —</option>';
+    allRooms
+      .filter(r => r.buildingId == buildingId)
+      .forEach(r => {
+        const opt = document.createElement('option');
+        opt.value = r.id;
+        opt.textContent = r.roomNumber;
+        sel.appendChild(opt);
+      });
+  }
+
+  // Auto-fill name when category changes in create modal
+  document.getElementById('createFeeCategory')?.addEventListener('change', function () {
+    applyDefaultUnit('create', this.value);
+    const nameEl = document.getElementById('createFeeName');
+    if (!nameEl.value) {
+      nameEl.value = this.options[this.selectedIndex].text.replace(/^.\s/, '');
+    }
+  });
+
+  // ── Edit modal ─────────────────────────────
+  function openEditFee(id, scope, buildingId, roomId, name, category, calcType, unitPrice, unit, isActive, sortOrder) {
+    document.getElementById('editFeeId').value       = id;
+    document.getElementById('editFeeName').value     = name;
+    document.getElementById('editFeeCategory').value = category;
+    document.getElementById('editCalcType').value    = calcType;
+    document.getElementById('editUnitPrice').value   = unitPrice;
+    document.getElementById('editFeeUnit').value     = unit;
+    document.getElementById('editFeeUnit').dataset.userEdited = '1';
+    document.getElementById('editSortOrder').value   = sortOrder;
+    document.getElementById('editIsActive').checked  = isActive;
+
+    const scopeEl = document.getElementById('editScopeLabel');
+    scopeEl.textContent = scope === 'building' ? '🏢 Cấp tòa nhà' : '🚪 Cấp phòng (ghi đè)';
+
+    new bootstrap.Modal(document.getElementById('editFeeModal')).show();
+  }
+</script>
+}
