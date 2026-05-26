@@ -23,7 +23,8 @@
       <span>Phòng</span>
     </a>
 
-    <a class="sidebar-link @(active == "FeeConfigs" ? "active" : "")" href="#">
+    <a class="sidebar-link @(active == "FeeConfigs" ? "active" : "")"
+       asp-controller="Landlord" asp-action="FeeConfigs">
       <i class="bi bi-sliders"></i>
       <span>Cấu hình phí</span>
     </a>
@@ -81,7 +82,8 @@
          asp-controller="Landlord" asp-action="Rooms">
         <i class="bi bi-door-open"></i><span>Phòng</span>
       </a>
-      <a class="sidebar-link @(active == "FeeConfigs" ? "active" : "")" href="#">
+      <a class="sidebar-link @(active == "FeeConfigs" ? "active" : "")"
+         asp-controller="Landlord" asp-action="FeeConfigs">
         <i class="bi bi-sliders"></i><span>Cấu hình phí</span>
       </a>
       <div class="sidebar-section-label mt-3">Nghiệp vụ</div>

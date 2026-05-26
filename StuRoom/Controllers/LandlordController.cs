@@ -381,4 +381,183 @@ public class LandlordController(
         TempData["Success"] = "Đã lưu tiện ích phòng.";
         return RedirectToAction(nameof(RoomDetail), new { id });
     }
+
+    // ════════════════════════════════════════════════════════
+    // FEE CONFIGS  (Task 11)
+    // ════════════════════════════════════════════════════════
+
+    public async Task<IActionResult> FeeConfigs(int? buildingId)
+    {
+        ViewData["ActiveMenu"] = "FeeConfigs";
+
+        var myBuildings = await db.Buildings
+            .Where(b => b.LandlordId == CurrentUserId)
+            .OrderBy(b => b.Name)
+            .ToListAsync();
+
+        var myBuildingIds = myBuildings.Select(b => b.Id).ToList();
+
+        var query = db.FeeConfigs
+            .Include(f => f.Building)
+            .Include(f => f.Room)
+            .Where(f =>
+                (f.BuildingId != null && myBuildingIds.Contains(f.BuildingId.Value)) ||
+                (f.RoomId != null && db.Rooms
+                    .Where(r => myBuildingIds.Contains(r.BuildingId))
+                    .Select(r => r.Id)
+                    .Contains(f.RoomId.Value)));
+
+        if (buildingId.HasValue)
+            query = query.Where(f =>
+                f.BuildingId == buildingId ||
+                (f.Room != null && f.Room.BuildingId == buildingId));
+
+        var configs = await query
+            .OrderBy(f => f.BuildingId ?? f.Room!.BuildingId)
+            .ThenBy(f => f.SortOrder)
+            .ThenBy(f => f.Name)
+            .ToListAsync();
+
+        // Rooms for building select in modal
+        var myRooms = await db.Rooms
+            .Where(r => myBuildingIds.Contains(r.BuildingId))
+            .OrderBy(r => r.Building.Name).ThenBy(r => r.RoomNumber)
+            .Select(r => new { r.Id, r.RoomNumber, r.BuildingId, BuildingName = r.Building.Name })
+            .ToListAsync();
+
+        ViewBag.Buildings  = myBuildings;
+        ViewBag.BuildingId = buildingId;
+        ViewBag.Rooms      = myRooms;
+
+        return View(configs);
+    }
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> CreateFeeConfig(
+        string scope, int? buildingId, int? roomId,
+        string name, FeeCategory feeCategory, CalcType calcType,
+        decimal unitPrice, string unit, bool isActive, int sortOrder,
+        int? returnBuildingId)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            TempData["Error"] = "Tên phí không được để trống.";
+            return RedirectToAction(nameof(FeeConfigs), new { buildingId = returnBuildingId });
+        }
+
+        // Verify ownership
+        if (scope == "building")
+        {
+            var ok = await db.Buildings.AnyAsync(b => b.Id == buildingId && b.LandlordId == CurrentUserId);
+            if (!ok) return NotFound();
+            roomId = null;
+        }
+        else
+        {
+            var ok = await db.Rooms.Include(r => r.Building)
+                .AnyAsync(r => r.Id == roomId && r.Building.LandlordId == CurrentUserId);
+            if (!ok) return NotFound();
+            buildingId = null;
+        }
+
+        db.FeeConfigs.Add(new FeeConfig
+        {
+            BuildingId  = scope == "building" ? buildingId : null,
+            RoomId      = scope == "room" ? roomId : null,
+            Name        = name.Trim(),
+            FeeCategory = feeCategory,
+            CalcType    = calcType,
+            UnitPrice   = unitPrice,
+            Unit        = unit.Trim(),
+            IsActive    = isActive,
+            SortOrder   = sortOrder
+        });
+        await db.SaveChangesAsync();
+
+        TempData["Success"] = $"Đã thêm cấu hình phí <strong>{name.Trim()}</strong>.";
+        return RedirectToAction(nameof(FeeConfigs), new { buildingId = returnBuildingId });
+    }
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> EditFeeConfig(
+        int id, string name, FeeCategory feeCategory, CalcType calcType,
+        decimal unitPrice, string unit, bool isActive, int sortOrder,
+        int? returnBuildingId)
+    {
+        var config = await GetOwnedFeeConfig(id);
+        if (config == null) return NotFound();
+
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            TempData["Error"] = "Tên phí không được để trống.";
+            return RedirectToAction(nameof(FeeConfigs), new { buildingId = returnBuildingId });
+        }
+
+        config.Name        = name.Trim();
+        config.FeeCategory = feeCategory;
+        config.CalcType    = calcType;
+        config.UnitPrice   = unitPrice;
+        config.Unit        = unit.Trim();
+        config.IsActive    = isActive;
+        config.SortOrder   = sortOrder;
+        await db.SaveChangesAsync();
+
+        TempData["Success"] = $"Đã cập nhật <strong>{config.Name}</strong>.";
+        return RedirectToAction(nameof(FeeConfigs), new { buildingId = returnBuildingId });
+    }
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteFeeConfig(int id, int? returnBuildingId)
+    {
+        var config = await GetOwnedFeeConfig(id);
+        if (config == null) return NotFound();
+
+        var inUse = await db.InvoiceItems.AnyAsync(i => i.FeeConfigId == id);
+        if (inUse)
+        {
+            TempData["Error"] = $"Không thể xoá <strong>{config.Name}</strong> vì đã được dùng trong hoá đơn.";
+            return RedirectToAction(nameof(FeeConfigs), new { buildingId = returnBuildingId });
+        }
+
+        db.FeeConfigs.Remove(config);
+        await db.SaveChangesAsync();
+
+        TempData["Success"] = $"Đã xoá cấu hình phí <strong>{config.Name}</strong>.";
+        return RedirectToAction(nameof(FeeConfigs), new { buildingId = returnBuildingId });
+    }
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> ToggleFeeConfig(int id, int? returnBuildingId)
+    {
+        var config = await GetOwnedFeeConfig(id);
+        if (config == null) return NotFound();
+
+        config.IsActive = !config.IsActive;
+        await db.SaveChangesAsync();
+
+        TempData["Success"] = config.IsActive
+            ? $"Đã kích hoạt <strong>{config.Name}</strong>."
+            : $"Đã tắt <strong>{config.Name}</strong>.";
+        return RedirectToAction(nameof(FeeConfigs), new { buildingId = returnBuildingId });
+    }
+
+    // Helper: load FeeConfig only if it belongs to current landlord
+    private async Task<FeeConfig?> GetOwnedFeeConfig(int id)
+    {
+        var myBuildingIds = await db.Buildings
+            .Where(b => b.LandlordId == CurrentUserId)
+            .Select(b => b.Id)
+            .ToListAsync();
+
+        return await db.FeeConfigs
+            .Include(f => f.Building)
+            .Include(f => f.Room)
+            .FirstOrDefaultAsync(f => f.Id == id && (
+                (f.BuildingId != null && myBuildingIds.Contains(f.BuildingId.Value)) ||
+                (f.RoomId != null && db.Rooms
+                    .Where(r => myBuildingIds.Contains(r.BuildingId))
+                    .Select(r => r.Id)
+                    .Contains(f.RoomId.Value))
+            ));
+    }
 }
