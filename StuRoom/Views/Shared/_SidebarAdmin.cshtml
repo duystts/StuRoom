@@ -1,0 +1,78 @@
+@{
+    var active = ViewData["ActiveMenu"]?.ToString() ?? "";
+}
+
+<aside class="sturoom-sidebar" id="adminSidebar">
+  <nav>
+    <div class="sidebar-section-label">Tổng quan</div>
+
+    <a class="sidebar-link @(active == "AdminDashboard" ? "active" : "")" href="#">
+      <i class="bi bi-bar-chart-line"></i>
+      <span>Dashboard</span>
+    </a>
+
+    <div class="sidebar-section-label mt-3">Quản trị</div>
+
+    <a class="sidebar-link @(active == "ApproveLandlord" ? "active" : "")" href="#">
+      <i class="bi bi-person-check"></i>
+      <span>Duyệt Landlord</span>
+    </a>
+
+    <a class="sidebar-link @(active == "Amenities" ? "active" : "")" href="#">
+      <i class="bi bi-tags"></i>
+      <span>Amenities</span>
+    </a>
+
+    <a class="sidebar-link @(active == "ReviewModeration" ? "active" : "")" href="#">
+      <i class="bi bi-star-half"></i>
+      <span>Kiểm duyệt Review</span>
+    </a>
+
+    <div class="sidebar-section-label mt-3">Hệ thống</div>
+
+    <a class="sidebar-link @(active == "AllUsers" ? "active" : "")" href="#">
+      <i class="bi bi-people"></i>
+      <span>Người dùng</span>
+    </a>
+  </nav>
+</aside>
+
+@* Mobile offcanvas *@
+<button class="sturoom-sidebar-toggle d-lg-none"
+        type="button"
+        data-bs-toggle="offcanvas"
+        data-bs-target="#mobileAdminSidebar"
+        aria-label="Mở menu">
+  <i class="bi bi-layout-sidebar"></i>
+</button>
+
+<div class="offcanvas offcanvas-start sturoom-offcanvas" tabindex="-1" id="mobileAdminSidebar">
+  <div class="offcanvas-header border-bottom">
+    <span class="fw-bold" style="color:#6c8fff;font-size:18px">Stu<span style="color:#fff">Room</span>
+      <small class="text-muted ms-2" style="font-size:12px">Admin</small>
+    </span>
+    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+  </div>
+  <div class="offcanvas-body p-0">
+    <nav>
+      <div class="sidebar-section-label">Tổng quan</div>
+      <a class="sidebar-link @(active == "AdminDashboard" ? "active" : "")" href="#">
+        <i class="bi bi-bar-chart-line"></i><span>Dashboard</span>
+      </a>
+      <div class="sidebar-section-label mt-3">Quản trị</div>
+      <a class="sidebar-link @(active == "ApproveLandlord" ? "active" : "")" href="#">
+        <i class="bi bi-person-check"></i><span>Duyệt Landlord</span>
+      </a>
+      <a class="sidebar-link @(active == "Amenities" ? "active" : "")" href="#">
+        <i class="bi bi-tags"></i><span>Amenities</span>
+      </a>
+      <a class="sidebar-link @(active == "ReviewModeration" ? "active" : "")" href="#">
+        <i class="bi bi-star-half"></i><span>Kiểm duyệt Review</span>
+      </a>
+      <div class="sidebar-section-label mt-3">Hệ thống</div>
+      <a class="sidebar-link @(active == "AllUsers" ? "active" : "")" href="#">
+        <i class="bi bi-people"></i><span>Người dùng</span>
+      </a>
+    </nav>
+  </div>
+</div>
