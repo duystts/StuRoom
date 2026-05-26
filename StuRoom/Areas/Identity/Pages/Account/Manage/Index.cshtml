@@ -1,0 +1,74 @@
+@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Thông tin cá nhân";
+    ViewData["ActivePage"] = ManageNavPages.Index;
+}
+
+<h4 class="mb-1">@ViewData["Title"]</h4>
+<p class="text-muted small mb-4">Cập nhật họ tên, số điện thoại và ảnh đại diện của bạn.</p>
+<partial name="_StatusMessage" for="StatusMessage" />
+
+<div class="row">
+  <div class="col-md-7">
+    <form id="profile-form" method="post">
+      <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small" role="alert"></div>
+
+      @* ── Avatar preview ── *@
+      <div class="mb-4 d-flex align-items-center gap-3">
+        <img id="avatarPreview"
+             src="@(Model.Input?.AvatarUrl ?? "/img/avatar-default.svg")"
+             onerror="this.src='/img/avatar-default.svg'"
+             alt="Ảnh đại diện"
+             class="rounded-circle border"
+             width="72" height="72"
+             style="object-fit:cover" />
+        <div class="flex-grow-1">
+          <label asp-for="Input.AvatarUrl" class="form-label fw-semibold small mb-1">URL ảnh đại diện</label>
+          <input asp-for="Input.AvatarUrl" class="form-control form-control-sm"
+                 placeholder="https://..." id="avatarUrlInput" />
+          <span asp-validation-for="Input.AvatarUrl" class="text-danger small"></span>
+          <div class="text-muted" style="font-size:11px;margin-top:3px">
+            Tính năng upload ảnh sẽ được bổ sung sau (Cloudinary).
+          </div>
+        </div>
+      </div>
+
+      @* ── Email (readonly) ── *@
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Email</label>
+        <input value="@Model.Email" class="form-control" disabled />
+        <div class="text-muted" style="font-size:11px;margin-top:3px">Email không thể thay đổi.</div>
+      </div>
+
+      @* ── Họ tên ── *@
+      <div class="mb-3">
+        <label asp-for="Input.FullName" class="form-label fw-semibold"></label>
+        <input asp-for="Input.FullName" class="form-control" placeholder="Nguyễn Văn A" />
+        <span asp-validation-for="Input.FullName" class="text-danger small"></span>
+      </div>
+
+      @* ── Số điện thoại ── *@
+      <div class="mb-4">
+        <label asp-for="Input.PhoneNumber" class="form-label fw-semibold"></label>
+        <input asp-for="Input.PhoneNumber" class="form-control" placeholder="0912 345 678" type="tel" />
+        <span asp-validation-for="Input.PhoneNumber" class="text-danger small"></span>
+      </div>
+
+      <button id="update-profile-button" type="submit" class="btn btn-primary fw-semibold px-4">
+        Lưu thay đổi
+      </button>
+    </form>
+  </div>
+</div>
+
+@section Scripts {
+  <partial name="_ValidationScriptsPartial" />
+  <script>
+    // Live preview ảnh đại diện khi thay URL
+    document.getElementById('avatarUrlInput')?.addEventListener('input', function () {
+      const preview = document.getElementById('avatarPreview');
+      preview.src = this.value || '/img/avatar-default.svg';
+    });
+  </script>
+}
