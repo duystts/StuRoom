@@ -17,6 +17,8 @@
 }
 
 <div class="container py-5">
+@* Hidden antiforgery token for AJAX *@
+@Html.AntiForgeryToken()
   
   @* Breadcrumb *@
   <nav aria-label="breadcrumb" class="mb-4">
@@ -710,6 +712,7 @@ function toggleDetailFav(roomId) {
     $.ajax({
       url: '@Url.Action("ToggleFavorite", "Rooms")',
       type: 'POST',
+      headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() },
       data: { roomId: roomId },
       success: function(response) {
         if (response.success) {

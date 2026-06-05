@@ -6,6 +6,8 @@
 }
 
 <div class="container-fluid py-5">
+@* Hidden form for AJAX anti-forgery token *@
+@Html.AntiForgeryToken()
   <div class="row g-4">
 
     @* ══════ Sidebar bộ lọc (Sticky) ══════ *@
@@ -513,7 +515,7 @@
     {
       <text>
       if (confirm("@Localizer["Bạn cần đăng nhập để lưu phòng yêu thích. Đăng nhập ngay?"]")) {
-        window.location.href = '@Url.Page("/Account/Login", new { area = "Identity", returnUrl = Context.Request.Path })';
+        window.location.href = '@Url.Page("/Account/Login", new { area = "Identity" })?returnUrl=' + encodeURIComponent('@Context.Request.Path' + '?autoFav=' + roomId);
       }
       </text>
     }
@@ -523,6 +525,7 @@
       $.ajax({
         url: '@Url.Action("ToggleFavorite", "Rooms")',
         type: 'POST',
+        headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() },
         data: { roomId: roomId },
         success: function(response) {
           if (response.success) {
@@ -542,6 +545,37 @@
       });
       </text>
     }
+  }
+
+  // Auto-favorite after login redirect
+  @if (User.Identity!.IsAuthenticated)
+  {
+    <text>
+  const urlParams = new URLSearchParams(window.location.search);
+  const autoFavId = parseInt(urlParams.get('autoFav'));
+  if (autoFavId) {
+    const favBtn = document.querySelector(`[onclick*="handleFavToggle(event, ${autoFavId},"]`);
+    if (favBtn) {
+      // Remove query param from URL without reload
+      const newUrl = window.location.pathname + window.location.search.replace(/[?&]autoFav=\d+/, '').replace(/^&/, '?');
+      history.replaceState(null, '', newUrl || window.location.pathname);
+      // Trigger the favorite
+      $.ajax({
+        url: '@Url.Action("ToggleFavorite", "Rooms")',
+        type: 'POST',
+        headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() },
+        data: { roomId: autoFavId },
+        success: function(response) {
+          if (response.success && response.isFavorite && favBtn) {
+            favBtn.classList.add('active');
+            const heart = favBtn.querySelector('i');
+            if (heart) heart.className = 'bi bi-heart-fill text-danger';
+          }
+        }
+      });
+    }
+  }
+    </text>
   }
 </script>
 }

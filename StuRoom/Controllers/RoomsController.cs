@@ -248,6 +248,7 @@ public class RoomsController(ApplicationDbContext db,
 
     [HttpPost]
     [Authorize]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> ToggleFavorite(int roomId)
     {
         var userId = userManager.GetUserId(User);
