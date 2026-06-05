@@ -747,5 +747,91 @@ html[data-theme="dark"] .compare-drawer {
   transform: scale(1.15);
 }
 
+/* ── Skeleton Loaders ── */
+.skeleton-card {
+  overflow: hidden;
+  background-color: var(--card-bg) !important;
+  border: 1px solid var(--card-border) !important;
+}
+
+.skeleton-img,
+.skeleton-title,
+.skeleton-text-short,
+.skeleton-badge,
+.skeleton-price,
+.skeleton-button {
+  background: linear-gradient(
+    90deg,
+    rgba(226, 232, 240, 0.6) 25%,
+    rgba(241, 245, 249, 0.9) 50%,
+    rgba(226, 232, 240, 0.6) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s infinite linear;
+  border-radius: 8px;
+}
+
+[data-theme="dark"] .skeleton-img,
+[data-theme="dark"] .skeleton-title,
+[data-theme="dark"] .skeleton-text-short,
+[data-theme="dark"] .skeleton-badge,
+[data-theme="dark"] .skeleton-price,
+[data-theme="dark"] .skeleton-button {
+  background: linear-gradient(
+    90deg,
+    rgba(51, 65, 85, 0.6) 25%,
+    rgba(71, 85, 105, 0.9) 50%,
+    rgba(51, 65, 85, 0.6) 75%
+  );
+  background-size: 200% 100%;
+}
+
+.skeleton-img {
+  height: 200px;
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.skeleton-title {
+  height: 20px;
+  width: 85%;
+  margin-bottom: 12px;
+}
+
+.skeleton-text-short {
+  height: 14px;
+  width: 60%;
+  margin-bottom: 20px;
+}
+
+.skeleton-badge {
+  height: 24px;
+  width: 60px;
+  border-radius: 12px;
+}
+
+.skeleton-price {
+  height: 24px;
+  width: 80px;
+}
+
+.skeleton-button {
+  height: 32px;
+  width: 80px;
+  border-radius: 16px;
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+
 
 
