@@ -6,13 +6,29 @@ using StuRoom.Models.ViewModels;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Identity;
 
 namespace StuRoom.Controllers
 {
-    public class HomeController(ApplicationDbContext db) : Controller
+    public class HomeController(
+        ApplicationDbContext db,
+        UserManager<ApplicationUser> userManager) : Controller
     {
         public async Task<IActionResult> Index()
         {
+            if (User.Identity!.IsAuthenticated)
+            {
+                var userId = userManager.GetUserId(User);
+                ViewBag.FavoriteRoomIds = await db.FavoriteRooms
+                    .Where(f => f.TenantId == userId)
+                    .Select(f => f.RoomId)
+                    .ToListAsync();
+            }
+            else
+            {
+                ViewBag.FavoriteRoomIds = new List<int>();
+            }
+
             var rooms = await db.Rooms
                 .Include(r => r.Building)
                 .Include(r => r.Images)

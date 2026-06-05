@@ -55,11 +55,11 @@
             <div class="card border-0 shadow-sm h-100 room-card">
 
               @* Image & Badges *@
-              <div class="position-relative overflow-hidden" style="height: 180px;">
+              <div class="position-relative overflow-hidden card-img-wrapper" style="height: 180px;">
                 @if (room.PrimaryImageUrl != null)
                 {
                   <img src="@room.PrimaryImageUrl" alt="@room.BuildingName"
-                       class="w-100 h-100" style="object-fit:cover" />
+                       class="w-100 h-100 room-card-img" style="object-fit:cover" />
                 }
                 else
                 {
@@ -69,13 +69,14 @@
                 }
 
                 @* Badges *@
-                <div class="position-absolute top-0 start-0 m-3 d-flex gap-2">
+                <div class="position-absolute top-0 start-0 m-3 d-flex gap-2" style="z-index: 2;">
                   <span class="badge badge-category">@categoryLabel</span>
                 </div>
 
                 @* Favorite heart icon *@
                 <button type="button" 
                         class="btn btn-fav active position-absolute top-0 end-0 m-3 d-flex align-items-center justify-content-center shadow-sm"
+                        style="z-index: 2;"
                         onclick="toggleFavorite(event, @room.Id)">
                   <i class="bi bi-heart-fill text-danger"></i>
                 </button>
@@ -104,11 +105,11 @@
                 @* Footer *@
                 <div class="d-flex align-items-center justify-content-between pt-2 border-top">
                   <div>
-                    <span class="text-muted text-uppercase fw-semibold d-block" style="font-size: 9px; letter-spacing: 0.05em; margin-bottom: 2px;">@Localizer["Giá thuê"]</span>
+                    <span class="text-muted text-uppercase fw-semibold d-block" style="font-size: 9px; letter-spacing: 0.05em; margin-bottom: 2.5px;">@Localizer["Giá thuê"]</span>
                     @if (room.RentPrice.HasValue)
                     {
-                      <div class="fw-bold text-primary card-room-price mb-0" style="font-size: 17px;">
-                        @((room.RentPrice.Value / 1000000.0m).ToString("0.#")) <span class="fs-6 fw-semibold">Tr</span><span class="text-muted fw-normal" style="font-size: 11px;">/@Localizer["tháng"]</span>
+                      <div class="card-room-price mb-0">
+                        <span class="price-value">@((room.RentPrice.Value / 1000000.0m).ToString("0.#"))</span> <span class="price-unit">@Localizer["Tr"]</span><span class="price-period">/@Localizer["tháng"]</span>
                       </div>
                     }
                     else
@@ -116,8 +117,14 @@
                       <div class="text-muted small fw-semibold">@Localizer["Liên hệ"]</div>
                     }
                   </div>
-                  <div class="btn-detail-arrow d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
-                    <i class="bi bi-arrow-right" style="font-size: 12px;"></i>
+                  <div class="d-flex align-items-center gap-2">
+                    <button type="button" class="btn btn-sm btn-compare rounded-pill px-2.5 py-1" data-room-id="@room.Id"
+                            onclick="toggleCompareRoom(event, @room.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(room.BuildingName)) - P.@room.RoomNumber', '@((room.RentPrice ?? 0) / 1000000.0m).ToString(&quot;0.#&quot;) Tr/tháng', '@room.PrimaryImageUrl')">
+                      <i class="bi bi-shuffle me-1"></i><span class="compare-text">So sánh</span>
+                    </button>
+                    <div class="btn-detail-arrow d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                      <i class="bi bi-arrow-right" style="font-size: 12px;"></i>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -132,61 +139,7 @@
 
 @section Styles {
 <style>
-  .room-card {
-    border-radius: 16px !important;
-    overflow: hidden;
-    background: #ffffff;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02) !important;
-    transition: transform 0.2s, box-shadow 0.2s;
-    border: none !important;
-  }
-  .room-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.06) !important;
-  }
-  .badge-category {
-    background: rgba(255, 255, 255, 0.85) !important;
-    backdrop-filter: blur(4px);
-    color: #1f2937;
-    font-size: 9px;
-    font-weight: 600;
-    padding: 4px 8px;
-    border-radius: 30px !important;
-  }
-  .btn-fav {
-    width: 32px;
-    height: 32px;
-    border-radius: 50% !important;
-    background: rgba(255, 255, 255, 0.9) !important;
-    border: none;
-    transition: background 0.15s, transform 0.15s;
-  }
-  .btn-fav:hover {
-    transform: scale(1.1);
-  }
-  .badge-spec {
-    background-color: #f3f4f6 !important;
-    color: #4b5563;
-    font-weight: 500;
-    font-size: 10px;
-    padding: 4px 8px;
-    border-radius: 30px !important;
-  }
-  .card-room-title {
-    font-size: 14px;
-    color: #1f2937;
-  }
-  .btn-detail-arrow {
-    border-radius: 50%;
-    background-color: #f3f4f6;
-    color: #1f2937;
-    transition: background-color 0.15s, color 0.15s, transform 0.15s;
-  }
-  .room-card:hover .btn-detail-arrow {
-    background-color: #2563eb;
-    color: white;
-    transform: translateX(2px);
-  }
+  /* Favorites page specific styles */
 </style>
 }
 
@@ -209,6 +162,7 @@
       },
       success: function(response) {
         if (response.success && !response.isFavorite) {
+          showToast("@Localizer["Đã xoá khỏi danh sách yêu thích!"]", "info");
           $('#favorite-card-' + roomId).fadeOut(300, function() {
             $(this).remove();
             if ($('.room-card').length === 0) {
@@ -218,7 +172,7 @@
         }
       },
       error: function() {
-        alert('@Localizer["Có lỗi xảy ra, vui lòng thử lại sau."]');
+        showToast("@Localizer["Có lỗi xảy ra, vui lòng thử lại sau."]", "error");
       }
     });
   }

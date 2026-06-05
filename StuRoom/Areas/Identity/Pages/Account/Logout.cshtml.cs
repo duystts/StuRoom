@@ -28,6 +28,7 @@ namespace StuRoom.Areas.Identity.Pages.Account
         {
             await _signInManager.SignOutAsync();
             _logger.LogInformation("User logged out.");
+            TempData["Success"] = "Đăng xuất thành công! Hẹn gặp lại bạn.";
             if (returnUrl != null)
             {
                 return LocalRedirect(returnUrl);

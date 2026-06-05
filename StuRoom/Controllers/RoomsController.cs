@@ -247,7 +247,7 @@ public class RoomsController(ApplicationDbContext db,
     // ════════════════════════════════════════════════════════
 
     [HttpPost]
-    [Authorize]
+    [Authorize(Roles = "Tenant")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> ToggleFavorite(int roomId)
     {
@@ -328,7 +328,7 @@ public class RoomsController(ApplicationDbContext db,
     }
 
     [HttpPost]
-    [Authorize]
+    [Authorize(Roles = "Tenant")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> ReportRoom(int roomId, string reason, string description)
     {
@@ -356,5 +356,42 @@ public class RoomsController(ApplicationDbContext db,
 
         TempData["ReviewSuccess"] = "Đã gửi báo cáo vi phạm. Ban quản trị sẽ sớm xem xét.";
         return RedirectToAction(nameof(Detail), new { id = roomId });
+    }
+
+    public async Task<IActionResult> Compare(string ids)
+    {
+        if (string.IsNullOrEmpty(ids))
+        {
+            TempData["Error"] = "Vui lòng chọn phòng để so sánh.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        var idList = ids.Split(',')
+            .Select(s => int.TryParse(s, out int id) ? id : 0)
+            .Where(id => id > 0)
+            .Distinct()
+            .Take(3)
+            .ToList();
+
+        if (!idList.Any())
+        {
+            TempData["Error"] = "Phòng so sánh không hợp lệ.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        var rooms = await db.Rooms
+            .Include(r => r.Building)
+            .Include(r => r.Images)
+            .Include(r => r.RoomAmenities).ThenInclude(ra => ra.Amenity)
+            .Include(r => r.FeeConfigs)
+            .Include(r => r.Building.FeeConfigs)
+            .Include(r => r.Reviews.Where(rv => rv.IsApproved))
+            .Where(r => idList.Contains(r.Id) && r.Status == RoomStatus.Available)
+            .ToListAsync();
+
+        // Ensure ordering matches the order of IDs in parameters
+        rooms = rooms.OrderBy(r => idList.IndexOf(r.Id)).ToList();
+
+        return View(rooms);
     }
 }

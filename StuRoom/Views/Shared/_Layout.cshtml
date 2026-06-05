@@ -9,7 +9,9 @@
       document.documentElement.setAttribute('data-theme', theme);
     })();
   </script>
-  <title>@ViewData["Title"] - StuRoom</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
   <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
@@ -48,9 +50,169 @@
   </div>
 </footer>
 
+@* ── Global Room Comparison Drawer ── *@
+<div id="compareDrawer" class="compare-drawer">
+  <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+    <div class="d-flex align-items-center gap-3 flex-wrap">
+      <h6 class="fw-bold mb-0 text-dark" style="font-family: 'Outfit', sans-serif;"><i class="bi bi-shuffle text-primary me-2"></i>So sánh phòng (<span id="compareCount">0</span>/3)</h6>
+      <div id="compareItems" class="d-flex align-items-center gap-2">
+        <!-- Dynamically populated room thumbs -->
+      </div>
+    </div>
+    <div class="d-flex align-items-center gap-3">
+      <button type="button" class="btn btn-link btn-sm text-secondary text-decoration-none small fw-semibold p-0" onclick="clearCompareRooms()">Xoá hết</button>
+      <button type="button" id="btnCompareSubmit" class="btn btn-primary rounded-pill btn-sm px-4 fw-bold shadow-sm" disabled onclick="submitCompareRooms()">So sánh ngay</button>
+    </div>
+  </div>
+</div>
+
 <script src="~/lib/jquery/dist/jquery.min.js"></script>
 <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
 <script src="~/js/site.js" asp-append-version="true"></script>
+
+<script>
+  // Global Room Comparison Logic
+  let compareRooms = [];
+
+  function loadCompareRooms() {
+    try {
+      compareRooms = JSON.parse(localStorage.getItem('compare_rooms')) || [];
+    } catch (e) {
+      compareRooms = [];
+    }
+    renderCompareDrawer();
+    syncCompareButtons();
+  }
+
+  window.toggleCompareRoom = function(e, id, name, price, img) {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    const index = compareRooms.findIndex(r => r.id === id);
+    if (index > -1) {
+      compareRooms.splice(index, 1);
+      showToast("Đã xoá phòng khỏi danh sách so sánh.", "info");
+    } else {
+      if (compareRooms.length >= 3) {
+        showToast("Chỉ có thể so sánh tối đa 3 phòng trọ cùng lúc.", "warning");
+        return;
+      }
+      compareRooms.push({ id, name, price, img });
+      showToast("Đã thêm phòng vào danh sách so sánh.", "success");
+    }
+    
+    localStorage.setItem('compare_rooms', JSON.stringify(compareRooms));
+    renderCompareDrawer();
+    syncCompareButtons();
+  };
+
+  window.removeCompareRoom = function(id) {
+    compareRooms = compareRooms.filter(r => r.id !== id);
+    localStorage.setItem('compare_rooms', JSON.stringify(compareRooms));
+    renderCompareDrawer();
+    syncCompareButtons();
+    showToast("Đã xoá phòng khỏi danh sách so sánh.", "info");
+  };
+
+  window.clearCompareRooms = function() {
+    compareRooms = [];
+    localStorage.setItem('compare_rooms', JSON.stringify(compareRooms));
+    renderCompareDrawer();
+    syncCompareButtons();
+    showToast("Đã xoá toàn bộ danh sách so sánh.", "info");
+  };
+
+  function syncCompareButtons() {
+    document.querySelectorAll('.btn-compare').forEach(btn => {
+      const id = parseInt(btn.getAttribute('data-room-id'));
+      const active = compareRooms.some(r => r.id === id);
+      if (active) {
+        btn.classList.add('active');
+        const text = btn.querySelector('.compare-text') || btn;
+        const icon = btn.querySelector('i');
+        if (icon) icon.className = 'bi bi-check-lg me-1';
+      } else {
+        btn.classList.remove('active');
+        const text = btn.querySelector('.compare-text') || btn;
+        const icon = btn.querySelector('i');
+        if (icon) icon.className = 'bi bi-shuffle me-1';
+      }
+    });
+  }
+
+  function renderCompareDrawer() {
+    const drawer = document.getElementById('compareDrawer');
+    const countSpan = document.getElementById('compareCount');
+    const itemsDiv = document.getElementById('compareItems');
+    const submitBtn = document.getElementById('btnCompareSubmit');
+    
+    if (!drawer || !countSpan || !itemsDiv || !submitBtn) return;
+    
+    countSpan.textContent = compareRooms.length;
+    itemsDiv.innerHTML = '';
+    
+    if (compareRooms.length > 0) {
+      drawer.classList.add('show');
+      
+      compareRooms.forEach(room => {
+        const thumb = document.createElement('div');
+        thumb.className = 'compare-drawer-thumb position-relative';
+        thumb.innerHTML = `
+          <img src="${room.img || '/img/placeholder.svg'}" alt="${room.name}" title="${room.name} - ${room.price}" />
+          <button type="button" class="compare-drawer-remove" onclick="removeCompareRoom(${room.id})"><i class="bi bi-x"></i></button>
+        `;
+        itemsDiv.appendChild(thumb);
+      });
+    } else {
+      drawer.classList.remove('show');
+    }
+    
+    submitBtn.disabled = compareRooms.length < 2;
+  }
+
+  window.submitCompareRooms = function() {
+    if (compareRooms.length < 2) return;
+    const ids = compareRooms.map(r => r.id).join(',');
+    window.location.href = '/Rooms/Compare?ids=' + ids;
+  };
+
+  // Re-sync buttons when AJAX calls reload listings
+  $(document).ajaxComplete(function() {
+    syncCompareButtons();
+  });
+
+  document.addEventListener("DOMContentLoaded", loadCompareRooms);
+</script>
+
+@if (TempData["Success"] != null)
+{
+  var successMsg = TempData["Success"]?.ToString() ?? "";
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      showToast("@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(successMsg))", "success");
+    });
+  </script>
+}
+@if (TempData["Error"] != null)
+{
+  var errorMsg = TempData["Error"]?.ToString() ?? "";
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      showToast("@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(errorMsg))", "error");
+    });
+  </script>
+}
+@if (TempData["Info"] != null)
+{
+  var infoMsg = TempData["Info"]?.ToString() ?? "";
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      showToast("@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(infoMsg))", "info");
+    });
+  </script>
+}
 @await RenderSectionAsync("Scripts", required: false)
 
 </body>

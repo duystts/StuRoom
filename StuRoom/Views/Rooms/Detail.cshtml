@@ -103,15 +103,23 @@
                 @if (!string.IsNullOrWhiteSpace(Model.Room.Building.Province)) { <span>, @Model.Room.Building.Province</span> }
               </span>
             </div>
-            @if (Model.Room.Building.Latitude.HasValue && Model.Room.Building.Longitude.HasValue)
-            {
-              <div class="mt-2 ps-3.5">
+            <div class="mt-2 ps-3.5">
+              @if (Model.Room.Building.Latitude.HasValue && Model.Room.Building.Longitude.HasValue)
+              {
                 <a href="https://www.google.com/maps/search/?api=1&query=@Model.Room.Building.Latitude.Value.ToString(System.Globalization.CultureInfo.InvariantCulture),@Model.Room.Building.Longitude.Value.ToString(System.Globalization.CultureInfo.InvariantCulture)" 
                    target="_blank" class="btn btn-outline-primary btn-sm rounded-pill py-1 px-2.5 small" style="font-size: 11px; padding: 2px 8px;">
                   <i class="bi bi-map me-1"></i>@Localizer["Xem trên bản đồ"]
                 </a>
-              </div>
-            }
+              }
+              else
+              {
+                var addressQuery = $"{Model.Room.Building.Name}, {Model.Room.Building.Address}, {Model.Room.Building.Ward}, {Model.Room.Building.District}, {Model.Room.Building.Province}";
+                <a href="https://www.google.com/maps/search/?api=1&query=@System.Net.WebUtility.UrlEncode(addressQuery)" 
+                   target="_blank" class="btn btn-outline-primary btn-sm rounded-pill py-1 px-2.5 small" style="font-size: 11px; padding: 2px 8px;">
+                  <i class="bi bi-map me-1"></i>@Localizer["Xem trên bản đồ"]
+                </a>
+              }
+            </div>
           </div>
 
           <div class="row g-3 mb-4">
@@ -359,9 +367,9 @@
           {
             <div class="mb-4 pb-3 border-bottom">
               <span class="text-muted small text-uppercase fw-semibold d-block" style="font-size: 10px; letter-spacing: 0.05em; margin-bottom: 4px;">Giá thuê phòng</span>
-              <div class="fw-bold text-primary mb-0" style="font-size: 28px; letter-spacing: -0.02em;">
-                @Model.RentPrice.Value.ToString("N0")
-                <span class="text-muted fw-normal fs-6">₫/@Model.RentUnit</span>
+              <div class="d-flex align-items-baseline gap-1 mb-0" style="line-height: 1;">
+                <span style="font-size: 2.2rem; font-weight: 800; color: var(--link-color); font-family: 'Outfit', sans-serif; letter-spacing: -0.02em;">@Model.RentPrice.Value.ToString("N0")</span>
+                <span style="font-size: 1.15rem; font-weight: 700; color: var(--link-color); font-family: 'Outfit', sans-serif;">₫</span><span style="font-size: 0.85rem; font-weight: 500; color: var(--text-secondary); margin-left: 2px;">/@Model.RentUnit</span>
               </div>
             </div>
           }
@@ -720,15 +728,17 @@ function toggleDetailFav(roomId) {
             btn.classList.add('active');
             icon.className = 'bi bi-heart-fill text-danger';
             text.textContent = "@Localizer["Đã lưu"]";
+            showToast("@Localizer["Đã lưu vào danh sách yêu thích!"]", "success");
           } else {
             btn.classList.remove('active');
             icon.className = 'bi bi-heart';
             text.textContent = "@Localizer["Lưu tin"]";
+            showToast("@Localizer["Đã xoá khỏi danh sách yêu thích!"]", "info");
           }
         }
       },
       error: function() {
-        alert("@Localizer["Có lỗi xảy ra, vui lòng thử lại sau."]");
+        showToast("@Localizer["Có lỗi xảy ra, vui lòng thử lại sau."]", "error");
       }
     });
     </text>

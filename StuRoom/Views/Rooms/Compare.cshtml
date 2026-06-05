@@ -1,0 +1,427 @@
+@model List<StuRoom.Models.Room>
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@{
+    ViewData["Title"] = Localizer["So sánh phòng trọ"];
+    Layout = "_Layout";
+
+    // Collect all unique amenities across these rooms to show checklist comparison
+    var allAmenities = Model.SelectMany(r => r.RoomAmenities.Select(ra => ra.Amenity))
+                            .GroupBy(a => a.Id)
+                            .Select(g => g.First())
+                            .OrderBy(a => a.Name)
+                            .ToList();
+
+    // Map fee categories for nice icons and labels
+    var feeCategories = new Dictionary<StuRoom.Models.FeeCategory, (string name, string icon)>
+    {
+        [StuRoom.Models.FeeCategory.Electricity] = ("Điện", "bi-lightning-charge"),
+        [StuRoom.Models.FeeCategory.Water] = ("Nước", "bi-droplet"),
+        [StuRoom.Models.FeeCategory.Internet] = ("Internet", "bi-wifi"),
+        [StuRoom.Models.FeeCategory.Parking] = ("Đỗ xe", "bi-car-front"),
+        [StuRoom.Models.FeeCategory.Other] = ("Khác", "bi-three-dots"),
+    };
+}
+
+@section Styles {
+  <style>
+    .compare-container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    
+    .compare-table {
+      background: var(--card-bg);
+      border-radius: 24px;
+      border: 1px solid var(--card-border);
+      overflow: hidden;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.02);
+    }
+    
+    .compare-row {
+      display: flex;
+      border-bottom: 1px solid var(--card-border);
+      align-items: center;
+      transition: background-color var(--transition-speed);
+    }
+    .compare-row:hover {
+      background-color: rgba(79, 70, 229, 0.01);
+    }
+    .compare-row:last-child {
+      border-bottom: none;
+    }
+    
+    .compare-label-col {
+      width: 250px;
+      flex-shrink: 0;
+      font-weight: 700;
+      color: var(--text-color);
+      padding: 24px;
+      border-right: 1px solid var(--card-border);
+      background-color: var(--spec-box-bg);
+      font-family: 'Outfit', sans-serif;
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    
+    .compare-data-cols {
+      display: flex;
+      flex-grow: 1;
+      align-items: stretch;
+    }
+    
+    .compare-val-col {
+      flex: 1;
+      padding: 24px;
+      border-right: 1px solid var(--card-border);
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-width: 0;
+    }
+    .compare-val-col:last-child {
+      border-right: none;
+    }
+
+    /* Column header styles */
+    .compare-header-row {
+      align-items: stretch;
+    }
+    .compare-header-label {
+      background-color: var(--spec-box-bg);
+      display: flex;
+      align-items: center;
+    }
+    
+    .compare-img-wrapper {
+      width: 100%;
+      height: 180px;
+      border-radius: 16px;
+      overflow: hidden;
+      margin-bottom: 16px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+    }
+    .compare-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.5s ease;
+    }
+    .compare-val-col:hover .compare-img {
+      transform: scale(1.05);
+    }
+
+    .compare-price-val {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.8rem;
+      font-weight: 800;
+      color: var(--link-color);
+      line-height: 1;
+      display: inline-flex;
+      align-items: baseline;
+      justify-content: center;
+      gap: 1px;
+    }
+
+    .compare-amenity-item {
+      font-size: 13px;
+      padding: 6px 12px;
+      border-radius: 30px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin: 4px;
+      font-weight: 500;
+    }
+    .compare-amenity-item.has {
+      background-color: rgba(16, 185, 129, 0.08);
+      color: #10b981;
+      border: 1px solid rgba(16, 185, 129, 0.1);
+    }
+    .compare-amenity-item.lacks {
+      background-color: var(--spec-box-bg);
+      color: var(--text-secondary);
+      border: 1px solid var(--spec-box-border);
+      opacity: 0.6;
+    }
+
+    .compare-fee-pill {
+      font-size: 12.5px;
+      background: var(--spec-box-bg);
+      border: 1px solid var(--spec-box-border);
+      border-radius: 10px;
+      padding: 8px 12px;
+      margin: 4px;
+      display: inline-flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      max-width: 260px;
+    }
+    
+    html[data-theme="dark"] .compare-fee-pill {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    /* Responsive */
+    @@media (max-width: 992px) {
+      .compare-row {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .compare-label-col {
+        width: 100%;
+        border-right: none;
+        border-bottom: 1px solid var(--card-border);
+        padding: 12px 20px;
+        text-align: center;
+      }
+      .compare-data-cols {
+        flex-direction: row;
+      }
+      .compare-val-col {
+        padding: 16px 12px;
+      }
+    }
+    
+    @@media (max-width: 576px) {
+      .compare-data-cols {
+        flex-direction: column;
+      }
+      .compare-val-col {
+        border-right: none;
+        border-bottom: 1px solid var(--card-border);
+      }
+      .compare-val-col:last-child {
+        border-bottom: none;
+      }
+    }
+  </style>
+}
+
+<div class="container compare-container py-5">
+  
+  @* Breadcrumb *@
+  <nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb small px-3 py-2 bg-white rounded-pill shadow-sm d-inline-flex border">
+      <li class="breadcrumb-item"><a asp-action="Index" class="text-decoration-none text-primary fw-semibold"><i class="bi bi-house me-1"></i>@Localizer["Tìm phòng"]</a></li>
+      <li class="breadcrumb-item active text-secondary" aria-current="page">@Localizer["So sánh phòng trọ"]</li>
+    </ol>
+  </nav>
+
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+      <h3 class="fw-bold mb-1 text-dark" style="font-family: 'Outfit', sans-serif;">@Localizer["So sánh phòng trọ"]</h3>
+      <p class="text-muted small mb-0">@Localizer["So sánh chi tiết song song tối đa 3 phòng trọ đã chọn."]</p>
+    </div>
+    <a asp-action="Index" class="btn btn-outline-secondary rounded-pill btn-sm px-3 fw-semibold shadow-sm"><i class="bi bi-arrow-left me-1"></i>@Localizer["Quay lại"]</a>
+  </div>
+
+  <div class="compare-table shadow-sm">
+
+    @* ── HÀNG 1: Tiêu đề + Hình ảnh ── *@
+    <div class="compare-row compare-header-row">
+      <div class="compare-label-col compare-header-label">
+        @Localizer["Thông tin chung"]
+      </div>
+      <div class="compare-data-cols">
+        @foreach (var room in Model)
+        {
+          var primaryImg = room.Images.FirstOrDefault(i => i.IsPrimary)?.ImageUrl 
+                        ?? room.Images.OrderBy(i => i.SortOrder).FirstOrDefault()?.ImageUrl;
+          
+          <div class="compare-val-col">
+            <div class="compare-img-wrapper">
+              @if (primaryImg != null)
+              {
+                <img src="@primaryImg" alt="@room.Building.Name" class="compare-img" />
+              }
+              else
+              {
+                <div class="w-100 h-100 d-flex align-items-center justify-content-center bg-light">
+                  <i class="bi bi-image text-muted fs-3"></i>
+                </div>
+              }
+            </div>
+            <h5 class="fw-bold text-dark mb-1" style="font-family: 'Outfit', sans-serif;">@room.Building.Name</h5>
+            <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-3 py-1 fw-bold align-self-center mb-0" style="font-size: 12px;">
+              Phòng @room.RoomNumber
+            </span>
+          </div>
+        }
+      </div>
+    </div>
+
+    @* ── HÀNG 2: Địa chỉ ── *@
+    <div class="compare-row">
+      <div class="compare-label-col">@Localizer["Vị trí / Địa chỉ"]</div>
+      <div class="compare-data-cols">
+        @foreach (var room in Model)
+        {
+          <div class="compare-val-col text-secondary small">
+            <i class="bi bi-geo-alt-fill text-primary mb-1 d-block fs-5"></i>
+            <div><strong>@room.Building.Address</strong></div>
+            <div class="mt-1">@room.Building.Ward, @room.Building.District, @room.Building.Province</div>
+          </div>
+        }
+      </div>
+    </div>
+
+    @* ── HÀNG 3: Giá thuê ── *@
+    <div class="compare-row">
+      <div class="compare-label-col">@Localizer["Giá thuê"]</div>
+      <div class="compare-data-cols">
+        @foreach (var room in Model)
+        {
+          var rentCfg = room.FeeConfigs.FirstOrDefault(f => f.RoomId == room.Id && f.FeeCategory == FeeCategory.Rent && f.IsActive)
+                     ?? room.Building.FeeConfigs.FirstOrDefault(f => f.BuildingId == room.BuildingId && f.FeeCategory == FeeCategory.Rent && f.IsActive);
+          
+          <div class="compare-val-col">
+            @if (rentCfg != null)
+            {
+              <div class="compare-price-val">
+                <span class="price-value">@((rentCfg.UnitPrice / 1000000.0m).ToString("0.#"))</span>
+                <span style="font-size: 1.2rem; font-weight: 700; margin-left: 1px;">Tr</span>
+                <span style="font-size: 0.85rem; font-weight: 500; color: var(--text-secondary); margin-left: 2px;">/tháng</span>
+              </div>
+            }
+            else
+            {
+              <div class="text-muted small fw-semibold">@Localizer["Liên hệ"]</div>
+            }
+          </div>
+        }
+      </div>
+    </div>
+
+    @* ── HÀNG 4: Diện tích & Sức chứa ── *@
+    <div class="compare-row">
+      <div class="compare-label-col">@Localizer["Diện tích & Sức chứa"]</div>
+      <div class="compare-data-cols">
+        @foreach (var room in Model)
+        {
+          <div class="compare-val-col">
+            <div class="d-flex justify-content-center gap-4">
+              <div>
+                <i class="bi bi-rulers text-secondary d-block mb-1"></i>
+                <span class="fw-bold text-dark">@room.Area m²</span>
+                <div class="text-muted" style="font-size: 10px;">@Localizer["Diện tích"]</div>
+              </div>
+              <div>
+                <i class="bi bi-people text-secondary d-block mb-1"></i>
+                <span class="fw-bold text-dark">@(room.Capacity?.ToString() ?? "-") @Localizer["người"]</span>
+                <div class="text-muted" style="font-size: 10px;">@Localizer["Tối đa"]</div>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+
+    @* ── HÀNG 5: Chi phí dịch vụ khác ── *@
+    <div class="compare-row">
+      <div class="compare-label-col">@Localizer["Chi phí khác"]</div>
+      <div class="compare-data-cols">
+        @foreach (var room in Model)
+        {
+          var feeConfigs = room.Building.FeeConfigs.Concat(room.FeeConfigs)
+                              .Where(f => f.FeeCategory != FeeCategory.Rent && f.IsActive)
+                              .GroupBy(f => f.FeeCategory)
+                              .Select(g => g.Last()) // Prefer room-level overrides
+                              .ToList();
+          
+          <div class="compare-val-col">
+            @if (feeConfigs.Any())
+            {
+              <div class="d-flex flex-column align-items-center gap-1.5">
+                @foreach (var fee in feeConfigs)
+                {
+                  var label = feeCategories.ContainsKey(fee.FeeCategory) ? feeCategories[fee.FeeCategory] : (name: fee.Name, icon: "bi-receipt-cutoff");
+                  <div class="compare-fee-pill">
+                    <span class="text-secondary fw-semibold text-truncate me-2"><i class="bi @label.icon me-1 text-muted"></i>@fee.Name</span>
+                    <span class="text-primary fw-bold">@fee.UnitPrice.ToString("N0") ₫<small class="text-muted fw-normal" style="font-size: 10px;">/@fee.Unit</small></span>
+                  </div>
+                }
+              </div>
+            }
+            else
+            {
+              <span class="text-muted small">@Localizer["Không có thông tin chi tiết"]</span>
+            }
+          </div>
+        }
+      </div>
+    </div>
+
+    @* ── HÀNG 6: Tiện ích ── *@
+    <div class="compare-row">
+      <div class="compare-label-col">@Localizer["So sánh Tiện ích"]</div>
+      <div class="compare-data-cols">
+        @foreach (var room in Model)
+        {
+          var roomAmenityIds = room.RoomAmenities.Select(ra => ra.AmenityId).ToList();
+          
+          <div class="compare-val-col text-start">
+            <div class="d-flex flex-wrap justify-content-center">
+              @foreach (var amen in allAmenities)
+              {
+                var has = roomAmenityIds.Contains(amen.Id);
+                <div class="compare-amenity-item @(has ? "has" : "lacks")">
+                  <i class="bi @(has ? "bi-check-circle-fill" : "bi-x-circle-fill")"></i>
+                  <span>@amen.Name</span>
+                </div>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+
+    @* ── HÀNG 7: Đánh giá ── *@
+    <div class="compare-row">
+      <div class="compare-label-col">@Localizer["Đánh giá"]</div>
+      <div class="compare-data-cols">
+        @foreach (var room in Model)
+        {
+          var approved = room.Reviews.Where(rv => rv.IsApproved).ToList();
+          var rating = approved.Any() ? approved.Average(rv => (double)rv.Rating) : (double?)null;
+          
+          <div class="compare-val-col">
+            @if (rating.HasValue)
+            {
+              <div class="d-flex align-items-center justify-content-center gap-1.5">
+                <span class="badge badge-rating d-inline-flex align-items-center gap-1 py-1 px-2.5 fs-6">
+                  @rating.Value.ToString("0.0") <i class="bi bi-star-fill text-warning" style="font-size: 12px;"></i>
+                </span>
+                <span class="text-muted small">(@approved.Count @Localizer["đánh giá"])</span>
+              </div>
+            }
+            else
+            {
+              <span class="text-muted small">@Localizer["Chưa có đánh giá"]</span>
+            }
+          </div>
+        }
+      </div>
+    </div>
+
+    @* ── HÀNG 8: Thao tác ── *@
+    <div class="compare-row">
+      <div class="compare-label-col">@Localizer["Thao tác"]</div>
+      <div class="compare-data-cols">
+        @foreach (var room in Model)
+        {
+          <div class="compare-val-col">
+            <div class="d-grid gap-2" style="max-width: 200px; margin: 0 auto; width: 100%;">
+              <a asp-action="Detail" asp-route-id="@room.Id" class="btn btn-primary rounded-pill btn-sm py-2 fw-semibold shadow-sm text-decoration-none">
+                <i class="bi bi-eye-fill me-1.5"></i>@Localizer["Xem chi tiết"]
+              </a>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+
+  </div>
+</div>

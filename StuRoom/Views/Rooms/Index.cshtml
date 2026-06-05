@@ -135,9 +135,22 @@
 
         @* Right actions: Map view mock and sort dropdown *@
         <div class="d-flex gap-2">
-          <button class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1.5 fw-semibold border bg-white d-flex align-items-center gap-1.5 shadow-sm text-secondary" type="button">
+          @{
+            var mapQuery = "Thành phố Hồ Chí Minh";
+            if (!string.IsNullOrEmpty(Model.Province))
+            {
+              mapQuery = Model.Province;
+            }
+            if (!string.IsNullOrEmpty(Model.Q))
+            {
+              mapQuery = Model.Q + ", " + mapQuery;
+            }
+          }
+          <a href="https://www.google.com/maps/search/?api=1&query=@System.Net.WebUtility.UrlEncode(mapQuery)" 
+             target="_blank"
+             class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1.5 fw-semibold border bg-white d-flex align-items-center gap-1.5 shadow-sm text-secondary text-decoration-none">
             <i class="bi bi-map"></i>@Localizer["Bản đồ"]
-          </button>
+          </a>
           <select class="form-select form-select-sm rounded-pill px-3 py-1.5 fw-semibold border bg-white text-secondary shadow-sm" style="width: auto; cursor: pointer;">
             <option>@Localizer["Mới nhất"]</option>
             <option>@Localizer["Giá tăng dần"]</option>
@@ -202,11 +215,11 @@
                 <div class="card border-0 shadow-sm h-100 room-card">
 
                   @* Image & Badges *@
-                  <div class="position-relative overflow-hidden" style="height: 200px;">
+                  <div class="position-relative overflow-hidden card-img-wrapper" style="height: 200px;">
                     @if (room.PrimaryImageUrl != null)
                     {
                       <img src="@room.PrimaryImageUrl" alt="@room.BuildingName"
-                           class="w-100 h-100" style="object-fit:cover" />
+                           class="w-100 h-100 room-card-img" style="object-fit:cover" />
                     }
                     else
                     {
@@ -216,7 +229,7 @@
                     }
 
                     @* Badges *@
-                    <div class="position-absolute top-0 start-0 m-3 d-flex gap-2">
+                    <div class="position-absolute top-0 start-0 m-3 d-flex gap-2" style="z-index: 2;">
                       @if (room.AvgRating >= 4.5 || room.ReviewCount > 2)
                       {
                         <span class="badge badge-featured">@Localizer["Nổi bật"]</span>
@@ -229,6 +242,7 @@
                       bool isFav = ViewBag.FavoriteRoomIds != null && ((List<int>)ViewBag.FavoriteRoomIds).Contains(room.Id);
                     }
                     <button type="button" class="btn btn-fav @(isFav ? "active" : "") position-absolute top-0 end-0 m-3 d-flex align-items-center justify-content-center shadow-sm"
+                            style="z-index: 2;"
                             onclick="handleFavToggle(event, @room.Id, this)">
                       <i class="bi @(isFav ? "bi-heart-fill text-danger" : "bi-heart")"></i>
                     </button>
@@ -271,11 +285,11 @@
                     @* Footer *@
                     <div class="d-flex align-items-center justify-content-between pt-3 border-top">
                       <div>
-                        <span class="text-muted text-uppercase fw-semibold d-block" style="font-size: 9px; letter-spacing: 0.05em; margin-bottom: 2px;">@Localizer["Giá thuê"]</span>
+                        <span class="text-muted text-uppercase fw-semibold d-block" style="font-size: 9px; letter-spacing: 0.05em; margin-bottom: 2.5px;">@Localizer["Giá thuê"]</span>
                         @if (room.RentPrice.HasValue)
                         {
-                          <div class="fw-bold text-primary card-room-price mb-0">
-                            @((room.RentPrice.Value / 1000000.0m).ToString("0.#")) <span class="fs-6 fw-semibold">@Localizer["Tr"]</span><span class="text-muted fw-normal" style="font-size: 11px;">/@Localizer["tháng"]</span>
+                          <div class="card-room-price mb-0">
+                            <span class="price-value">@((room.RentPrice.Value / 1000000.0m).ToString("0.#"))</span> <span class="price-unit">@Localizer["Tr"]</span><span class="price-period">/@Localizer["tháng"]</span>
                           </div>
                         }
                         else
@@ -283,8 +297,14 @@
                           <div class="text-muted small fw-semibold">@Localizer["Liên hệ"]</div>
                         }
                       </div>
-                      <div class="btn-detail-arrow d-flex align-items-center justify-content-center">
-                        <i class="bi bi-arrow-right"></i>
+                      <div class="d-flex align-items-center gap-2">
+                        <button type="button" class="btn btn-sm btn-compare rounded-pill px-2.5 py-1" data-room-id="@room.Id"
+                                onclick="toggleCompareRoom(event, @room.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(room.BuildingName)) - P.@room.RoomNumber', '@((room.RentPrice ?? 0) / 1000000.0m).ToString(&quot;0.#&quot;) Tr/tháng', '@room.PrimaryImageUrl')">
+                          <i class="bi bi-shuffle me-1"></i><span class="compare-text">So sánh</span>
+                        </button>
+                        <div class="btn-detail-arrow d-flex align-items-center justify-content-center">
+                          <i class="bi bi-arrow-right"></i>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -307,179 +327,6 @@
     max-width: 1400px;
     padding-left: 2rem;
     padding-right: 2rem;
-  }
-  
-  /* Filter Sidebar */
-  .filter-card {
-    border-radius: 20px !important;
-    background: #ffffff;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04) !important;
-    border: none !important;
-  }
-  
-  .filter-title {
-    font-size: 1.1rem;
-    font-weight: 700;
-  }
-
-  /* Custom range slider styling */
-  .custom-range::-webkit-slider-runnable-track {
-    background: #e5e7eb;
-    height: 6px;
-    border-radius: 3px;
-  }
-  .custom-range::-webkit-slider-thumb {
-    background: #2563eb;
-    border: 2px solid #ffffff;
-    width: 18px;
-    height: 18px;
-    margin-top: -6px;
-    border-radius: 50%;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.15);
-    transition: background 0.15s;
-    cursor: pointer;
-  }
-  .custom-range::-webkit-slider-thumb:active {
-    background: #1d4ed8;
-  }
-  
-  /* Custom form control styling */
-  .form-control-custom {
-    border-radius: 12px !important;
-    padding: 0.5rem 0.75rem;
-    border: 1px solid #e5e7eb;
-    font-size: 13.5px;
-    transition: border-color 0.15s, box-shadow 0.15s;
-  }
-  .form-control-custom:focus {
-    border-color: #2563eb;
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
-  }
-  
-  /* Custom checkbox */
-  .form-check-input {
-    border-radius: 6px !important;
-    border-color: #cbd5e1;
-    cursor: pointer;
-  }
-  .form-check-input:checked {
-    background-color: #2563eb;
-    border-color: #2563eb;
-  }
-
-  /* Room Card styling */
-  .room-card {
-    border-radius: 20px !important;
-    overflow: hidden;
-    background: #ffffff;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.03) !important;
-    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-    border: none !important;
-  }
-  
-  .room-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.08) !important;
-  }
-  
-  /* Badges on image */
-  .badge-featured {
-    background: linear-gradient(135deg, #f97316 0%, #ea580c 100%) !important;
-    color: white;
-    font-size: 10px;
-    font-weight: 600;
-    padding: 6px 12px;
-    border-radius: 30px !important;
-    box-shadow: 0 4px 10px rgba(249, 115, 22, 0.2);
-  }
-  
-  .badge-category {
-    background: rgba(255, 255, 255, 0.75) !important;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    color: #1f2937;
-    font-size: 10px;
-    font-weight: 600;
-    padding: 6px 12px;
-    border-radius: 30px !important;
-    border: 1px solid rgba(255, 255, 255, 0.4);
-  }
-  
-  /* Favorite Button */
-  .btn-fav {
-    width: 36px;
-    height: 36px;
-    border-radius: 50% !important;
-    background: rgba(255, 255, 255, 0.9) !important;
-    backdrop-filter: blur(4px);
-    border: none;
-    color: #9ca3af;
-    transition: background 0.15s, color 0.15s, transform 0.15s;
-  }
-  .btn-fav:hover {
-    color: #ef4444;
-    background: #ffffff !important;
-    transform: scale(1.1);
-  }
-  .btn-fav.active {
-    color: #ef4444;
-  }
-
-  .card-room-title {
-    font-size: 15px;
-    color: #1f2937;
-    letter-spacing: -0.01em;
-  }
-
-  .badge-rating {
-    background-color: #fef3c7 !important;
-    color: #d97706;
-    font-size: 11px;
-    font-weight: 600;
-    padding: 4px 8px;
-    border-radius: 30px !important;
-  }
-
-  .badge-spec {
-    background-color: #f3f4f6 !important;
-    color: #4b5563;
-    font-weight: 500;
-    font-size: 11px;
-    padding: 6px 10px;
-    border-radius: 30px !important;
-  }
-  
-  .badge-spec-icon {
-    background-color: #f3f4f6 !important;
-    color: #6b7280;
-    font-size: 11px;
-    width: 26px;
-    height: 26px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50% !important;
-    padding: 0 !important;
-  }
-  
-  .card-room-price {
-    font-size: 20px;
-    letter-spacing: -0.02em;
-  }
-  
-  /* Circular Detail Arrow */
-  .btn-detail-arrow {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    background-color: #f3f4f6;
-    color: #1f2937;
-    transition: background-color 0.15s, color 0.15s, transform 0.15s;
-  }
-  .room-card:hover .btn-detail-arrow {
-    background-color: #2563eb;
-    color: white;
-    transform: translateX(3px);
   }
 </style>
 }
@@ -533,14 +380,16 @@
             if (response.isFavorite) {
               btn.classList.add('active');
               heart.className = 'bi bi-heart-fill text-danger';
+              showToast("@Localizer["Đã lưu vào danh sách yêu thích!"]", "success");
             } else {
               btn.classList.remove('active');
               heart.className = 'bi bi-heart';
+              showToast("@Localizer["Đã xoá khỏi danh sách yêu thích!"]", "info");
             }
           }
         },
         error: function() {
-          alert("@Localizer["Có lỗi xảy ra, vui lòng thử lại sau."]");
+          showToast("@Localizer["Có lỗi xảy ra, vui lòng thử lại sau."]", "error");
         }
       });
       </text>
