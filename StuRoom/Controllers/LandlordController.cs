@@ -134,7 +134,7 @@ public class LandlordController(
     public async Task<IActionResult> CreateBuilding(
         string name, string address,
         string province, string district, string ward,
-        string? description)
+        string? description, double? latitude, double? longitude)
     {
         if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(address))
         {
@@ -150,7 +150,9 @@ public class LandlordController(
             Province    = province.Trim(),
             District    = district.Trim(),
             Ward        = ward.Trim(),
-            Description = string.IsNullOrWhiteSpace(description) ? null : description.Trim()
+            Description = string.IsNullOrWhiteSpace(description) ? null : description.Trim(),
+            Latitude    = latitude,
+            Longitude   = longitude
         });
         await db.SaveChangesAsync();
 
@@ -162,7 +164,7 @@ public class LandlordController(
     public async Task<IActionResult> EditBuilding(
         int id, string name, string address,
         string province, string district, string ward,
-        string? description)
+        string? description, double? latitude, double? longitude)
     {
         var building = await db.Buildings
             .FirstOrDefaultAsync(b => b.Id == id && b.LandlordId == CurrentUserId);
@@ -180,6 +182,8 @@ public class LandlordController(
         building.District    = district.Trim();
         building.Ward        = ward.Trim();
         building.Description = string.IsNullOrWhiteSpace(description) ? null : description.Trim();
+        building.Latitude    = latitude;
+        building.Longitude   = longitude;
         await db.SaveChangesAsync();
 
         TempData["Success"] = $"Đã cập nhật tòa nhà <strong>{building.Name}</strong>.";

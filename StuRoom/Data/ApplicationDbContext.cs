@@ -22,6 +22,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<Payment> Payments => Set<Payment>();
     public DbSet<RoomReview> RoomReviews => Set<RoomReview>();
     public DbSet<Notification> Notifications => Set<Notification>();
+    public DbSet<RoomReport> RoomReports => Set<RoomReport>();
+    public DbSet<FavoriteRoom> FavoriteRooms => Set<FavoriteRoom>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -123,6 +125,29 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         builder.Entity<InvoiceItem>().Property(i => i.CurrentReading).HasPrecision(18, 3);
         builder.Entity<Payment>().Property(p => p.Amount).HasPrecision(18, 2);
         builder.Entity<Room>().Property(r => r.Area).HasPrecision(10, 2);
+
+        // FavoriteRoom — composite PK and FK constraints
+        builder.Entity<FavoriteRoom>()
+            .HasKey(fr => new { fr.TenantId, fr.RoomId });
+
+        builder.Entity<FavoriteRoom>()
+            .HasOne(fr => fr.Tenant)
+            .WithMany()
+            .HasForeignKey(fr => fr.TenantId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // RoomReport — FK constraints
+        builder.Entity<RoomReport>()
+            .HasOne(rr => rr.Reporter)
+            .WithMany()
+            .HasForeignKey(rr => rr.ReporterId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<RoomReport>()
+            .HasOne(rr => rr.Room)
+            .WithMany()
+            .HasForeignKey(rr => rr.RoomId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }
 

@@ -59,7 +59,7 @@ else
               <div class="d-flex gap-1">
                 <button class="btn btn-sm btn-outline-secondary"
                         title="Sửa"
-                        onclick="openEditBuilding(@b.Id, '@Html.Raw(Html.Encode(b.Name))', '@Html.Raw(Html.Encode(b.Address))', '@Html.Raw(Html.Encode(b.Province))', '@Html.Raw(Html.Encode(b.District))', '@Html.Raw(Html.Encode(b.Ward))', '@Html.Raw(Html.Encode(b.Description ?? ""))')">
+                        onclick="openEditBuilding(@b.Id, '@Html.Raw(Html.Encode(b.Name))', '@Html.Raw(Html.Encode(b.Address))', '@Html.Raw(Html.Encode(b.Province))', '@Html.Raw(Html.Encode(b.District))', '@Html.Raw(Html.Encode(b.Ward))', '@Html.Raw(Html.Encode(b.Description ?? ""))', @(b.Latitude?.ToString() ?? "null"), @(b.Longitude?.ToString() ?? "null"))">
                   <i class="bi bi-pencil"></i>
                 </button>
                 <form asp-action="DeleteBuilding" method="post" class="d-inline">
@@ -134,6 +134,16 @@ else
             <textarea name="description" class="form-control" rows="2"
                       placeholder="Ghi chú thêm về tòa nhà (tuỳ chọn)"></textarea>
           </div>
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <label class="form-label fw-semibold">Vĩ độ (Latitude)</label>
+              <input type="number" step="any" name="latitude" class="form-control" placeholder="10.8231" />
+            </div>
+            <div class="col-6">
+              <label class="form-label fw-semibold">Kinh độ (Longitude)</label>
+              <input type="number" step="any" name="longitude" class="form-control" placeholder="106.6297" />
+            </div>
+          </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Huỷ</button>
@@ -184,6 +194,16 @@ else
             <label class="form-label fw-semibold">Mô tả</label>
             <textarea name="description" id="editBuildingDesc" class="form-control" rows="2"></textarea>
           </div>
+          <div class="row g-2 mb-3">
+            <div class="col-6">
+              <label class="form-label fw-semibold">Vĩ độ (Latitude)</label>
+              <input type="number" step="any" name="latitude" id="editBuildingLat" class="form-control" />
+            </div>
+            <div class="col-6">
+              <label class="form-label fw-semibold">Kinh độ (Longitude)</label>
+              <input type="number" step="any" name="longitude" id="editBuildingLng" class="form-control" />
+            </div>
+          </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Huỷ</button>
@@ -198,7 +218,7 @@ else
 
 @section Scripts {
   <script>
-    function openEditBuilding(id, name, address, province, district, ward, description) {
+    function openEditBuilding(id, name, address, province, district, ward, description, latitude, longitude) {
       document.getElementById('editBuildingId').value      = id;
       document.getElementById('editBuildingName').value    = name;
       document.getElementById('editBuildingAddress').value = address;
@@ -206,6 +226,8 @@ else
       document.getElementById('editBuildingDistrict').value = district;
       document.getElementById('editBuildingWard').value    = ward;
       document.getElementById('editBuildingDesc').value    = description;
+      document.getElementById('editBuildingLat').value     = latitude !== null ? latitude : '';
+      document.getElementById('editBuildingLng').value     = longitude !== null ? longitude : '';
       new bootstrap.Modal(document.getElementById('editBuildingModal')).show();
     }
   </script>

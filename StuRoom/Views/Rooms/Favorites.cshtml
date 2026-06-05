@@ -1,0 +1,226 @@
+@model List<StuRoom.Models.ViewModels.RoomCardViewModel>
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@{
+    ViewData["Title"] = Localizer["Phòng yêu thích"];
+    Layout = "_Layout";
+}
+
+<div class="container py-5">
+  
+  @* Breadcrumb *@
+  <nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb small px-3 py-2 bg-white rounded-pill shadow-sm d-inline-flex border">
+      <li class="breadcrumb-item"><a asp-action="Index" class="text-decoration-none text-primary fw-semibold"><i class="bi bi-house me-1"></i>@Localizer["Tìm phòng"]</a></li>
+      <li class="breadcrumb-item active text-secondary" aria-current="page">@Localizer["Phòng yêu thích"]</li>
+    </ol>
+  </nav>
+
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+      <h4 class="fw-bold mb-1 text-dark">@Localizer["Phòng đã lưu"]</h4>
+      <p class="text-muted small mb-0">
+        @if (Model.Count == 0)
+        {
+          <span>@Localizer["Chưa có phòng nào được lưu"]</span>
+        }
+        else
+        {
+          <span>@Localizer["Đang lưu"] <strong>@Model.Count</strong> @Localizer["phòng trọ"]</span>
+        }
+      </p>
+    </div>
+  </div>
+
+  @if (Model.Count == 0)
+  {
+    <div class="text-center py-5 bg-white rounded-3 shadow-sm my-4 border">
+      <i class="bi bi-heart-slash text-muted fs-1 d-block mb-3"></i>
+      <h5 class="text-dark fw-bold">@Localizer["Danh sách trống"]</h5>
+      <p class="text-muted small">@Localizer["Hãy lưu những phòng trọ bạn ưng ý khi tìm kiếm."]</p>
+      <a asp-action="Index" class="btn btn-primary rounded-pill btn-sm px-4 fw-semibold mt-2 shadow-sm">@Localizer["Tìm phòng ngay"]</a>
+    </div>
+  }
+  else
+  {
+    <div class="row g-4">
+      @foreach (var room in Model)
+      {
+        var categoryLabel = Localizer["Phòng trọ"].Value;
+        if (room.Capacity == 1) { categoryLabel = Localizer["Ký túc xá"].Value; }
+        else if (room.Area > 25 && room.Capacity <= 2) { categoryLabel = Localizer["Studio"].Value; }
+        else if (room.Area > 40) { categoryLabel = Localizer["Căn hộ"].Value; }
+
+        <div class="col-sm-6 col-md-4 col-lg-3" id="favorite-card-@room.Id">
+          <a asp-action="Detail" asp-route-id="@room.Id" class="text-decoration-none text-dark">
+            <div class="card border-0 shadow-sm h-100 room-card">
+
+              @* Image & Badges *@
+              <div class="position-relative overflow-hidden" style="height: 180px;">
+                @if (room.PrimaryImageUrl != null)
+                {
+                  <img src="@room.PrimaryImageUrl" alt="@room.BuildingName"
+                       class="w-100 h-100" style="object-fit:cover" />
+                }
+                else
+                {
+                  <div class="w-100 h-100 d-flex align-items-center justify-content-center bg-light">
+                    <i class="bi bi-image text-muted fs-1"></i>
+                  </div>
+                }
+
+                @* Badges *@
+                <div class="position-absolute top-0 start-0 m-3 d-flex gap-2">
+                  <span class="badge badge-category">@categoryLabel</span>
+                </div>
+
+                @* Favorite heart icon *@
+                <button type="button" 
+                        class="btn btn-fav active position-absolute top-0 end-0 m-3 d-flex align-items-center justify-content-center shadow-sm"
+                        onclick="toggleFavorite(event, @room.Id)">
+                  <i class="bi bi-heart-fill text-danger"></i>
+                </button>
+              </div>
+
+              @* Details *@
+              <div class="card-body p-3 d-flex flex-column justify-content-between">
+                <div>
+                  <div class="d-flex align-items-start justify-content-between gap-2 mb-2">
+                    <h6 class="fw-bold mb-0 text-truncate text-dark card-room-title">@room.BuildingName - P.@room.RoomNumber</h6>
+                  </div>
+                  
+                  <div class="text-muted small text-truncate mb-3" style="font-size: 12px;">
+                    <i class="bi bi-geo-alt me-1"></i>@room.Address
+                  </div>
+
+                  <div class="d-flex flex-wrap gap-1.5 mb-3">
+                    <span class="badge badge-spec"><i class="bi bi-rulers me-1"></i>@room.Area m²</span>
+                    @if (room.Capacity.HasValue)
+                    {
+                      <span class="badge badge-spec"><i class="bi bi-people me-1"></i>@room.Capacity @Localizer["người"]</span>
+                    }
+                  </div>
+                </div>
+
+                @* Footer *@
+                <div class="d-flex align-items-center justify-content-between pt-2 border-top">
+                  <div>
+                    <span class="text-muted text-uppercase fw-semibold d-block" style="font-size: 9px; letter-spacing: 0.05em; margin-bottom: 2px;">@Localizer["Giá thuê"]</span>
+                    @if (room.RentPrice.HasValue)
+                    {
+                      <div class="fw-bold text-primary card-room-price mb-0" style="font-size: 17px;">
+                        @((room.RentPrice.Value / 1000000.0m).ToString("0.#")) <span class="fs-6 fw-semibold">Tr</span><span class="text-muted fw-normal" style="font-size: 11px;">/@Localizer["tháng"]</span>
+                      </div>
+                    }
+                    else
+                    {
+                      <div class="text-muted small fw-semibold">@Localizer["Liên hệ"]</div>
+                    }
+                  </div>
+                  <div class="btn-detail-arrow d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                    <i class="bi bi-arrow-right" style="font-size: 12px;"></i>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </a>
+        </div>
+      }
+    </div>
+  }
+</div>
+
+@section Styles {
+<style>
+  .room-card {
+    border-radius: 16px !important;
+    overflow: hidden;
+    background: #ffffff;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02) !important;
+    transition: transform 0.2s, box-shadow 0.2s;
+    border: none !important;
+  }
+  .room-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.06) !important;
+  }
+  .badge-category {
+    background: rgba(255, 255, 255, 0.85) !important;
+    backdrop-filter: blur(4px);
+    color: #1f2937;
+    font-size: 9px;
+    font-weight: 600;
+    padding: 4px 8px;
+    border-radius: 30px !important;
+  }
+  .btn-fav {
+    width: 32px;
+    height: 32px;
+    border-radius: 50% !important;
+    background: rgba(255, 255, 255, 0.9) !important;
+    border: none;
+    transition: background 0.15s, transform 0.15s;
+  }
+  .btn-fav:hover {
+    transform: scale(1.1);
+  }
+  .badge-spec {
+    background-color: #f3f4f6 !important;
+    color: #4b5563;
+    font-weight: 500;
+    font-size: 10px;
+    padding: 4px 8px;
+    border-radius: 30px !important;
+  }
+  .card-room-title {
+    font-size: 14px;
+    color: #1f2937;
+  }
+  .btn-detail-arrow {
+    border-radius: 50%;
+    background-color: #f3f4f6;
+    color: #1f2937;
+    transition: background-color 0.15s, color 0.15s, transform 0.15s;
+  }
+  .room-card:hover .btn-detail-arrow {
+    background-color: #2563eb;
+    color: white;
+    transform: translateX(2px);
+  }
+</style>
+}
+
+@section Scripts {
+<script>
+  function toggleFavorite(event, roomId) {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    if (!confirm("@Localizer["Bạn có chắc chắn muốn bỏ lưu phòng này?"]")) {
+      return;
+    }
+    
+    $.ajax({
+      url: '@Url.Action("ToggleFavorite", "Rooms")',
+      type: 'POST',
+      data: { 
+        roomId: roomId,
+        __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val() 
+      },
+      success: function(response) {
+        if (response.success && !response.isFavorite) {
+          $('#favorite-card-' + roomId).fadeOut(300, function() {
+            $(this).remove();
+            if ($('.room-card').length === 0) {
+              location.reload();
+            }
+          });
+        }
+      },
+      error: function() {
+        alert('@Localizer["Có lỗi xảy ra, vui lòng thử lại sau."]');
+      }
+    });
+  }
+</script>
+}

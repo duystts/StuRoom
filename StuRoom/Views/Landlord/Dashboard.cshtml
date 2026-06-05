@@ -239,57 +239,119 @@
 @section Scripts {
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
-// Revenue bar chart
-new Chart(document.getElementById('revenueChart'), {
-  type: 'bar',
-  data: {
-    labels: @Html.Raw(revenueLabelsJson),
-    datasets: [{
-      label: 'Doanh thu (₫)',
-      data: @Html.Raw(revenueDataJson),
-      backgroundColor: 'rgba(79,70,229,0.7)',
-      borderColor: 'rgba(79,70,229,1)',
-      borderWidth: 1,
-      borderRadius: 4,
-    }]
-  },
-  options: {
-    responsive: true,
-    plugins: { legend: { display: false } },
-    scales: {
-      y: {
-        beginAtZero: true,
-        ticks: {
-          callback: v => new Intl.NumberFormat('vi-VN',
-            { notation: 'compact', maximumFractionDigits: 1 }).format(v) + ' ₫'
-        }
-      }
-    }
-  }
-});
+// Keep references to charts
+let revenueChart;
+let occupancyChart;
 
-// Occupancy doughnut
-new Chart(document.getElementById('occupancyChart'), {
-  type: 'doughnut',
-  data: {
-    labels: ['Đang thuê', 'Trống'],
-    datasets: [{
-      data: [@occupiedRooms, @(totalRooms - occupiedRooms)],
-      backgroundColor: ['#4f46e5', '#e5e7eb'],
-      borderWidth: 0,
-    }]
-  },
-  options: {
-    cutout: '70%',
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        callbacks: {
-          label: ctx => ` ${ctx.label}: ${ctx.raw} phòng`
+function initCharts() {
+  // Revenue bar chart
+  revenueChart = new Chart(document.getElementById('revenueChart'), {
+    type: 'bar',
+    data: {
+      labels: @Html.Raw(revenueLabelsJson),
+      datasets: [{
+        label: 'Doanh thu (₫)',
+        data: @Html.Raw(revenueDataJson),
+        backgroundColor: 'rgba(79,70,229,0.75)',
+        borderColor: 'rgba(79,70,229,1)',
+        borderWidth: 1,
+        borderRadius: 4,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { 
+        legend: { display: false },
+        tooltip: {
+          borderWidth: 1
+        }
+      },
+      scales: {
+        x: {
+          grid: {}
+        },
+        y: {
+          beginAtZero: true,
+          grid: {},
+          ticks: {
+            callback: v => new Intl.NumberFormat('vi-VN',
+              { notation: 'compact', maximumFractionDigits: 1 }).format(v) + ' ₫'
+          }
         }
       }
     }
-  }
+  });
+
+  // Occupancy doughnut
+  occupancyChart = new Chart(document.getElementById('occupancyChart'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Đang thuê', 'Trống'],
+      datasets: [{
+        data: [@occupiedRooms, @(totalRooms - occupiedRooms)],
+        backgroundColor: ['#4f46e5', '#e5e7eb'],
+        borderWidth: 0,
+      }]
+    },
+    options: {
+      cutout: '70%',
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          borderWidth: 1,
+          callbacks: {
+            label: ctx => ` ${ctx.label}: ${ctx.raw} phòng`
+          }
+        }
+      }
+    }
+  });
+}
+
+function applyThemeToCharts(theme) {
+  if (!revenueChart || !occupancyChart) return;
+  const isDark = theme === 'dark';
+  const textColor = isDark ? '#9ca3af' : '#4b5563';
+  const gridColor = isDark ? '#232742' : '#e5e7eb';
+  const tooltipBg = isDark ? '#181a30' : '#ffffff';
+  const tooltipBorder = isDark ? '#252847' : '#e2e8f0';
+  const tooltipColor = isDark ? '#f3f4f6' : '#1f2937';
+
+  // Revenue chart scaling colors
+  revenueChart.options.scales.x.ticks.color = textColor;
+  revenueChart.options.scales.y.ticks.color = textColor;
+  revenueChart.options.scales.x.grid.color = gridColor;
+  revenueChart.options.scales.y.grid.color = gridColor;
+  
+  // Tooltip colors
+  revenueChart.options.plugins.tooltip.backgroundColor = tooltipBg;
+  revenueChart.options.plugins.tooltip.titleColor = tooltipColor;
+  revenueChart.options.plugins.tooltip.bodyColor = tooltipColor;
+  revenueChart.options.plugins.tooltip.borderColor = tooltipBorder;
+  
+  occupancyChart.options.plugins.tooltip.backgroundColor = tooltipBg;
+  occupancyChart.options.plugins.tooltip.titleColor = tooltipColor;
+  occupancyChart.options.plugins.tooltip.bodyColor = tooltipColor;
+  occupancyChart.options.plugins.tooltip.borderColor = tooltipBorder;
+  
+  // Doughnut dataset
+  occupancyChart.data.datasets[0].backgroundColor = [
+    '#4f46e5', 
+    isDark ? '#232742' : '#e5e7eb'
+  ];
+
+  revenueChart.update();
+  occupancyChart.update();
+}
+
+// Initialise and apply current theme
+initCharts();
+const initialTheme = document.documentElement.getAttribute('data-theme') || 'light';
+applyThemeToCharts(initialTheme);
+
+// Listen for global theme-changed event
+window.addEventListener('theme-changed', (e) => {
+  applyThemeToCharts(e.detail.theme);
 });
 </script>
 }

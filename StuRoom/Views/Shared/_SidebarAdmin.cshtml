@@ -1,10 +1,11 @@
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @{
     var active = ViewData["ActiveMenu"]?.ToString() ?? "";
 }
 
 <aside class="sturoom-sidebar" id="adminSidebar">
   <nav>
-    <div class="sidebar-section-label">Tổng quan</div>
+    <div class="sidebar-section-label">@Localizer["Tổng quan"]</div>
 
     <a class="sidebar-link @(active == "AdminDashboard" ? "active" : "")"
        asp-controller="Admin" asp-action="Dashboard">
@@ -12,12 +13,12 @@
       <span>Dashboard</span>
     </a>
 
-    <div class="sidebar-section-label mt-3">Quản trị</div>
+    <div class="sidebar-section-label mt-3">@Localizer["Quản trị"]</div>
 
     <a class="sidebar-link @(active == "ApproveLandlord" ? "active" : "")"
        asp-controller="Admin" asp-action="LandlordApproval">
       <i class="bi bi-person-check"></i>
-      <span>Duyệt Landlord</span>
+      <span>@Localizer["Duyệt Landlord"]</span>
     </a>
 
     <a class="sidebar-link @(active == "Amenities" ? "active" : "")"
@@ -29,14 +30,20 @@
     <a class="sidebar-link @(active == "ReviewModeration" ? "active" : "")"
        asp-controller="Admin" asp-action="ReviewModeration">
       <i class="bi bi-star-half"></i>
-      <span>Kiểm duyệt Review</span>
+      <span>@Localizer["Kiểm duyệt Review"]</span>
     </a>
 
-    <div class="sidebar-section-label mt-3">Hệ thống</div>
+    <a class="sidebar-link @(active == "Reports" ? "active" : "")"
+       asp-controller="Admin" asp-action="Reports">
+      <i class="bi bi-exclamation-triangle"></i>
+      <span>@Localizer["Báo cáo vi phạm"]</span>
+    </a>
+
+    <div class="sidebar-section-label mt-3">@Localizer["Hệ thống"]</div>
 
     <a class="sidebar-link @(active == "AllUsers" ? "active" : "")" href="#">
       <i class="bi bi-people"></i>
-      <span>Người dùng</span>
+      <span>@Localizer["Người dùng"]</span>
     </a>
   </nav>
 </aside>
@@ -59,15 +66,15 @@
   </div>
   <div class="offcanvas-body p-0">
     <nav>
-      <div class="sidebar-section-label">Tổng quan</div>
+      <div class="sidebar-section-label">@Localizer["Tổng quan"]</div>
       <a class="sidebar-link @(active == "AdminDashboard" ? "active" : "")"
          asp-controller="Admin" asp-action="Dashboard">
         <i class="bi bi-bar-chart-line"></i><span>Dashboard</span>
       </a>
-      <div class="sidebar-section-label mt-3">Quản trị</div>
+      <div class="sidebar-section-label mt-3">@Localizer["Quản trị"]</div>
       <a class="sidebar-link @(active == "ApproveLandlord" ? "active" : "")"
          asp-controller="Admin" asp-action="LandlordApproval">
-        <i class="bi bi-person-check"></i><span>Duyệt Landlord</span>
+        <i class="bi bi-person-check"></i><span>@Localizer["Duyệt Landlord"]</span>
       </a>
       <a class="sidebar-link @(active == "Amenities" ? "active" : "")"
          asp-controller="Admin" asp-action="Amenities">
@@ -75,11 +82,15 @@
       </a>
       <a class="sidebar-link @(active == "ReviewModeration" ? "active" : "")"
          asp-controller="Admin" asp-action="ReviewModeration">
-        <i class="bi bi-star-half"></i><span>Kiểm duyệt Review</span>
+        <i class="bi bi-star-half"></i><span>@Localizer["Kiểm duyệt Review"]</span>
       </a>
-      <div class="sidebar-section-label mt-3">Hệ thống</div>
+      <a class="sidebar-link @(active == "Reports" ? "active" : "")"
+         asp-controller="Admin" asp-action="Reports">
+        <i class="bi bi-exclamation-triangle"></i><span>@Localizer["Báo cáo vi phạm"]</span>
+      </a>
+      <div class="sidebar-section-label mt-3">@Localizer["Hệ thống"]</div>
       <a class="sidebar-link @(active == "AllUsers" ? "active" : "")" href="#">
-        <i class="bi bi-people"></i><span>Người dùng</span>
+        <i class="bi bi-people"></i><span>@Localizer["Người dùng"]</span>
       </a>
     </nav>
   </div>

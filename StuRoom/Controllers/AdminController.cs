@@ -245,4 +245,56 @@ public class AdminController(
         TempData["Success"] = $"Đã xoá tiện ích <strong>{amenity.Name}</strong>.";
         return RedirectToAction(nameof(Amenities));
     }
+
+    // ════════════════════════════════════════════════════════
+    // ROOM VIOLATION REPORTS
+    // ════════════════════════════════════════════════════════
+
+    public async Task<IActionResult> Reports(string? status)
+    {
+        ViewData["ActiveMenu"] = "Reports";
+        ViewData["StatusFilter"] = status ?? "pending";
+
+        var query = db.RoomReports
+            .Include(r => r.Room).ThenInclude(r => r.Building)
+            .Include(r => r.Reporter)
+            .AsQueryable();
+
+        query = status switch
+        {
+            "resolved"  => query.Where(r => r.Status == ReportStatus.Resolved),
+            "dismissed" => query.Where(r => r.Status == ReportStatus.Dismissed),
+            _           => query.Where(r => r.Status == ReportStatus.Pending)
+        };
+
+        var list = await query.OrderByDescending(r => r.CreatedAt).ToListAsync();
+        return View(list);
+    }
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> HandleReport(int id, string actionType, string? feedback)
+    {
+        var report = await db.RoomReports
+            .Include(r => r.Room)
+            .FirstOrDefaultAsync(r => r.Id == id);
+        if (report == null) return NotFound();
+
+        report.AdminFeedback = feedback?.Trim();
+        report.HandledAt = DateTime.UtcNow;
+
+        if (actionType == "block")
+        {
+            report.Status = ReportStatus.Resolved;
+            report.Room.Status = RoomStatus.Inactive; // Block room
+            TempData["Success"] = "Đã khoá phòng và giải quyết báo cáo.";
+        }
+        else if (actionType == "dismiss")
+        {
+            report.Status = ReportStatus.Dismissed;
+            TempData["Success"] = "Đã bỏ qua báo cáo.";
+        }
+
+        await db.SaveChangesAsync();
+        return RedirectToAction(nameof(Reports), new { status = actionType == "block" ? "resolved" : "dismissed" });
+    }
 }

@@ -2,6 +2,59 @@
    StuRoom — Site-wide styles
    ============================================================ */
 
+:root {
+  --bg-color: #f5f6fa;
+  --text-color: #1a1a2e;
+  --text-secondary: #6b7280;
+  --card-bg: #ffffff;
+  --card-border: #eef0f6;
+  --navbar-bg: #ffffff;
+  --navbar-border: #eef0f6;
+  --sidebar-bg: #1a1a2e;
+  --sidebar-link-hover: #232645;
+  --sidebar-link-text: #a0a8c8;
+  --input-bg: #ffffff;
+  --input-border: #e2e8f0;
+  --input-color: #1a1a2e;
+  --table-header-bg: #f8fafc;
+  --table-border: #e2e8f0;
+  --dropdown-bg: #ffffff;
+  --dropdown-border: rgba(0,0,0,.15);
+  --dropdown-item-hover: #f8fafc;
+  --spec-box-bg: #f8fafc;
+  --spec-box-border: #f1f5f9;
+  --footer-bg: #ffffff;
+  --footer-border: #eef0f6;
+  --link-color: #2563eb;
+  --transition-speed: 0.2s;
+}
+
+html[data-theme="dark"] {
+  --bg-color: #0b0c16;
+  --text-color: #f3f4f6;
+  --text-secondary: #9ca3af;
+  --card-bg: #131525;
+  --card-border: #232742;
+  --navbar-bg: #131525;
+  --navbar-border: #232742;
+  --sidebar-bg: #090a10;
+  --sidebar-link-hover: #1b1e33;
+  --sidebar-link-text: #8b92b6;
+  --input-bg: #181a30;
+  --input-border: #2e3357;
+  --input-color: #f3f4f6;
+  --table-header-bg: #1c1e33;
+  --table-border: #252847;
+  --dropdown-bg: #131525;
+  --dropdown-border: #232742;
+  --dropdown-item-hover: #1c1e33;
+  --spec-box-bg: #181a30;
+  --spec-box-border: #252847;
+  --footer-bg: #131525;
+  --footer-border: #232742;
+  --link-color: #3b82f6;
+}
+
 /* ── Base ── */
 html {
   font-size: 15px;
@@ -10,18 +63,21 @@ html {
 }
 
 body {
-  background-color: #f5f6fa;
-  color: #1a1a2e;
+  background-color: var(--bg-color);
+  color: var(--text-color);
   margin-bottom: 0;
+  transition: background-color var(--transition-speed), color var(--transition-speed);
 }
 
 /* ── Navbar ── */
 .sturoom-navbar {
   height: 56px;
-  background: #fff;
+  background: var(--navbar-bg);
   position: sticky;
   top: 0;
   z-index: 1030;
+  border-bottom: 1px solid var(--navbar-border) !important;
+  transition: background-color var(--transition-speed), border-color var(--transition-speed);
 }
 
 .sturoom-navbar .navbar-brand {
@@ -31,13 +87,29 @@ body {
 
 .sturoom-navbar .nav-link {
   font-size: 14px;
-  color: #374151;
+  color: var(--text-color);
+  opacity: 0.85;
   padding-left: .75rem;
   padding-right: .75rem;
+  transition: color var(--transition-speed), opacity var(--transition-speed);
 }
 
 .sturoom-navbar .nav-link:hover {
-  color: #6c8fff;
+  color: var(--link-color) !important;
+  opacity: 1;
+}
+
+/* ── Theme Toggle Button ── */
+.theme-toggle-btn {
+  border: none !important;
+  background: transparent !important;
+  color: var(--text-color) !important;
+  opacity: 0.7;
+  transition: opacity var(--transition-speed), transform var(--transition-speed) !important;
+}
+.theme-toggle-btn:hover {
+  opacity: 1;
+  transform: rotate(15deg) scale(1.1);
 }
 
 /* ── Page body (sidebar + main) ── */
@@ -50,9 +122,10 @@ body {
 .sturoom-sidebar {
   width: 220px;
   flex-shrink: 0;
-  background: #1a1a2e;
+  background: var(--sidebar-bg);
   padding: 20px 0 32px;
   display: none; /* hidden on mobile, shown on lg+ */
+  transition: background-color var(--transition-speed);
 }
 
 @media (min-width: 992px) {
@@ -75,7 +148,7 @@ body {
   align-items: center;
   gap: 10px;
   padding: 9px 20px;
-  color: #a0a8c8;
+  color: var(--sidebar-link-text);
   text-decoration: none;
   font-size: 13.5px;
   border-left: 3px solid transparent;
@@ -83,15 +156,15 @@ body {
 }
 
 .sidebar-link:hover {
-  background: #232645;
+  background: var(--sidebar-link-hover);
   color: #fff;
-  border-left-color: #6c8fff;
+  border-left-color: var(--link-color);
 }
 
 .sidebar-link.active {
-  background: #232645;
+  background: var(--sidebar-link-hover);
   color: #fff;
-  border-left-color: #6c8fff;
+  border-left-color: var(--link-color);
   font-weight: 600;
 }
 
@@ -110,7 +183,8 @@ body {
 }
 
 .sturoom-main.has-sidebar {
-  background: #f5f6fa;
+  background: var(--bg-color);
+  transition: background-color var(--transition-speed);
 }
 
 @media (max-width: 768px) {
@@ -125,7 +199,7 @@ body {
   bottom: 20px;
   left: 16px;
   z-index: 1020;
-  background: #1a1a2e;
+  background: var(--sidebar-bg);
   color: #fff;
   border: none;
   border-radius: 50%;
@@ -133,12 +207,14 @@ body {
   height: 44px;
   font-size: 18px;
   box-shadow: 0 2px 8px rgba(0,0,0,.3);
+  transition: background-color var(--transition-speed);
 }
 
 /* ── Mobile offcanvas sidebar ── */
 .sturoom-offcanvas {
-  background: #1a1a2e;
+  background: var(--sidebar-bg);
   width: 240px !important;
+  transition: background-color var(--transition-speed);
 }
 
 .sturoom-offcanvas .sidebar-link {
@@ -150,27 +226,159 @@ body {
   height: 40px;
   display: flex;
   align-items: center;
-  background: #fff;
+  background: var(--footer-bg);
+  border-top: 1px solid var(--footer-border) !important;
+  transition: background-color var(--transition-speed), border-color var(--transition-speed);
 }
 
-/* ── Form focus ring ── */
-.btn:focus, .btn:active:focus,
-.form-control:focus, .form-check-input:focus {
-  box-shadow: 0 0 0 0.1rem #fff, 0 0 0 0.25rem #6c8fff;
+/* ── Form elements ── */
+.form-control, .form-select {
+  background-color: var(--input-bg) !important;
+  border-color: var(--input-border) !important;
+  color: var(--input-color) !important;
+  transition: background-color var(--transition-speed), border-color var(--transition-speed), color var(--transition-speed);
+}
+.form-control:focus, .form-select:focus {
+  color: var(--input-color) !important;
+  background-color: var(--input-bg) !important;
+  border-color: var(--link-color) !important;
+  box-shadow: 0 0 0 0.25rem rgba(37, 99, 235, 0.15) !important;
+}
+.form-control::placeholder {
+  color: var(--text-secondary);
+  opacity: 0.7;
 }
 
 /* ── Cards ── */
 .card {
-  border-radius: 10px;
+  background-color: var(--card-bg) !important;
+  border-color: var(--card-border) !important;
+  color: var(--text-color) !important;
+  transition: background-color var(--transition-speed), border-color var(--transition-speed);
+}
+
+/* ── Tables ── */
+.table {
+  color: var(--text-color) !important;
+  border-color: var(--table-border) !important;
+  background-color: transparent !important;
+}
+.table th, .table td {
+  border-color: var(--table-border) !important;
+  background-color: transparent !important;
+  color: var(--text-color) !important;
+}
+.table tbody tr, .table tbody td {
+  background-color: transparent !important;
+  color: var(--text-color) !important;
+}
+.table-light, thead th {
+  background-color: var(--table-header-bg) !important;
+  color: var(--text-color) !important;
+  border-color: var(--table-border) !important;
+}
+.table-hover tbody tr:hover td {
+  background-color: var(--dropdown-item-hover) !important;
+  color: var(--text-color) !important;
+}
+
+/* ── Dropdown menu ── */
+.dropdown-menu {
+  background-color: var(--dropdown-bg) !important;
+  border: 1px solid var(--dropdown-border) !important;
+  transition: background-color var(--transition-speed);
+}
+.dropdown-item {
+  color: var(--text-color) !important;
+}
+.dropdown-item:hover {
+  background-color: var(--dropdown-item-hover) !important;
+}
+.dropdown-divider {
+  border-top-color: var(--card-border) !important;
+}
+
+/* ── Breadcrumbs ── */
+.breadcrumb {
+  background-color: var(--card-bg) !important;
+  border: 1px solid var(--card-border) !important;
+}
+.breadcrumb-item a {
+  color: var(--link-color);
+}
+.breadcrumb-item.active {
+  color: var(--text-secondary) !important;
+}
+
+/* ── Spec Boxes (Detail Page) ── */
+.spec-box {
+  background-color: var(--spec-box-bg) !important;
+  border-color: var(--spec-box-border) !important;
+}
+.spec-box:hover {
+  background-color: var(--spec-box-border) !important;
 }
 
 /* ── Utilities ── */
-.text-primary { color: #6c8fff !important; }
+.text-primary { color: var(--link-color) !important; }
+.text-muted { color: var(--text-secondary) !important; }
+.text-dark { color: var(--text-color) !important; }
+
 .btn-primary {
-  background-color: #6c8fff;
-  border-color: #6c8fff;
+  background-color: #2563eb;
+  border-color: #2563eb;
 }
 .btn-primary:hover, .btn-primary:focus {
-  background-color: #5a7aff;
-  border-color: #5a7aff;
+  background-color: #1d4ed8;
+  border-color: #1d4ed8;
 }
+
+.btn-light {
+  background-color: var(--spec-box-bg) !important;
+  border-color: var(--input-border) !important;
+  color: var(--text-color) !important;
+}
+.btn-light:hover {
+  background-color: var(--spec-box-border) !important;
+}
+
+/* ── Progress Bars, Alerts & Badges ── */
+.progress {
+  background-color: var(--spec-box-bg) !important;
+  border: 1px solid var(--spec-box-border);
+}
+.badge.bg-light {
+  background-color: var(--spec-box-bg) !important;
+  color: var(--text-color) !important;
+  border-color: var(--card-border) !important;
+}
+.alert-success {
+  background-color: rgba(22, 163, 74, 0.1) !important;
+  color: #16a34a !important;
+  border: 1px solid rgba(22, 163, 74, 0.2) !important;
+}
+.alert-danger {
+  background-color: rgba(220, 38, 38, 0.1) !important;
+  color: #dc2626 !important;
+  border: 1px solid rgba(220, 38, 38, 0.2) !important;
+}
+.alert-info {
+  background-color: rgba(37, 99, 235, 0.1) !important;
+  color: #2563eb !important;
+  border: 1px solid rgba(37, 99, 235, 0.2) !important;
+}
+.alert-warning {
+  background-color: rgba(245, 158, 11, 0.1) !important;
+  color: #f59e0b !important;
+  border: 1px solid rgba(245, 158, 11, 0.2) !important;
+}
+.bg-warning-subtle {
+  background-color: rgba(245, 158, 11, 0.15) !important;
+}
+.bg-success-subtle {
+  background-color: rgba(22, 163, 74, 0.15) !important;
+}
+.bg-danger-subtle {
+  background-color: rgba(220, 38, 38, 0.15) !important;
+}
+

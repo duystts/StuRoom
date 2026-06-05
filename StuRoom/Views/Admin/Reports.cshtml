@@ -1,0 +1,184 @@
+@model List<StuRoom.Models.RoomReport>
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@{
+    ViewData["Title"] = Localizer["Báo cáo vi phạm"];
+    var currentFilter = ViewData["StatusFilter"]?.ToString() ?? "pending";
+}
+
+<div class="d-flex align-items-center justify-content-between mb-4">
+  <div>
+    <h4 class="fw-bold mb-0">@Localizer["Báo cáo vi phạm"]</h4>
+    <p class="text-muted small mb-0">@Localizer["Kiểm duyệt các báo cáo bài đăng phòng trọ từ người dùng"]</p>
+  </div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+  <div class="alert alert-success alert-dismissible fade show py-2.5 small mb-4 border-0 shadow-sm" style="border-left: 4px solid #10b981 !important;">
+    <i class="bi bi-check-circle-fill me-1.5 text-success"></i>@Html.Raw(TempData["Success"])
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+}
+
+@* Status Tabs *@
+<div class="card border-0 shadow-sm mb-4">
+  <div class="card-body p-2">
+    <div class="nav nav-pills gap-1">
+      <a class="nav-link small fw-semibold px-3 py-2 @(currentFilter == "pending" ? "active" : "text-secondary")"
+         asp-action="Reports" asp-route-status="pending">
+        <i class="bi bi-hourglass-split me-1.5"></i>@Localizer["Chờ xử lý"]
+      </a>
+      <a class="nav-link small fw-semibold px-3 py-2 @(currentFilter == "resolved" ? "active" : "text-secondary")"
+         asp-action="Reports" asp-route-status="resolved">
+        <i class="bi bi-shield-lock me-1.5"></i>@Localizer["Đã khóa phòng"]
+      </a>
+      <a class="nav-link small fw-semibold px-3 py-2 @(currentFilter == "dismissed" ? "active" : "text-secondary")"
+         asp-action="Reports" asp-route-status="dismissed">
+        <i class="bi bi-x-circle me-1.5"></i>@Localizer["Đã bỏ qua"]
+      </a>
+    </div>
+  </div>
+</div>
+
+@if (!Model.Any())
+{
+  <div class="card border-0 shadow-sm py-5 text-center text-muted">
+    <div class="card-body">
+      <i class="bi bi-shield-check fs-1 d-block mb-3 text-secondary"></i>
+      <h5 class="fw-bold text-dark mb-1">@Localizer["Không có báo cáo nào"]</h5>
+      <p class="text-muted small mb-0">@Localizer["Tất cả đều sạch sẽ và an toàn!"]</p>
+    </div>
+  </div>
+}
+else
+{
+  <div class="card border-0 shadow-sm">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light text-secondary small">
+          <tr>
+            <th class="ps-3">@Localizer["Người báo cáo"]</th>
+            <th>@Localizer["Phòng bị báo cáo"]</th>
+            <th>@Localizer["Lý do"]</th>
+            <th>@Localizer["Chi tiết"]</th>
+            <th>@Localizer["Ngày gửi"]</th>
+            @if (currentFilter != "pending")
+            {
+              <th>@Localizer["Phản hồi của Admin"]</th>
+            }
+            <th class="pe-3 text-end" style="width: 150px;"></th>
+          </tr>
+        </thead>
+        <tbody class="small text-dark">
+          @foreach (var r in Model)
+          {
+            var reasonText = r.Reason switch
+            {
+              "Fraud" => Localizer["Lừa đảo, cọc ảo"].Value,
+              "FakePrice" => Localizer["Giá sai thực tế"].Value,
+              "FakeInfo" => Localizer["Thông tin sai lệch"].Value,
+              _ => Localizer["Lý do khác"].Value
+            };
+
+            <tr>
+              <td class="ps-3">
+                <div class="fw-bold">@r.Reporter.FullName</div>
+                <div class="text-muted" style="font-size: 11px;">@r.Reporter.Email</div>
+              </td>
+              <td>
+                <a asp-controller="Rooms" asp-action="Detail" asp-route-id="@r.RoomId" target="_blank" class="fw-bold text-primary text-decoration-none">
+                  @r.Room.Building.Name - P.@r.Room.RoomNumber
+                </a>
+                <div class="text-muted" style="font-size: 11px;">@r.Room.Building.Address</div>
+              </td>
+              <td>
+                <span class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill px-2.5 py-1">
+                  @reasonText
+                </span>
+              </td>
+              <td style="max-width: 250px;">
+                <div class="text-truncate" title="@r.Description">@r.Description</div>
+              </td>
+              <td>@r.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
+              @if (currentFilter != "pending")
+              {
+                <td>
+                  <div class="text-muted">@r.AdminFeedback</div>
+                  <div class="text-muted" style="font-size: 11px;">@r.HandledAt?.ToString("dd/MM HH:mm")</div>
+                </td>
+              }
+              <td class="pe-3 text-end">
+                @if (r.Status == StuRoom.Models.ReportStatus.Pending)
+                {
+                  <button type="button" class="btn btn-danger btn-xs px-2.5 rounded-pill me-1"
+                          onclick="openHandleModal(@r.Id, 'block', '@r.Room.Building.Name - P.@r.Room.RoomNumber')">
+                    <i class="bi bi-lock-fill"></i> @Localizer["Khóa phòng"]
+                  </button>
+                  <button type="button" class="btn btn-outline-secondary btn-xs px-2.5 rounded-pill"
+                          onclick="openHandleModal(@r.Id, 'dismiss', '@r.Room.Building.Name - P.@r.Room.RoomNumber')">
+                    <i class="bi bi-x-lg"></i> @Localizer["Bỏ qua"]
+                  </button>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+}
+
+@* ── Modal: Xử lý báo cáo ── *@
+<div class="modal fade" id="handleReportModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form asp-action="HandleReport" method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="id" id="modalReportId" />
+        <input type="hidden" name="actionType" id="modalActionType" />
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold" id="modalTitleText"></h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="alert alert-info py-2 small border-0 mb-3" id="modalAlertText"></div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold small text-secondary">@Localizer["Ghi chú phản hồi / Lý do"]</label>
+            <textarea name="feedback" class="form-control" rows="3" placeholder="@Localizer["Nhập ghi chú hoặc lý do xử lý để lưu lại... (tùy chọn)"]"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill" data-bs-dismiss="modal">@Localizer["Huỷ"]</button>
+          <button type="submit" class="btn btn-sm rounded-pill px-3" id="modalSubmitBtn"></button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+@section Scripts {
+<script>
+  function openHandleModal(reportId, actionType, roomName) {
+    document.getElementById('modalReportId').value = reportId;
+    document.getElementById('modalActionType').value = actionType;
+    
+    const titleText = document.getElementById('modalTitleText');
+    const alertText = document.getElementById('modalAlertText');
+    const submitBtn = document.getElementById('modalSubmitBtn');
+    
+    if (actionType === 'block') {
+      titleText.innerHTML = '<i class="bi bi-shield-slash text-danger me-2"></i>' + "@Localizer["Khóa phòng trọ"]";
+      alertText.textContent = "@Localizer["Hành động này sẽ thay đổi trạng thái của phòng "] " + roomName + " @Localizer[" thành 'Inactive', ẩn hoàn toàn khỏi danh sách tìm kiếm công cộng."]";
+      submitBtn.className = "btn btn-danger btn-sm rounded-pill px-3";
+      submitBtn.innerHTML = '<i class="bi bi-lock-fill me-1"></i>' + "@Localizer["Xác nhận khóa"]";
+    } else {
+      titleText.innerHTML = '<i class="bi bi-x-circle text-secondary me-2"></i>' + "@Localizer["Bỏ qua báo cáo"]";
+      alertText.textContent = "@Localizer["Bỏ qua báo cáo vi phạm đối với phòng "] " + roomName + ". @Localizer["Phòng này vẫn hoạt động bình thường."] ";
+      submitBtn.className = "btn btn-secondary btn-sm rounded-pill px-3";
+      submitBtn.innerHTML = '<i class="bi bi-check-lg me-1"></i>' + "@Localizer["Xác nhận bỏ qua"]";
+    }
+    
+    new bootstrap.Modal(document.getElementById('handleReportModal')).show();
+  }
+</script>
+}

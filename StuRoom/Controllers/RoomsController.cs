@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -17,6 +18,22 @@ public class RoomsController(ApplicationDbContext db,
 
     public async Task<IActionResult> Index(RoomSearchViewModel filter)
     {
+        if (User.Identity?.IsAuthenticated == true)
+        {
+            var userId = userManager.GetUserId(User);
+            if (!string.IsNullOrEmpty(userId))
+            {
+                ViewBag.FavoriteRoomIds = await db.FavoriteRooms
+                    .Where(f => f.TenantId == userId)
+                    .Select(f => f.RoomId)
+                    .ToListAsync();
+            }
+        }
+        else
+        {
+            ViewBag.FavoriteRoomIds = new List<int>();
+        }
+
         // Base query: only Available rooms
         var query = db.Rooms
             .Include(r => r.Building)
@@ -122,6 +139,22 @@ public class RoomsController(ApplicationDbContext db,
         filter.AllAmenities = await db.Amenities.OrderBy(a => a.Name).ToListAsync();
         filter.Provinces    = allProvinces;
 
+        if (User.Identity?.IsAuthenticated == true)
+        {
+            var userId = userManager.GetUserId(User);
+            if (!string.IsNullOrEmpty(userId))
+            {
+                ViewBag.FavoriteRoomIds = await db.FavoriteRooms
+                    .Where(f => f.TenantId == userId)
+                    .Select(f => f.RoomId)
+                    .ToListAsync();
+            }
+        }
+        else
+        {
+            ViewBag.FavoriteRoomIds = new List<int>();
+        }
+
         return View(filter);
     }
 
@@ -192,6 +225,135 @@ public class RoomsController(ApplicationDbContext db,
             ReviewContractId = reviewContractId
         };
 
+        if (User.Identity?.IsAuthenticated == true)
+        {
+            var userId = userManager.GetUserId(User);
+            if (!string.IsNullOrEmpty(userId))
+            {
+                ViewBag.IsFavorite = await db.FavoriteRooms
+                    .AnyAsync(f => f.TenantId == userId && f.RoomId == id);
+            }
+        }
+        else
+        {
+            ViewBag.IsFavorite = false;
+        }
+
         return View(vm);
+    }
+
+    // ════════════════════════════════════════════════════════
+    // FAVORITES & REPORTS
+    // ════════════════════════════════════════════════════════
+
+    [HttpPost]
+    [Authorize]
+    public async Task<IActionResult> ToggleFavorite(int roomId)
+    {
+        var userId = userManager.GetUserId(User);
+        if (string.IsNullOrEmpty(userId))
+            return Json(new { success = false, message = "Unauthorized" });
+
+        var favorite = await db.FavoriteRooms
+            .FirstOrDefaultAsync(f => f.TenantId == userId && f.RoomId == roomId);
+
+        bool isFavorite;
+        if (favorite != null)
+        {
+            db.FavoriteRooms.Remove(favorite);
+            isFavorite = false;
+        }
+        else
+        {
+            db.FavoriteRooms.Add(new FavoriteRoom
+            {
+                TenantId = userId,
+                RoomId = roomId,
+                CreatedAt = DateTime.UtcNow
+            });
+            isFavorite = true;
+        }
+
+        await db.SaveChangesAsync();
+        return Json(new { success = true, isFavorite = isFavorite });
+    }
+
+    [Authorize(Roles = "Tenant")]
+    public async Task<IActionResult> Favorites()
+    {
+        var userId = userManager.GetUserId(User);
+        if (string.IsNullOrEmpty(userId)) return RedirectToAction("Login", "Account", new { area = "Identity" });
+
+        var favoriteRoomIds = await db.FavoriteRooms
+            .Where(f => f.TenantId == userId)
+            .Select(f => f.RoomId)
+            .ToListAsync();
+
+        var query = db.Rooms
+            .Include(r => r.Building)
+            .Include(r => r.Images)
+            .Include(r => r.RoomAmenities).ThenInclude(ra => ra.Amenity)
+            .Include(r => r.FeeConfigs)
+            .Include(r => r.Building.FeeConfigs)
+            .Where(r => favoriteRoomIds.Contains(r.Id) && r.Status == RoomStatus.Available);
+
+        var rooms = await query.ToListAsync();
+
+        var cards = rooms.Select(r =>
+        {
+            var rentCfg = r.FeeConfigs.FirstOrDefault(f => f.RoomId == r.Id && f.FeeCategory == FeeCategory.Rent && f.IsActive)
+                       ?? r.Building.FeeConfigs.FirstOrDefault(f => f.BuildingId == r.BuildingId && f.FeeCategory == FeeCategory.Rent && f.IsActive);
+
+            return new RoomCardViewModel
+            {
+                Id            = r.Id,
+                RoomNumber    = r.RoomNumber,
+                BuildingName  = r.Building.Name,
+                Address       = r.Building.Address,
+                Province      = r.Building.Province,
+                District      = r.Building.District,
+                Ward          = r.Building.Ward,
+                Area          = r.Area,
+                Capacity      = r.Capacity,
+                PrimaryImageUrl = r.Images.FirstOrDefault(i => i.IsPrimary)?.ImageUrl
+                               ?? r.Images.OrderBy(i => i.SortOrder).FirstOrDefault()?.ImageUrl,
+                RentPrice     = rentCfg?.UnitPrice,
+                RentUnit      = rentCfg?.Unit ?? "tháng",
+                Amenities     = r.RoomAmenities.Select(ra => (ra.Amenity.IconClass, ra.Amenity.Name)).ToList()
+            };
+        }).ToList();
+
+        return View(cards);
+    }
+
+    [HttpPost]
+    [Authorize]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ReportRoom(int roomId, string reason, string description)
+    {
+        var userId = userManager.GetUserId(User);
+        if (string.IsNullOrEmpty(userId)) return Challenge();
+
+        if (string.IsNullOrWhiteSpace(reason) || string.IsNullOrWhiteSpace(description))
+        {
+            TempData["ReviewError"] = "Lý do và nội dung báo cáo không được để trống.";
+            return RedirectToAction(nameof(Detail), new { id = roomId });
+        }
+
+        var report = new RoomReport
+        {
+            RoomId = roomId,
+            ReporterId = userId,
+            Reason = reason.Trim(),
+            Description = description.Trim(),
+            Status = ReportStatus.Pending,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        db.RoomReports.Add(report);
+        await db.SaveChangesAsync();
+
+        TempData["ReviewSuccess"] = "Đã gửi báo cáo vi phạm. Ban quản trị sẽ sớm xem xét.";
+        return RedirectToAction(nameof(Detail), new { id = roomId });
     }
 }

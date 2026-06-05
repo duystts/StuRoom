@@ -1,37 +1,42 @@
 @model StuRoom.Models.ViewModels.RoomSearchViewModel
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @{
-    ViewData["Title"] = "Tìm phòng";
+    ViewData["Title"] = Localizer["Tìm phòng"];
     Layout = "_Layout";
 }
 
-<div class="container-fluid py-4">
+<div class="container-fluid py-5">
   <div class="row g-4">
 
-    @* ══════ Sidebar bộ lọc ══════ *@
+    @* ══════ Sidebar bộ lọc (Sticky) ══════ *@
     <div class="col-lg-3">
-      <div class="card border-0 shadow-sm sticky-top" style="top:70px">
-        <div class="card-body">
-          <h6 class="fw-bold mb-3"><i class="bi bi-funnel me-2"></i>Bộ lọc</h6>
+      <div class="card filter-card sticky-top" style="top:90px; z-index: 100;">
+        <div class="card-body p-4">
+          <div class="d-flex align-items-center justify-content-between mb-4 pb-2 border-bottom">
+            <h6 class="fw-bold mb-0 text-dark filter-title"><i class="bi bi-funnel me-2 text-primary"></i>@Localizer["Bộ lọc"]</h6>
+            <a asp-action="Index" class="text-decoration-none text-primary small fw-semibold">@Localizer["Xóa tất cả"]</a>
+          </div>
+          
           <form method="get" asp-action="Index" id="filterForm">
-
             @* Keyword *@
-            <div class="mb-3">
-              <label class="form-label small fw-semibold">Tìm kiếm</label>
+            <div class="mb-4">
+              <label class="form-label small fw-semibold text-secondary">@Localizer["Tìm kiếm"]</label>
               <div class="input-group input-group-sm">
-                <span class="input-group-text"><i class="bi bi-search"></i></span>
-                <input type="text" name="Q" class="form-control" placeholder="Tên tòa nhà, khu vực..."
-                       value="@Model.Q" />
+                <span class="input-group-text bg-white border-end-0 border-radius-custom" style="border-top-left-radius: 12px; border-bottom-left-radius: 12px;"><i class="bi bi-search text-muted"></i></span>
+                <input type="text" name="Q" class="form-control form-control-custom border-start-0" 
+                       style="border-top-left-radius: 0; border-bottom-left-radius: 0;"
+                       placeholder="@Localizer["Tên tòa nhà, khu vực..."]" value="@Model.Q" />
               </div>
             </div>
 
             @* Province *@
             @if (Model.Provinces.Any())
             {
-              <div class="mb-3">
-                <label class="form-label small fw-semibold">Tỉnh / Thành phố</label>
-                <select name="Province" class="form-select form-select-sm"
+              <div class="mb-4">
+                <label class="form-label small fw-semibold text-secondary">@Localizer["Tỉnh / Thành phố"]</label>
+                <select name="Province" class="form-select form-control-custom"
                         onchange="document.getElementById('filterForm').submit()">
-                  <option value="">Tất cả</option>
+                  <option value="">@Localizer["Tất cả"]</option>
                   @foreach (var p in Model.Provinces)
                   {
                     if (Model.Province == p)
@@ -48,46 +53,48 @@
             }
 
             @* District *@
-            <div class="mb-3">
-              <label class="form-label small fw-semibold">Quận / Huyện</label>
-              <input type="text" name="District" class="form-control form-control-sm"
-                     placeholder="VD: Thủ Đức" value="@Model.District" />
+            <div class="mb-4">
+              <label class="form-label small fw-semibold text-secondary">@Localizer["Quận / Huyện"]</label>
+              <input type="text" name="District" class="form-control form-control-custom"
+                     placeholder="@Localizer["VD: Thủ Đức"]" value="@Model.District" />
             </div>
 
-            @* Price range *@
-            <div class="mb-3">
-              <label class="form-label small fw-semibold">Giá thuê (₫/tháng)</label>
-              <div class="d-flex gap-2 align-items-center">
-                <input type="number" name="MinPrice" class="form-control form-control-sm"
-                       placeholder="Từ" value="@Model.MinPrice" min="0" step="100000" />
-                <span class="text-muted small">—</span>
-                <input type="number" name="MaxPrice" class="form-control form-control-sm"
-                       placeholder="Đến" value="@Model.MaxPrice" min="0" step="100000" />
+            @* Max price range slider *@
+            <div class="mb-4">
+              <div class="d-flex justify-content-between align-items-center mb-1">
+                <label class="form-label small fw-semibold text-secondary mb-0">@Localizer["Mức giá tối đa"]</label>
+                <span id="priceDisplay" class="text-primary fw-bold small">@(Model.MaxPrice.HasValue ? (Model.MaxPrice.Value / 1000000.0m).ToString("0.#") + " " + Localizer["Tr"].Value : Localizer["10 Tr+"].Value)</span>
+              </div>
+              <input type="range" name="MaxPrice" id="priceSlider" class="form-range custom-range"
+                     min="1000000" max="10000000" step="500000" value="@(Model.MaxPrice ?? 10000000)" />
+              <div class="d-flex justify-content-between small text-muted mt-1" style="font-size: 11px;">
+                <span>1 @Localizer["Tr"]</span>
+                <span>@Localizer["10 Tr+"]</span>
               </div>
             </div>
 
             @* Min area *@
-            <div class="mb-3">
-              <label class="form-label small fw-semibold">Diện tích tối thiểu (m²)</label>
-              <input type="number" name="MinArea" class="form-control form-control-sm"
-                     placeholder="VD: 15" value="@Model.MinArea" min="0" step="1" />
+            <div class="mb-4">
+              <label class="form-label small fw-semibold text-secondary">@Localizer["Diện tích tối thiểu (m²)"]</label>
+              <input type="number" name="MinArea" class="form-control form-control-custom"
+                     placeholder="@Localizer["VD: 15"]" value="@Model.MinArea" min="0" step="1" />
             </div>
 
             @* Amenities *@
             @if (Model.AllAmenities.Any())
             {
-              <div class="mb-3">
-                <label class="form-label small fw-semibold">Tiện ích</label>
-                <div class="d-flex flex-column gap-1">
+              <div class="mb-4">
+                <label class="form-label small fw-semibold text-secondary mb-2 d-block">@Localizer["Tiện ích cơ bản"]</label>
+                <div class="d-flex flex-column gap-2" style="max-height: 200px; overflow-y: auto;">
                   @foreach (var a in Model.AllAmenities)
                   {
-                    <div class="form-check form-check-sm">
+                    <div class="form-check">
                       <input class="form-check-input" type="checkbox"
                              name="AmenityIds" value="@a.Id"
                              id="fa_@a.Id"
                              @(Model.AmenityIds.Contains(a.Id) ? "checked" : "") />
-                      <label class="form-check-label small" for="fa_@a.Id">
-                        <i class="bi @a.IconClass me-1"></i>@a.Name
+                      <label class="form-check-label small text-dark" style="cursor: pointer;" for="fa_@a.Id">
+                        <i class="bi @a.IconClass me-1.5 text-muted"></i>@a.Name
                       </label>
                     </div>
                   }
@@ -96,12 +103,9 @@
             }
 
             <div class="d-grid gap-2">
-              <button type="submit" class="btn btn-primary btn-sm">
-                <i class="bi bi-search me-1"></i>Tìm phòng
+              <button type="submit" class="btn btn-primary rounded-pill py-2 small fw-semibold shadow-sm">
+                <i class="bi bi-search me-1.5"></i>@Localizer["Tìm phòng"]
               </button>
-              <a asp-action="Index" class="btn btn-outline-secondary btn-sm">
-                <i class="bi bi-x-circle me-1"></i>Xoá bộ lọc
-              </a>
             </div>
           </form>
         </div>
@@ -112,149 +116,175 @@
     <div class="col-lg-9">
 
       @* Header *@
-      <div class="d-flex align-items-center justify-content-between mb-3">
+      <div class="d-flex align-items-center justify-content-between mb-4">
         <div>
-          <h5 class="fw-bold mb-0">Phòng trống</h5>
+          <h4 class="fw-bold mb-1 text-dark">@Localizer["Phòng trọ tại"] @(string.IsNullOrEmpty(Model.Province) ? "TP.HCM" : Model.Province)</h4>
           <p class="text-muted small mb-0">
             @if (Model.TotalCount == 0)
             {
-              <span>Không tìm thấy phòng nào phù hợp</span>
+              <span>@Localizer["Không tìm thấy phòng nào phù hợp"]</span>
             }
             else
             {
-              <span>Tìm thấy <strong>@Model.TotalCount</strong> phòng</span>
+              <span>@Localizer["Hiển thị"] <strong>@Model.TotalCount</strong> @Localizer["kết quả phù hợp"]</span>
             }
           </p>
         </div>
-        @* Active filter chips *@
-        <div class="d-flex flex-wrap gap-1">
+
+        @* Right actions: Map view mock and sort dropdown *@
+        <div class="d-flex gap-2">
+          <button class="btn btn-outline-secondary btn-sm rounded-pill px-3 py-1.5 fw-semibold border bg-white d-flex align-items-center gap-1.5 shadow-sm text-secondary" type="button">
+            <i class="bi bi-map"></i>@Localizer["Bản đồ"]
+          </button>
+          <select class="form-select form-select-sm rounded-pill px-3 py-1.5 fw-semibold border bg-white text-secondary shadow-sm" style="width: auto; cursor: pointer;">
+            <option>@Localizer["Mới nhất"]</option>
+            <option>@Localizer["Giá tăng dần"]</option>
+            <option>@Localizer["Giá giảm dần"]</option>
+          </select>
+        </div>
+      </div>
+
+      @* Active Filter Chips *@
+      @if (!string.IsNullOrWhiteSpace(Model.Q) || !string.IsNullOrWhiteSpace(Model.Province) || Model.MinPrice.HasValue || Model.MaxPrice.HasValue || Model.MinArea.HasValue || Model.AmenityIds.Any())
+      {
+        <div class="d-flex flex-wrap gap-1.5 mb-4 align-items-center">
+          <span class="text-muted small me-1">@Localizer["Bộ lọc đang áp dụng:"]</span>
           @if (!string.IsNullOrWhiteSpace(Model.Q))
           {
-            <span class="badge bg-primary-subtle text-primary border border-primary-subtle">
+            <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2.5 py-1.5 font-monospace">
               "@Model.Q"
             </span>
           }
           @if (!string.IsNullOrWhiteSpace(Model.Province))
           {
-            <span class="badge bg-info-subtle text-info border border-info-subtle">@Model.Province</span>
+            <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2.5 py-1.5">@Model.Province</span>
           }
-          @if (Model.MinPrice.HasValue || Model.MaxPrice.HasValue)
+          @if (Model.MaxPrice.HasValue)
           {
-            <span class="badge bg-warning-subtle text-warning border border-warning-subtle">
-              @(Model.MinPrice.HasValue ? Model.MinPrice.Value.ToString("N0") + "₫" : "")
-              @(Model.MinPrice.HasValue && Model.MaxPrice.HasValue ? " – " : "")
-              @(Model.MaxPrice.HasValue ? Model.MaxPrice.Value.ToString("N0") + "₫" : "")
+            <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2.5 py-1.5">
+              @Localizer["Dưới"] @((Model.MaxPrice.Value / 1000000.0m).ToString("0.#")) @Localizer["Tr ₫"]
             </span>
           }
+          @if (Model.MinArea.HasValue)
+          {
+            <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2.5 py-1.5">
+              @Localizer["Diện tích"] ≥ @Model.MinArea m²
+            </span>
+          }
+          <a asp-action="Index" class="text-decoration-none text-muted small ms-2"><i class="bi bi-x-circle me-1"></i>@Localizer["Xóa hết"]</a>
         </div>
-      </div>
+      }
 
       @if (!Model.Rooms.Any())
       {
-        <div class="text-center py-5 text-muted">
-          <i class="bi bi-house-slash fs-1 d-block mb-3"></i>
-          <h6>Không tìm thấy phòng nào</h6>
-          <p class="small">Thử thay đổi bộ lọc hoặc <a asp-action="Index">xem tất cả phòng</a>.</p>
+        <div class="text-center py-5 bg-white rounded-3 shadow-sm my-4 border">
+          <i class="bi bi-house-slash text-muted fs-1 d-block mb-3"></i>
+          <h5 class="text-dark fw-bold">@Localizer["Không tìm thấy phòng nào"]</h5>
+          <p class="text-muted small">@Localizer["Thử thay đổi bộ lọc hoặc xóa bộ lọc để xem tất cả phòng."]</p>
+          <a asp-action="Index" class="btn btn-primary rounded-pill btn-sm px-4 fw-semibold mt-2 shadow-sm">@Localizer["Xem tất cả"]</a>
         </div>
       }
       else
       {
-        <div class="row g-3">
+        <div class="row g-4">
           @foreach (var room in Model.Rooms)
           {
+            // Dynamic category label based on capacity and area
+            var categoryLabel = Localizer["Phòng trọ"].Value;
+            if (room.Capacity == 1) { categoryLabel = Localizer["Ký túc xá"].Value; }
+            else if (room.Area > 25 && room.Capacity <= 2) { categoryLabel = Localizer["Studio"].Value; }
+            else if (room.Area > 40) { categoryLabel = Localizer["Căn hộ"].Value; }
+
             <div class="col-sm-6 col-xl-4">
-              <a asp-action="Detail" asp-route-id="@room.Id"
-                 class="text-decoration-none text-dark">
+              <a asp-action="Detail" asp-route-id="@room.Id" class="text-decoration-none text-dark">
                 <div class="card border-0 shadow-sm h-100 room-card">
 
-                  @* Image *@
-                  <div class="position-relative">
+                  @* Image & Badges *@
+                  <div class="position-relative overflow-hidden" style="height: 200px;">
                     @if (room.PrimaryImageUrl != null)
                     {
                       <img src="@room.PrimaryImageUrl" alt="@room.BuildingName"
-                           class="card-img-top"
-                           style="height:180px;object-fit:cover" />
+                           class="w-100 h-100" style="object-fit:cover" />
                     }
                     else
                     {
-                      <div class="card-img-top d-flex align-items-center justify-content-center bg-light"
-                           style="height:180px">
+                      <div class="w-100 h-100 d-flex align-items-center justify-content-center bg-light">
                         <i class="bi bi-image text-muted fs-1"></i>
                       </div>
                     }
 
                     @* Badges *@
-                    <div class="position-absolute top-0 start-0 m-2 d-flex flex-column gap-1">
-                      @if (room.Capacity is > 1)
+                    <div class="position-absolute top-0 start-0 m-3 d-flex gap-2">
+                      @if (room.AvgRating >= 4.5 || room.ReviewCount > 2)
                       {
-                        <span class="badge bg-success" style="font-size:10px">
-                          <i class="bi bi-people-fill me-1"></i>Tìm ghép
-                        </span>
+                        <span class="badge badge-featured">@Localizer["Nổi bật"]</span>
                       }
+                      <span class="badge badge-category">@categoryLabel</span>
                     </div>
 
-                    @* Price badge *@
-                    @if (room.RentPrice.HasValue)
-                    {
-                      <div class="position-absolute bottom-0 end-0 m-2">
-                        <span class="badge bg-dark bg-opacity-75 fs-6 fw-bold px-2 py-1">
-                          @room.RentPrice.Value.ToString("N0")
-                          <small class="fw-normal" style="font-size:10px">₫/@room.RentUnit</small>
-                        </span>
-                      </div>
+                    @* Favorite heart icon *@
+                    @{
+                      bool isFav = ViewBag.FavoriteRoomIds != null && ((List<int>)ViewBag.FavoriteRoomIds).Contains(room.Id);
                     }
+                    <button type="button" class="btn btn-fav @(isFav ? "active" : "") position-absolute top-0 end-0 m-3 d-flex align-items-center justify-content-center shadow-sm"
+                            onclick="handleFavToggle(event, @room.Id, this)">
+                      <i class="bi @(isFav ? "bi-heart-fill text-danger" : "bi-heart")"></i>
+                    </button>
                   </div>
 
-                  <div class="card-body py-2 px-3">
-                    <h6 class="fw-bold mb-0 text-truncate">@room.BuildingName</h6>
-                    <div class="text-muted small text-truncate mb-1">
-                      <i class="bi bi-geo-alt me-1"></i>@room.Address
-                      @if (!string.IsNullOrWhiteSpace(room.District))
-                      {
-                        <span>, @room.District</span>
-                      }
-                    </div>
-
-                    <div class="d-flex gap-3 small text-muted mb-2">
-                      <span><i class="bi bi-rulers me-1"></i>@room.Area m²</span>
-                      @if (room.Capacity.HasValue)
-                      {
-                        <span><i class="bi bi-people me-1"></i>@room.Capacity người</span>
-                      }
-                    </div>
-
-                    @* Amenity icons *@
-                    @if (room.Amenities.Any())
-                    {
-                      <div class="d-flex flex-wrap gap-1 mb-2">
-                        @foreach (var (icon, name) in room.Amenities.Take(5))
+                  @* Details *@
+                  <div class="card-body p-4 d-flex flex-column justify-content-between">
+                    <div>
+                      <div class="d-flex align-items-start justify-content-between gap-2 mb-2">
+                        <h6 class="fw-bold mb-0 text-truncate text-dark card-room-title">@room.BuildingName - P.@room.RoomNumber</h6>
+                        @if (room.ReviewCount > 0)
                         {
-                          <span class="badge bg-light text-secondary border" title="@name" style="font-size:11px">
-                            <i class="bi @icon"></i>
-                          </span>
-                        }
-                        @if (room.Amenities.Count > 5)
-                        {
-                          <span class="badge bg-light text-secondary border" style="font-size:11px">
-                            +@(room.Amenities.Count - 5)
+                          <span class="badge badge-rating d-inline-flex align-items-center gap-1">
+                            @room.AvgRating!.Value.ToString("0.0") <i class="bi bi-star-fill text-warning" style="font-size: 10px;"></i>
                           </span>
                         }
                       </div>
-                    }
-
-                    @* Rating *@
-                    @if (room.ReviewCount > 0)
-                    {
-                      <div class="d-flex align-items-center gap-1 small">
-                        <i class="bi bi-star-fill" style="color:#f59e0b;font-size:11px"></i>
-                        <span class="fw-semibold">@room.AvgRating!.Value.ToString("0.0")</span>
-                        <span class="text-muted">(@room.ReviewCount đánh giá)</span>
+                      
+                      <div class="text-muted small text-truncate mb-3">
+                        <i class="bi bi-geo-alt me-1"></i>@room.Address
+                        @if (!string.IsNullOrWhiteSpace(room.District))
+                        {
+                          <span>, @room.District</span>
+                        }
                       </div>
-                    }
-                    else
-                    {
-                      <div class="small text-muted">Chưa có đánh giá</div>
-                    }
+
+                      <div class="d-flex flex-wrap gap-1.5 mb-3">
+                        <span class="badge badge-spec"><i class="bi bi-rulers me-1"></i>@room.Area m²</span>
+                        @if (room.Capacity.HasValue)
+                        {
+                          <span class="badge badge-spec"><i class="bi bi-people me-1"></i>@room.Capacity @Localizer["người"]</span>
+                        }
+                        @foreach (var (icon, name) in room.Amenities.Take(3))
+                        {
+                          <span class="badge badge-spec-icon" title="@name"><i class="bi @icon"></i></span>
+                        }
+                      </div>
+                    </div>
+
+                    @* Footer *@
+                    <div class="d-flex align-items-center justify-content-between pt-3 border-top">
+                      <div>
+                        <span class="text-muted text-uppercase fw-semibold d-block" style="font-size: 9px; letter-spacing: 0.05em; margin-bottom: 2px;">@Localizer["Giá thuê"]</span>
+                        @if (room.RentPrice.HasValue)
+                        {
+                          <div class="fw-bold text-primary card-room-price mb-0">
+                            @((room.RentPrice.Value / 1000000.0m).ToString("0.#")) <span class="fs-6 fw-semibold">@Localizer["Tr"]</span><span class="text-muted fw-normal" style="font-size: 11px;">/@Localizer["tháng"]</span>
+                          </div>
+                        }
+                        else
+                        {
+                          <div class="text-muted small fw-semibold">@Localizer["Liên hệ"]</div>
+                        }
+                      </div>
+                      <div class="btn-detail-arrow d-flex align-items-center justify-content-center">
+                        <i class="bi bi-arrow-right"></i>
+                      </div>
+                    </div>
                   </div>
 
                 </div>
@@ -270,7 +300,248 @@
 
 @section Styles {
 <style>
-  .room-card { transition: transform .15s, box-shadow .15s; cursor: pointer; }
-  .room-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,.12) !important; }
+  /* General page styles */
+  .container-fluid {
+    max-width: 1400px;
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+  
+  /* Filter Sidebar */
+  .filter-card {
+    border-radius: 20px !important;
+    background: #ffffff;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04) !important;
+    border: none !important;
+  }
+  
+  .filter-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+  }
+
+  /* Custom range slider styling */
+  .custom-range::-webkit-slider-runnable-track {
+    background: #e5e7eb;
+    height: 6px;
+    border-radius: 3px;
+  }
+  .custom-range::-webkit-slider-thumb {
+    background: #2563eb;
+    border: 2px solid #ffffff;
+    width: 18px;
+    height: 18px;
+    margin-top: -6px;
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+    transition: background 0.15s;
+    cursor: pointer;
+  }
+  .custom-range::-webkit-slider-thumb:active {
+    background: #1d4ed8;
+  }
+  
+  /* Custom form control styling */
+  .form-control-custom {
+    border-radius: 12px !important;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #e5e7eb;
+    font-size: 13.5px;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .form-control-custom:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
+  }
+  
+  /* Custom checkbox */
+  .form-check-input {
+    border-radius: 6px !important;
+    border-color: #cbd5e1;
+    cursor: pointer;
+  }
+  .form-check-input:checked {
+    background-color: #2563eb;
+    border-color: #2563eb;
+  }
+
+  /* Room Card styling */
+  .room-card {
+    border-radius: 20px !important;
+    overflow: hidden;
+    background: #ffffff;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.03) !important;
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    border: none !important;
+  }
+  
+  .room-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.08) !important;
+  }
+  
+  /* Badges on image */
+  .badge-featured {
+    background: linear-gradient(135deg, #f97316 0%, #ea580c 100%) !important;
+    color: white;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 30px !important;
+    box-shadow: 0 4px 10px rgba(249, 115, 22, 0.2);
+  }
+  
+  .badge-category {
+    background: rgba(255, 255, 255, 0.75) !important;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    color: #1f2937;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 30px !important;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+  }
+  
+  /* Favorite Button */
+  .btn-fav {
+    width: 36px;
+    height: 36px;
+    border-radius: 50% !important;
+    background: rgba(255, 255, 255, 0.9) !important;
+    backdrop-filter: blur(4px);
+    border: none;
+    color: #9ca3af;
+    transition: background 0.15s, color 0.15s, transform 0.15s;
+  }
+  .btn-fav:hover {
+    color: #ef4444;
+    background: #ffffff !important;
+    transform: scale(1.1);
+  }
+  .btn-fav.active {
+    color: #ef4444;
+  }
+
+  .card-room-title {
+    font-size: 15px;
+    color: #1f2937;
+    letter-spacing: -0.01em;
+  }
+
+  .badge-rating {
+    background-color: #fef3c7 !important;
+    color: #d97706;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 8px;
+    border-radius: 30px !important;
+  }
+
+  .badge-spec {
+    background-color: #f3f4f6 !important;
+    color: #4b5563;
+    font-weight: 500;
+    font-size: 11px;
+    padding: 6px 10px;
+    border-radius: 30px !important;
+  }
+  
+  .badge-spec-icon {
+    background-color: #f3f4f6 !important;
+    color: #6b7280;
+    font-size: 11px;
+    width: 26px;
+    height: 26px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50% !important;
+    padding: 0 !important;
+  }
+  
+  .card-room-price {
+    font-size: 20px;
+    letter-spacing: -0.02em;
+  }
+  
+  /* Circular Detail Arrow */
+  .btn-detail-arrow {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background-color: #f3f4f6;
+    color: #1f2937;
+    transition: background-color 0.15s, color 0.15s, transform 0.15s;
+  }
+  .room-card:hover .btn-detail-arrow {
+    background-color: #2563eb;
+    color: white;
+    transform: translateX(3px);
+  }
 </style>
+}
+
+@section Scripts {
+<script>
+  // Price slider dynamics
+  const priceSlider = document.getElementById('priceSlider');
+  const priceDisplay = document.getElementById('priceDisplay');
+  
+  if (priceSlider && priceDisplay) {
+    priceSlider.addEventListener('input', function() {
+      const val = parseFloat(this.value);
+      if (val >= 10000000) {
+        priceDisplay.textContent = '10 Tr+';
+      } else {
+        priceDisplay.textContent = (val / 1000000).toFixed(1) + ' Tr';
+      }
+    });
+
+    // Auto submit on slider release to trigger query filtering
+    priceSlider.addEventListener('change', function() {
+      document.getElementById('filterForm').submit();
+    });
+  }
+
+  // Favorite toggle logic (AJAX)
+  function handleFavToggle(e, roomId, btn) {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    @if (!User.Identity!.IsAuthenticated)
+    {
+      <text>
+      if (confirm("@Localizer["Bạn cần đăng nhập để lưu phòng yêu thích. Đăng nhập ngay?"]")) {
+        window.location.href = '@Url.Page("/Account/Login", new { area = "Identity", returnUrl = Context.Request.Path })';
+      }
+      </text>
+    }
+    else
+    {
+      <text>
+      $.ajax({
+        url: '@Url.Action("ToggleFavorite", "Rooms")',
+        type: 'POST',
+        data: { roomId: roomId },
+        success: function(response) {
+          if (response.success) {
+            const heart = btn.querySelector('i');
+            if (response.isFavorite) {
+              btn.classList.add('active');
+              heart.className = 'bi bi-heart-fill text-danger';
+            } else {
+              btn.classList.remove('active');
+              heart.className = 'bi bi-heart';
+            }
+          }
+        },
+        error: function() {
+          alert("@Localizer["Có lỗi xảy ra, vui lòng thử lại sau."]");
+        }
+      });
+      </text>
+    }
+  }
+</script>
 }
