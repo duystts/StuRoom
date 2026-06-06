@@ -440,47 +440,73 @@
 
 @* ── Modal: Báo cáo vi phạm ── *@
 <div class="modal fade" id="reportRoomModal" tabindex="-1" aria-labelledby="reportRoomModalLabel" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <form asp-action="ReportRoom" asp-controller="Rooms" method="post">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content border-0 shadow-lg" style="border-radius: 24px;">
+      <form asp-action="ReportRoom" asp-controller="Rooms" method="post" id="reportRoomForm">
         @Html.AntiForgeryToken()
         <input type="hidden" name="roomId" value="@Model.Room.Id" />
-        <div class="modal-header">
-          <h5 class="modal-title fw-bold text-dark" id="reportRoomModalLabel"><i class="bi bi-exclamation-triangle-fill text-warning me-2"></i>@Localizer["Báo cáo vi phạm"]</h5>
+        <div class="modal-header border-bottom-0 pb-0 px-4 pt-4">
+          <h5 class="modal-title fw-bold text-dark" id="reportRoomModalLabel" style="font-family: 'Outfit', sans-serif;"><i class="bi bi-exclamation-triangle-fill text-warning me-2"></i>@Localizer["Báo cáo vi phạm"]</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
-        <div class="modal-body text-dark">
+        <div class="modal-body text-dark px-4 py-3">
           @if (!User.Identity!.IsAuthenticated)
           {
-            <div class="text-center py-3">
-              <p class="text-muted">@Localizer["Bạn cần đăng nhập để thực hiện báo cáo vi phạm."]</p>
-              <a asp-area="Identity" asp-page="/Account/Login" asp-route-returnUrl="@Context.Request.Path" class="btn btn-primary rounded-pill btn-sm px-4">@Localizer["Đăng nhập ngay"]</a>
+            <div class="text-center py-4">
+              <i class="bi bi-shield-lock text-muted fs-1 mb-2 d-block"></i>
+              <p class="text-muted mb-3">@Localizer["Bạn cần đăng nhập để thực hiện báo cáo vi phạm."]</p>
+              <a asp-area="Identity" asp-page="/Account/Login" asp-route-returnUrl="@Context.Request.Path" class="btn btn-primary rounded-pill btn-sm px-4 fw-semibold shadow-sm">@Localizer["Đăng nhập ngay"]</a>
             </div>
           }
           else
           {
             <div class="mb-3 text-start">
-              <label class="form-label fw-semibold small text-secondary">@Localizer["Lý do báo cáo"] <span class="text-danger">*</span></label>
-              <select name="reason" class="form-select form-control-custom" required>
-                <option value="">-- @Localizer["Chọn lý do"] --</option>
-                <option value="Fraud">@Localizer["Lừa đảo, đặt cọc ảo"]</option>
-                <option value="FakePrice">@Localizer["Giá thuê không đúng thực tế"]</option>
-                <option value="FakeInfo">@Localizer["Thông tin/Hình ảnh sai sự thật"]</option>
-                <option value="Other">@Localizer["Lý do khác"]</option>
-              </select>
+              <label class="form-label fw-bold small text-secondary mb-2">@Localizer["Chọn lý do vi phạm"] <span class="text-danger">*</span></label>
+              
+              <input type="hidden" name="reason" id="reportReasonInput" required />
+              
+              <div class="report-reason-container">
+                <div class="report-reason-chip" data-reason="Fraud" title="@Localizer["Lừa đảo, đặt cọc ảo"]">
+                  <i class="bi bi-shield-slash-fill text-warning chip-icon"></i>
+                  <span class="chip-label">@Localizer["Lừa đảo, đặt cọc ảo"]</span>
+                  <i class="bi bi-check-circle-fill chip-check"></i>
+                </div>
+                <div class="report-reason-chip" data-reason="FakePrice" title="@Localizer["Giá thuê không đúng thực tế"]">
+                  <i class="bi bi-cash-coin text-success chip-icon"></i>
+                  <span class="chip-label">@Localizer["Giá không đúng thực tế"]</span>
+                  <i class="bi bi-check-circle-fill chip-check"></i>
+                </div>
+                <div class="report-reason-chip" data-reason="FakeInfo" title="@Localizer["Thông tin/Hình ảnh sai sự thật"]">
+                  <i class="bi bi-image-fill text-primary chip-icon"></i>
+                  <span class="chip-label">@Localizer["Thông tin sai sự thật"]</span>
+                  <i class="bi bi-check-circle-fill chip-check"></i>
+                </div>
+                <div class="report-reason-chip" data-reason="Other" title="@Localizer["Lý do khác"]">
+                  <i class="bi bi-three-dots text-secondary chip-icon"></i>
+                  <span class="chip-label">@Localizer["Lý do vi phạm khác"]</span>
+                  <i class="bi bi-check-circle-fill chip-check"></i>
+                </div>
+              </div>
+              
+              <div id="reasonHelpText" class="alert alert-secondary py-2 px-3 small rounded-3 border-0 d-none mb-3" style="font-size: 11.5px; background: rgba(79, 70, 229, 0.03); color: var(--text-color);"></div>
             </div>
+            
             <div class="mb-3 text-start">
-              <label class="form-label fw-semibold small text-secondary">@Localizer["Chi tiết vi phạm"] <span class="text-danger">*</span></label>
-              <textarea name="description" class="form-control form-control-custom" rows="4" 
-                        placeholder="@Localizer["Cung cấp thêm thông tin chi tiết về hành vi vi phạm..."]" required></textarea>
+              <label class="form-label fw-bold small text-secondary">@Localizer["Chi tiết vi phạm"] <span class="text-danger">*</span></label>
+              <textarea name="description" id="reportDescInput" class="form-control form-control-custom" rows="4" 
+                        maxlength="500" placeholder="@Localizer["Cung cấp thêm thông tin chi tiết về hành vi vi phạm..."]" required></textarea>
+              <div class="d-flex justify-content-between text-muted mt-1.5" style="font-size: 11px;">
+                <span id="reportDescWarning" class="text-danger fw-semibold">Nhập tối thiểu 10 ký tự</span>
+                <span id="reportCharCount">0/500 ký tự</span>
+              </div>
             </div>
           }
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill" data-bs-dismiss="modal">@Localizer["Huỷ"]</button>
+        <div class="modal-footer border-top-0 px-4 pb-4 pt-0">
+          <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3.5 py-1.5 fw-semibold" data-bs-dismiss="modal">@Localizer["Huỷ"]</button>
           @if (User.Identity.IsAuthenticated)
           {
-            <button type="submit" class="btn btn-danger btn-sm rounded-pill px-3">
+            <button type="submit" id="btnSubmitReport" class="btn btn-danger btn-sm rounded-pill px-4 py-1.5 fw-semibold shadow-sm" disabled>
               <i class="bi bi-send-fill me-1.5"></i>@Localizer["Gửi báo cáo"]
             </button>
           }
@@ -724,6 +750,9 @@ function toggleDetailFav(roomId) {
       data: { roomId: roomId },
       success: function(response) {
         if (response.success) {
+          btn.classList.add('animating');
+          setTimeout(() => btn.classList.remove('animating'), 500);
+          
           if (response.isFavorite) {
             btn.classList.add('active');
             icon.className = 'bi bi-heart-fill text-danger';
@@ -744,5 +773,69 @@ function toggleDetailFav(roomId) {
     </text>
   }
 }
+
+// Logic for report reason chips and input validation
+document.addEventListener("DOMContentLoaded", function() {
+  const reasonInput = document.getElementById('reportReasonInput');
+  const reasonHelp = document.getElementById('reasonHelpText');
+  const descInput = document.getElementById('reportDescInput');
+  const descWarning = document.getElementById('reportDescWarning');
+  const charCount = document.getElementById('reportCharCount');
+  const submitBtn = document.getElementById('btnSubmitReport');
+  const chips = document.querySelectorAll('.report-reason-chip');
+  
+  const helpTexts = {
+    'Fraud': 'Báo cáo nếu bạn phát hiện tin đăng này là giả mạo, yêu cầu chuyển khoản đặt cọc giữ chỗ đáng ngờ trước khi xem phòng, hoặc có dấu hiệu chiếm đoạt tài sản.',
+    'FakePrice': 'Báo cáo nếu giá thuê thực tế khi liên hệ hoặc đến xem nhà cao hơn nhiều so với giá hiển thị trên website.',
+    'FakeInfo': 'Báo cáo nếu hình ảnh phòng trọ không đúng thực tế, sai lệch vị trí nghiêm trọng hoặc toà nhà không tồn tại.',
+    'Other': 'Báo cáo nếu vi phạm các quy tắc khác như thái độ chủ nhà không phù hợp, tin đăng trùng lặp hoặc chứa nội dung rác.'
+  };
+
+  chips.forEach(chip => {
+    chip.addEventListener('click', function() {
+      chips.forEach(c => c.classList.remove('active'));
+      this.classList.add('active');
+      const val = this.getAttribute('data-reason');
+      if (reasonInput) reasonInput.value = val;
+      
+      if (reasonHelp) {
+        reasonHelp.textContent = helpTexts[val] || '';
+        reasonHelp.classList.remove('d-none');
+      }
+      
+      validateReportForm();
+    });
+  });
+
+  if (descInput) {
+    descInput.addEventListener('input', function() {
+      const len = this.value.length;
+      if (charCount) charCount.textContent = `${len}/500 ký tự`;
+      
+      if (descWarning) {
+        if (len < 10) {
+          descWarning.textContent = 'Nhập tối thiểu 10 ký tự';
+          descWarning.classList.remove('text-success');
+          descWarning.classList.add('text-danger');
+        } else {
+          descWarning.textContent = 'Nội dung hợp lệ';
+          descWarning.classList.remove('text-danger');
+          descWarning.classList.add('text-success');
+        }
+      }
+      
+      validateReportForm();
+    });
+  }
+
+  function validateReportForm() {
+    const isReasonSelected = reasonInput && reasonInput.value !== '';
+    const isDescValid = descInput && descInput.value.length >= 10 && descInput.value.length <= 500;
+    
+    if (submitBtn) {
+      submitBtn.disabled = !(isReasonSelected && isDescValid);
+    }
+  }
+});
 </script>
 }

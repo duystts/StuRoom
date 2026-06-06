@@ -46,7 +46,7 @@
     }
 
     .hero-title {
-      font-family: 'Outfit', sans-serif;
+      font-family: 'Inter', 'Be Vietnam Pro', sans-serif;
       font-size: 3.8rem;
       font-weight: 800;
       color: #fff;
@@ -230,7 +230,7 @@
 </div>
 
 <!-- Core platform features -->
-<h3 class="fw-bold mb-2 text-center text-dark" style="margin-top: 60px; font-family: 'Outfit', sans-serif;">@Localizer["Tại sao nên chọn StuRoom?"]</h3>
+<h3 class="fw-bold mb-2 text-center text-dark" style="margin-top: 60px; font-family: 'Inter', 'Be Vietnam Pro', sans-serif;">@Localizer["Tại sao nên chọn StuRoom?"]</h3>
 <p class="text-center text-muted mb-5 small">@Localizer["Nền tảng giúp bạn kết nối nhanh chóng, minh bạch và an toàn."]</p>
 
 <div class="row g-4 mb-5">
@@ -278,7 +278,7 @@
 <!-- Featured Room Listings -->
 <div class="d-flex align-items-center justify-content-between mb-4 mt-5 pt-3">
   <div>
-    <h4 class="fw-bold mb-1 text-dark" style="font-family: 'Outfit', sans-serif;">@Localizer["Phòng nổi bật gần đây"]</h4>
+    <h4 class="fw-bold mb-1 text-dark" style="font-family: 'Inter', 'Be Vietnam Pro', sans-serif;">@Localizer["Phòng nổi bật gần đây"]</h4>
     <p class="text-muted small mb-0">@Localizer["Các phòng trọ và căn hộ dịch vụ mini vừa được đăng lên nền tảng"]</p>
   </div>
   <a href="/Rooms" class="btn btn-outline-primary btn-sm rounded-pill px-3.5 py-1.5 fw-semibold shadow-sm text-decoration-none">@Localizer["Xem tất cả phòng"]</a>
@@ -299,7 +299,7 @@ else
       // Dynamic category label based on capacity and area
       var categoryLabel = Localizer["Phòng trọ"].Value;
       if (room.Capacity == 1) { categoryLabel = Localizer["Ký túc xá"].Value; }
-      else if (room.Area > 25 && room.Capacity <= 2) { categoryLabel = Localizer["Studio"].Value; }
+      else if (room.Area > 25 && room.Capacity <= 2) { categoryLabel = Localizer["Phòng Studio"].Value; }
       else if (room.Area > 40) { categoryLabel = Localizer["Căn hộ"].Value; }
 
       <div class="col-sm-6 col-xl-4">
@@ -391,8 +391,8 @@ else
                 </div>
                 <div class="d-flex align-items-center gap-2">
                   <button type="button" class="btn btn-sm btn-compare rounded-pill px-2.5 py-1" data-room-id="@room.Id"
-                          onclick="toggleCompareRoom(event, @room.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(room.BuildingName)) - P.@room.RoomNumber', '@((room.RentPrice ?? 0) / 1000000.0m).ToString(&quot;0.#&quot;) Tr/tháng', '@room.PrimaryImageUrl')">
-                    <i class="bi bi-shuffle me-1"></i><span class="compare-text">So sánh</span>
+                          onclick="toggleCompareRoom(event, @room.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(room.BuildingName)) - P.@room.RoomNumber', '@((room.RentPrice ?? 0) / 1000000.0m).ToString("0.#") ' + '@Localizer["Tr/tháng"]', '@room.PrimaryImageUrl')">
+                    <i class="bi bi-shuffle me-1"></i><span class="compare-text">@Localizer["So sánh"]</span>
                   </button>
                   <div class="btn-detail-arrow d-flex align-items-center justify-content-center">
                     <i class="bi bi-arrow-right"></i>
@@ -412,7 +412,7 @@ else
 <div class="cta-section shadow-sm">
   <div class="row align-items-center">
     <div class="col-lg-8 mb-4 mb-lg-0 text-center text-lg-start">
-      <h4 class="fw-bold mb-2" style="font-family: 'Outfit', sans-serif; font-size: 1.65rem;">@Localizer["Bắt đầu trải nghiệm StuRoom ngay hôm nay!"]</h4>
+      <h4 class="fw-bold mb-2" style="font-family: 'Inter', 'Be Vietnam Pro', sans-serif; font-size: 1.65rem;">@Localizer["Bắt đầu trải nghiệm StuRoom ngay hôm nay!"]</h4>
       <p class="mb-0 opacity-90" style="font-size: 14.5px;">
         @Localizer["Đăng ký tài khoản để khám phá phòng trọ hoặc bắt đầu quản lý danh sách phòng cho thuê của bạn."]
       </p>
@@ -455,6 +455,9 @@ else
         data: { roomId: roomId },
         success: function(response) {
           if (response.success) {
+            btn.classList.add('animating');
+            setTimeout(() => btn.classList.remove('animating'), 500);
+            
             const heart = btn.querySelector('i');
             if (response.isFavorite) {
               btn.classList.add('active');

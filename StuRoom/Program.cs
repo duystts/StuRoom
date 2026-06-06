@@ -95,7 +95,7 @@ else
 app.UseHttpsRedirection();
 app.UseRouting();
 
-var supportedCultures = new[] { "vi", "en" };
+var supportedCultures = new[] { "vi" };
 var localizationOptions = new RequestLocalizationOptions()
     .SetDefaultCulture("vi")
     .AddSupportedCultures(supportedCultures)

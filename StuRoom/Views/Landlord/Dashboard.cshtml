@@ -1,6 +1,6 @@
 @using StuRoom.Models
 @{
-    ViewData["Title"] = "Dashboard";
+    ViewData["Title"] = "Trang tổng quan";
     ViewData["ActiveMenu"] = "Dashboard";
 
     int    totalRooms      = (int)ViewBag.TotalRooms;
@@ -19,7 +19,7 @@
 
 <div class="d-flex align-items-center justify-content-between mb-4">
   <div>
-    <h4 class="fw-bold mb-0">Dashboard</h4>
+    <h4 class="fw-bold mb-0">Trang tổng quan</h4>
     <p class="text-muted small mb-0">Tổng quan hoạt động</p>
   </div>
   <span class="text-muted small">@DateTime.Now.ToString("dd/MM/yyyy")</span>

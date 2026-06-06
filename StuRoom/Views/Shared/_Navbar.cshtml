@@ -63,7 +63,7 @@
           </li>
           <li class="nav-item">
             <a class="nav-link" href="#blog">
-              @Localizer["Blog"]
+              @Localizer["Bài viết"]
             </a>
           </li>
         }
@@ -89,42 +89,9 @@
       </ul>
 
       <ul class="navbar-nav ms-auto align-items-center">
-        @* Language Selector *@
-        <li class="nav-item dropdown me-2">
-          <a class="nav-link dropdown-toggle d-flex align-items-center gap-1 py-1" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false" id="langSelector">
-            @if (currentCulture == "en")
-            {
-              <span class="small fw-bold">ENG</span>
-            }
-            else
-            {
-              <span class="small fw-bold">VIE</span>
-            }
-          </a>
-          <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" style="min-width: 100px;">
-            <li>
-              <form asp-controller="Language" asp-action="SetLanguage" method="post" class="m-0">
-                <input type="hidden" name="culture" value="vi" />
-                <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
-                <button type="submit" class="dropdown-item small d-flex align-items-center gap-2 @(currentCulture == "vi" ? "active" : "")">
-                  <span>Tiếng Việt</span>
-                </button>
-              </form>
-            </li>
-            <li>
-              <form asp-controller="Language" asp-action="SetLanguage" method="post" class="m-0">
-                <input type="hidden" name="culture" value="en" />
-                <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
-                <button type="submit" class="dropdown-item small d-flex align-items-center gap-2 @(currentCulture == "en" ? "active" : "")">
-                  <span>English</span>
-                </button>
-              </form>
-            </li>
-          </ul>
-        </li>
         @* Theme Toggle *@
         <li class="nav-item me-2">
-          <button id="themeToggle" class="btn btn-link nav-link px-2 text-secondary theme-toggle-btn" type="button" title="Chuyển chế độ sáng/tối">
+          <button id="themeToggle" class="btn btn-link nav-link px-2 text-secondary theme-toggle-btn" type="button" title="@Localizer["Chuyển chế độ sáng/tối"]">
             <i class="bi bi-moon fs-5"></i>
           </button>
         </li>
@@ -135,7 +102,7 @@
             <li class="nav-item me-2 d-none d-md-block">
               <a class="btn btn-outline-primary btn-sm rounded-pill px-3"
                  asp-controller="Landlord" asp-action="Rooms">
-                <i class="bi bi-plus-circle me-1"></i>Đăng tin
+                <i class="bi bi-plus-circle me-1"></i>@Localizer["Đăng tin"]
               </a>
             </li>
           }
@@ -157,12 +124,12 @@
             <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 p-0"
                 style="min-width:320px;max-height:420px;overflow-y:auto">
               <li class="px-3 py-2 border-bottom d-flex align-items-center justify-content-between">
-                <span class="fw-semibold small">Thông báo</span>
+                <span class="fw-semibold small">@Localizer["Thông báo"]</span>
                 @if (unreadCount > 0)
                 {
                   <form asp-controller="Notifications" asp-action="MarkAllRead" method="post" class="mb-0">
                     <button type="submit" class="btn btn-link btn-sm p-0 text-primary small">
-                      Đọc tất cả
+                      @Localizer["Đọc tất cả"]
                     </button>
                   </form>
                 }

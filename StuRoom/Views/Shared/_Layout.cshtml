@@ -1,5 +1,10 @@
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@{
+    var requestCulture = Context.Features.Get<Microsoft.AspNetCore.Localization.IRequestCultureFeature>()?.RequestCulture;
+    var currentCulture = requestCulture?.Culture.Name ?? "en";
+}
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="@currentCulture">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -11,7 +16,7 @@
   </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
   <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
@@ -54,14 +59,14 @@
 <div id="compareDrawer" class="compare-drawer">
   <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
     <div class="d-flex align-items-center gap-3 flex-wrap">
-      <h6 class="fw-bold mb-0 text-dark" style="font-family: 'Outfit', sans-serif;"><i class="bi bi-shuffle text-primary me-2"></i>So sánh phòng (<span id="compareCount">0</span>/3)</h6>
+      <h6 class="fw-bold mb-0 text-dark" style="font-family: 'Outfit', sans-serif;"><i class="bi bi-shuffle text-primary me-2"></i>@Localizer["So sánh phòng"] (<span id="compareCount">0</span>/3)</h6>
       <div id="compareItems" class="d-flex align-items-center gap-2">
         <!-- Dynamically populated room thumbs -->
       </div>
     </div>
     <div class="d-flex align-items-center gap-3">
-      <button type="button" class="btn btn-link btn-sm text-secondary text-decoration-none small fw-semibold p-0" onclick="clearCompareRooms()">Xoá hết</button>
-      <button type="button" id="btnCompareSubmit" class="btn btn-primary rounded-pill btn-sm px-4 fw-bold shadow-sm" disabled onclick="submitCompareRooms()">So sánh ngay</button>
+      <button type="button" class="btn btn-link btn-sm text-secondary text-decoration-none small fw-semibold p-0" onclick="clearCompareRooms()">@Localizer["Xoá hết"]</button>
+      <button type="button" id="btnCompareSubmit" class="btn btn-primary rounded-pill btn-sm px-4 fw-bold shadow-sm" disabled onclick="submitCompareRooms()">@Localizer["So sánh ngay"]</button>
     </div>
   </div>
 </div>
@@ -90,17 +95,23 @@
       e.stopPropagation();
     }
     
+    // Trigger button micro-animation
+    document.querySelectorAll(`.btn-compare[data-room-id="${id}"]`).forEach(btn => {
+      btn.classList.add('animating');
+      setTimeout(() => btn.classList.remove('animating'), 500);
+    });
+    
     const index = compareRooms.findIndex(r => r.id === id);
     if (index > -1) {
       compareRooms.splice(index, 1);
-      showToast("Đã xoá phòng khỏi danh sách so sánh.", "info");
+      showToast("@Localizer["Đã xoá phòng khỏi danh sách so sánh."]", "info");
     } else {
       if (compareRooms.length >= 3) {
-        showToast("Chỉ có thể so sánh tối đa 3 phòng trọ cùng lúc.", "warning");
+        showToast("@Localizer["Chỉ có thể so sánh tối đa 3 phòng trọ cùng lúc."]", "warning");
         return;
       }
       compareRooms.push({ id, name, price, img });
-      showToast("Đã thêm phòng vào danh sách so sánh.", "success");
+      showToast("@Localizer["Đã thêm phòng vào danh sách so sánh."]", "success");
     }
     
     localStorage.setItem('compare_rooms', JSON.stringify(compareRooms));
@@ -109,11 +120,17 @@
   };
 
   window.removeCompareRoom = function(id) {
+    // Trigger button micro-animation
+    document.querySelectorAll(`.btn-compare[data-room-id="${id}"]`).forEach(btn => {
+      btn.classList.add('animating');
+      setTimeout(() => btn.classList.remove('animating'), 500);
+    });
+    
     compareRooms = compareRooms.filter(r => r.id !== id);
     localStorage.setItem('compare_rooms', JSON.stringify(compareRooms));
     renderCompareDrawer();
     syncCompareButtons();
-    showToast("Đã xoá phòng khỏi danh sách so sánh.", "info");
+    showToast("@Localizer["Đã xoá phòng khỏi danh sách so sánh."]", "info");
   };
 
   window.clearCompareRooms = function() {
@@ -121,7 +138,7 @@
     localStorage.setItem('compare_rooms', JSON.stringify(compareRooms));
     renderCompareDrawer();
     syncCompareButtons();
-    showToast("Đã xoá toàn bộ danh sách so sánh.", "info");
+    showToast("@Localizer["Đã xoá toàn bộ danh sách so sánh."]", "info");
   };
 
   function syncCompareButtons() {

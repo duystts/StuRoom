@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="So sánh phòng" xml:space="preserve">
+    <value>Compare Rooms</value>
+  </data>
+  <data name="Xoá hết" xml:space="preserve">
+    <value>Clear All</value>
+  </data>
+  <data name="So sánh ngay" xml:space="preserve">
+    <value>Compare Now</value>
+  </data>
+  <data name="Đã xoá phòng khỏi danh sách so sánh." xml:space="preserve">
+    <value>Removed room from comparison list.</value>
+  </data>
+  <data name="Chỉ có thể so sánh tối đa 3 phòng trọ cùng lúc." xml:space="preserve">
+    <value>You can only compare up to 3 rooms at a time.</value>
+  </data>
+  <data name="Đã thêm phòng vào danh sách so sánh." xml:space="preserve">
+    <value>Added room to comparison list.</value>
+  </data>
+  <data name="Đã xoá toàn bộ danh sách so sánh." xml:space="preserve">
+    <value>Cleared comparison list.</value>
+  </data>
+</root>

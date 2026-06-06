@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Tìm phòng" xml:space="preserve">
+    <value>Search Rooms</value>
+  </data>
+  <data name="Phòng yêu thích" xml:space="preserve">
+    <value>Favorite Rooms</value>
+  </data>
+  <data name="Phòng đã lưu" xml:space="preserve">
+    <value>Saved Rooms</value>
+  </data>
+  <data name="Chưa có phòng nào được lưu" xml:space="preserve">
+    <value>No saved rooms yet</value>
+  </data>
+  <data name="Đang lưu" xml:space="preserve">
+    <value>Saved</value>
+  </data>
+  <data name="phòng trọ" xml:space="preserve">
+    <value>rooms</value>
+  </data>
+  <data name="Danh sách trống" xml:space="preserve">
+    <value>Empty List</value>
+  </data>
+  <data name="Hãy lưu những phòng trọ bạn ưng ý khi tìm kiếm." xml:space="preserve">
+    <value>Save rooms you like while searching.</value>
+  </data>
+  <data name="Tìm phòng ngay" xml:space="preserve">
+    <value>Search Rooms Now</value>
+  </data>
+  <data name="người" xml:space="preserve">
+    <value>people</value>
+  </data>
+  <data name="Giá thuê" xml:space="preserve">
+    <value>Rent Price</value>
+  </data>
+  <data name="Tr" xml:space="preserve">
+    <value>M</value>
+  </data>
+  <data name="tháng" xml:space="preserve">
+    <value>month</value>
+  </data>
+  <data name="Liên hệ" xml:space="preserve">
+    <value>Contact</value>
+  </data>
+  <data name="Bạn có chắc chắn muốn bỏ lưu phòng này?" xml:space="preserve">
+    <value>Are you sure you want to remove this room from favorites?</value>
+  </data>
+  <data name="So sánh" xml:space="preserve">
+    <value>Compare</value>
+  </data>
+  <data name="Tr/tháng" xml:space="preserve">
+    <value>M/month</value>
+  </data>
+  <data name="Ký túc xá" xml:space="preserve">
+    <value>Dormitory</value>
+  </data>
+  <data name="Studio" xml:space="preserve">
+    <value>Studio</value>
+  </data>
+  <data name="Căn hộ" xml:space="preserve">
+    <value>Apartment</value>
+  </data>
+  <data name="Phòng trọ" xml:space="preserve">
+    <value>Room</value>
+  </data>
+  <data name="Đã xoá khỏi danh sách yêu thích!" xml:space="preserve">
+    <value>Removed from favorites!</value>
+  </data>
+  <data name="Có lỗi xảy ra, vui lòng thử lại sau." xml:space="preserve">
+    <value>An error occurred, please try again later.</value>
+  </data>
+</root>

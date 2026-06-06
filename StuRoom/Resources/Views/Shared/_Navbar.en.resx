@@ -51,4 +51,19 @@
   <data name="Đăng xuất" xml:space="preserve">
     <value>Log Out</value>
   </data>
+  <data name="Yêu thích" xml:space="preserve">
+    <value>Favorites</value>
+  </data>
+  <data name="Thông báo" xml:space="preserve">
+    <value>Notifications</value>
+  </data>
+  <data name="Đọc tất cả" xml:space="preserve">
+    <value>Mark All Read</value>
+  </data>
+  <data name="Chuyển chế độ sáng/tối" xml:space="preserve">
+    <value>Toggle Light/Dark Mode</value>
+  </data>
+  <data name="Đăng tin" xml:space="preserve">
+    <value>Post Ad</value>
+  </data>
 </root>

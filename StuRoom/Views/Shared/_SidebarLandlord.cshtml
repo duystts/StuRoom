@@ -10,7 +10,7 @@
     <a class="sidebar-link @(active == "Dashboard" ? "active" : "")"
        asp-controller="Landlord" asp-action="Dashboard">
       <i class="bi bi-grid-1x2"></i>
-      <span>Dashboard</span>
+      <span>@Localizer["Trang tổng quan"]</span>
     </a>
 
     <a class="sidebar-link @(active == "Buildings" ? "active" : "")"
@@ -78,7 +78,7 @@
     <nav>
       <div class="sidebar-section-label">@Localizer["Quản lý"]</div>
       <a class="sidebar-link @(active == "Dashboard" ? "active" : "")" href="#">
-        <i class="bi bi-grid-1x2"></i><span>Dashboard</span>
+        <i class="bi bi-grid-1x2"></i><span>@Localizer["Trang tổng quan"]</span>
       </a>
       <a class="sidebar-link @(active == "Buildings" ? "active" : "")"
          asp-controller="Landlord" asp-action="Buildings">

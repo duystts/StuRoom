@@ -10,7 +10,7 @@
     <a class="sidebar-link @(active == "AdminDashboard" ? "active" : "")"
        asp-controller="Admin" asp-action="Dashboard">
       <i class="bi bi-bar-chart-line"></i>
-      <span>Dashboard</span>
+      <span>@Localizer["Trang tổng quan"]</span>
     </a>
 
     <div class="sidebar-section-label mt-3">@Localizer["Quản trị"]</div>
@@ -24,7 +24,7 @@
     <a class="sidebar-link @(active == "Amenities" ? "active" : "")"
        asp-controller="Admin" asp-action="Amenities">
       <i class="bi bi-tags"></i>
-      <span>Amenities</span>
+      <span>@Localizer["Tiện ích"]</span>
     </a>
 
     <a class="sidebar-link @(active == "ReviewModeration" ? "active" : "")"
@@ -69,7 +69,7 @@
       <div class="sidebar-section-label">@Localizer["Tổng quan"]</div>
       <a class="sidebar-link @(active == "AdminDashboard" ? "active" : "")"
          asp-controller="Admin" asp-action="Dashboard">
-        <i class="bi bi-bar-chart-line"></i><span>Dashboard</span>
+        <i class="bi bi-bar-chart-line"></i><span>@Localizer["Trang tổng quan"]</span>
       </a>
       <div class="sidebar-section-label mt-3">@Localizer["Quản trị"]</div>
       <a class="sidebar-link @(active == "ApproveLandlord" ? "active" : "")"
@@ -78,7 +78,7 @@
       </a>
       <a class="sidebar-link @(active == "Amenities" ? "active" : "")"
          asp-controller="Admin" asp-action="Amenities">
-        <i class="bi bi-tags"></i><span>Amenities</span>
+        <i class="bi bi-tags"></i><span>@Localizer["Tiện ích"]</span>
       </a>
       <a class="sidebar-link @(active == "ReviewModeration" ? "active" : "")"
          asp-controller="Admin" asp-action="ReviewModeration">

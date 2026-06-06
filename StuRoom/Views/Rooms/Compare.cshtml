@@ -215,7 +215,15 @@
       <h3 class="fw-bold mb-1 text-dark" style="font-family: 'Outfit', sans-serif;">@Localizer["So sánh phòng trọ"]</h3>
       <p class="text-muted small mb-0">@Localizer["So sánh chi tiết song song tối đa 3 phòng trọ đã chọn."]</p>
     </div>
-    <a asp-action="Index" class="btn btn-outline-secondary rounded-pill btn-sm px-3 fw-semibold shadow-sm"><i class="bi bi-arrow-left me-1"></i>@Localizer["Quay lại"]</a>
+    <div class="d-flex align-items-center gap-3">
+      <div class="form-check form-switch bg-white rounded-pill px-3 py-1.5 border shadow-sm d-inline-flex align-items-center gap-2 mb-0">
+        <input class="form-check-input ms-0" type="checkbox" id="toggleDiffSwitch" style="cursor: pointer;" />
+        <label class="form-check-label small fw-bold text-secondary mb-0" for="toggleDiffSwitch" style="cursor: pointer; user-select: none;">
+          @Localizer["Làm nổi bật khác biệt"]
+        </label>
+      </div>
+      <a asp-action="Index" class="btn btn-outline-secondary rounded-pill btn-sm px-3 fw-semibold shadow-sm"><i class="bi bi-arrow-left me-1"></i>@Localizer["Quay lại"]</a>
+    </div>
   </div>
 
   <div class="compare-table shadow-sm">
@@ -246,7 +254,7 @@
             </div>
             <h5 class="fw-bold text-dark mb-1" style="font-family: 'Outfit', sans-serif;">@room.Building.Name</h5>
             <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-3 py-1 fw-bold align-self-center mb-0" style="font-size: 12px;">
-              Phòng @room.RoomNumber
+              @Localizer["Phòng"] @room.RoomNumber
             </span>
           </div>
         }
@@ -282,8 +290,8 @@
             {
               <div class="compare-price-val">
                 <span class="price-value">@((rentCfg.UnitPrice / 1000000.0m).ToString("0.#"))</span>
-                <span style="font-size: 1.2rem; font-weight: 700; margin-left: 1px;">Tr</span>
-                <span style="font-size: 0.85rem; font-weight: 500; color: var(--text-secondary); margin-left: 2px;">/tháng</span>
+                <span style="font-size: 1.2rem; font-weight: 700; margin-left: 1px;">@Localizer["Tr"]</span>
+                <span style="font-size: 0.85rem; font-weight: 500; color: var(--text-secondary); margin-left: 2px;">@Localizer["/tháng"]</span>
               </div>
             }
             else
@@ -425,3 +433,67 @@
 
   </div>
 </div>
+
+@section Scripts {
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  const diffSwitch = document.getElementById('toggleDiffSwitch');
+  if (!diffSwitch) return;
+
+  diffSwitch.addEventListener('change', function() {
+    const rows = document.querySelectorAll('.compare-table .compare-row');
+    
+    rows.forEach(row => {
+      // Skip general info (header) and action buttons (footer)
+      if (row.classList.contains('compare-header-row') || row.querySelector('.btn-primary')) {
+        return;
+      }
+      
+      if (this.checked) {
+        if (checkDifference(row)) {
+          row.classList.add('row-diff-highlighted');
+        }
+      } else {
+        row.classList.remove('row-diff-highlighted');
+      }
+    });
+  });
+
+  function checkDifference(row) {
+    const cols = row.querySelectorAll('.compare-val-col');
+    if (cols.length < 2) return false;
+    
+    // 1. Special case: Amenities row
+    const hasAmenities = row.querySelector('.compare-amenity-item') !== null;
+    if (hasAmenities) {
+      const activeAmenities = Array.from(cols).map(col => {
+        return Array.from(col.querySelectorAll('.compare-amenity-item.has'))
+                    .map(item => item.textContent.trim())
+                    .sort()
+                    .join(',');
+      });
+      return activeAmenities.some(val => val !== activeAmenities[0]);
+    }
+    
+    // 2. Special case: Fee configs row
+    const hasFees = row.querySelector('.compare-fee-pill') !== null;
+    if (hasFees) {
+      const fees = Array.from(cols).map(col => {
+        return Array.from(col.querySelectorAll('.compare-fee-pill'))
+                    .map(item => item.textContent.trim().replace(/\s+/g, ' '))
+                    .sort()
+                    .join(',');
+      });
+      return fees.some(val => val !== fees[0]);
+    }
+
+    // 3. General case: simple text comparison
+    const textVals = Array.from(cols).map(col => {
+      return col.textContent.trim().replace(/\s+/g, ' ');
+    });
+    
+    return textVals.some(val => val !== textVals[0]);
+  }
+});
+</script>
+}

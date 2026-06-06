@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Tìm phòng" xml:space="preserve">
+    <value>Search Rooms</value>
+  </data>
+  <data name="So sánh phòng trọ" xml:space="preserve">
+    <value>Compare Rooms</value>
+  </data>
+  <data name="So sánh chi tiết song song tối đa 3 phòng trọ đã chọn." xml:space="preserve">
+    <value>Compare details side-by-side for up to 3 selected rooms.</value>
+  </data>
+  <data name="Làm nổi bật khác biệt" xml:space="preserve">
+    <value>Highlight differences</value>
+  </data>
+  <data name="Quay lại" xml:space="preserve">
+    <value>Go back</value>
+  </data>
+  <data name="Thông tin chung" xml:space="preserve">
+    <value>General Info</value>
+  </data>
+  <data name="Phòng" xml:space="preserve">
+    <value>Room</value>
+  </data>
+  <data name="Vị trí / Địa chỉ" xml:space="preserve">
+    <value>Location / Address</value>
+  </data>
+  <data name="Giá thuê" xml:space="preserve">
+    <value>Rent Price</value>
+  </data>
+  <data name="Tr" xml:space="preserve">
+    <value>M</value>
+  </data>
+  <data name="/tháng" xml:space="preserve">
+    <value>/month</value>
+  </data>
+  <data name="Liên hệ" xml:space="preserve">
+    <value>Contact</value>
+  </data>
+  <data name="Diện tích &amp; Sức chứa" xml:space="preserve">
+    <value>Area &amp; Capacity</value>
+  </data>
+  <data name="Diện tích" xml:space="preserve">
+    <value>Area</value>
+  </data>
+  <data name="người" xml:space="preserve">
+    <value>people</value>
+  </data>
+  <data name="Tối đa" xml:space="preserve">
+    <value>Max</value>
+  </data>
+  <data name="Chi phí khác" xml:space="preserve">
+    <value>Other Costs</value>
+  </data>
+  <data name="Không có thông tin chi tiết" xml:space="preserve">
+    <value>No details available</value>
+  </data>
+  <data name="So sánh Tiện ích" xml:space="preserve">
+    <value>Compare Amenities</value>
+  </data>
+  <data name="Đánh giá" xml:space="preserve">
+    <value>Reviews</value>
+  </data>
+  <data name="đánh giá" xml:space="preserve">
+    <value>reviews</value>
+  </data>
+  <data name="Chưad có đánh giá" xml:space="preserve">
+    <value>No reviews yet</value>
+  </data>
+  <data name="Chưa có đánh giá" xml:space="preserve">
+    <value>No reviews yet</value>
+  </data>
+  <data name="Thao tác" xml:space="preserve">
+    <value>Action</value>
+  </data>
+  <data name="Xem chi tiết" xml:space="preserve">
+    <value>View Details</value>
+  </data>
+</root>
