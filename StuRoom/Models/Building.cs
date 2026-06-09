@@ -12,6 +12,8 @@ public class Building
     public string District { get; set; } = string.Empty;
     public string Ward { get; set; } = string.Empty;
     public string? Description { get; set; }
+    public double? Latitude { get; set; }
+    public double? Longitude { get; set; }
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

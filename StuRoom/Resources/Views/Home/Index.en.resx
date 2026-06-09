@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Trang chủ - StuRoom" xml:space="preserve">
+    <value>Home - StuRoom</value>
+  </data>
+  <data name="Hơn 10,000+ phòng trọ xác thực" xml:space="preserve">
+    <value>Over 10,000+ verified rooms</value>
+  </data>
+  <data name="Không gian sống hoàn hảo cho khởi đầu mới." xml:space="preserve">
+    <value>Perfect living space for a new start.</value>
+  </data>
+  <data name="Tìm kiếm phòng trọ, căn hộ mini và không gian chia sẻ chất lượng tại các khu vực trung tâm một cách nhanh chóng." xml:space="preserve">
+    <value>Quickly find high-quality room rentals, mini apartments, and shared spaces in central areas.</value>
+  </data>
+  <data name="Nhập tên đường, khu vực..." xml:space="preserve">
+    <value>Enter street name, area...</value>
+  </data>
+  <data name="Khu vực (Tất cả)" xml:space="preserve">
+    <value>Area (All)</value>
+  </data>
+  <data name="Tìm kiếm" xml:space="preserve">
+    <value>Search</value>
+  </data>
+  <data name="Tại sao nên chọn StuRoom?" xml:space="preserve">
+    <value>Why choose StuRoom?</value>
+  </data>
+  <data name="Nền tảng giúp bạn kết nối nhanh chóng, minh bạch và an toàn." xml:space="preserve">
+    <value>A platform connecting you quickly, transparently, and safely.</value>
+  </data>
+  <data name="Tìm phòng nhanh chóng" xml:space="preserve">
+    <value>Quick Room Search</value>
+  </data>
+  <data name="Hệ thống lọc thông minh theo địa điểm, giá cả, diện tích và tiện ích chi tiết giúp sinh viên dễ dàng tìm thấy nơi ở ưng ý." xml:space="preserve">
+    <value>Smart filtering by location, price, area, and detailed amenities helps students easily find their ideal home.</value>
+  </data>
+  <data name="Hỗ trợ tìm người ở ghép" xml:space="preserve">
+    <value>Roommate Matching Support</value>
+  </data>
+  <data name="Dễ dàng đăng thông tin ghép cặp ở chung và tự động chia đều tiền phòng, điện nước hóa đơn hàng tháng trên hệ thống." xml:space="preserve">
+    <value>Easily post roommate pairing info and automatically split rent, electricity, and water bills on the system.</value>
+  </data>
+  <data name="Ký hợp đồng &amp; Hóa đơn tự động" xml:space="preserve">
+    <value>Contracts &amp; Automatic Invoices</value>
+  </data>
+  <data name="Xuất hợp đồng mẫu PDF/Word theo đúng pháp lý, nhập chỉ số điện nước để hệ thống tự động sinh hóa đơn gửi trực tiếp." xml:space="preserve">
+    <value>Export legal PDF/Word templates and enter utility readings for automatic invoice generation and delivery.</value>
+  </data>
+  <data name="Phòng nổi bật gần đây" xml:space="preserve">
+    <value>Featured Rooms</value>
+  </data>
+  <data name="Các phòng trọ và căn hộ dịch vụ mini vừa được đăng lên nền tảng" xml:space="preserve">
+    <value>Recently posted rooms and mini serviced apartments on the platform</value>
+  </data>
+  <data name="Xem tất cả phòng" xml:space="preserve">
+    <value>View All Rooms</value>
+  </data>
+  <data name="Chưa có phòng trọ khả dụng nào được đăng." xml:space="preserve">
+    <value>No available rooms have been posted yet.</value>
+  </data>
+  <data name="Yêu thích" xml:space="preserve">
+    <value>Favorite</value>
+  </data>
+  <data name="Phòng ghép" xml:space="preserve">
+    <value>Shared room</value>
+  </data>
+  <data name="Phòng đơn" xml:space="preserve">
+    <value>Single room</value>
+  </data>
+  <data name="Tối đa" xml:space="preserve">
+    <value>Max</value>
+  </data>
+  <data name="người" xml:space="preserve">
+    <value>guests</value>
+  </data>
+  <data name="Giá thuê" xml:space="preserve">
+    <value>Rent price</value>
+  </data>
+  <data name="tháng" xml:space="preserve">
+    <value>month</value>
+  </data>
+  <data name="Bắt đầu trải nghiệm StuRoom ngay hôm nay!" xml:space="preserve">
+    <value>Start your StuRoom experience today!</value>
+  </data>
+  <data name="Đăng ký tài khoản để khám phá phòng trọ hoặc bắt đầu quản lý danh sách phòng cho thuê của bạn." xml:space="preserve">
+    <value>Register an account to explore rooms or start managing your listings.</value>
+  </data>
+  <data name="Đăng ký thành viên" xml:space="preserve">
+    <value>Join StuRoom</value>
+  </data>
+  <data name="Đăng nhập" xml:space="preserve">
+    <value>Log In</value>
+  </data>
+  <data name="Tr" xml:space="preserve">
+    <value>M</value>
+  </data>
+  <data name="Tr/tháng" xml:space="preserve">
+    <value>M/month</value>
+  </data>
+  <data name="So sánh" xml:space="preserve">
+    <value>Compare</value>
+  </data>
+  <data name="Liên hệ" xml:space="preserve">
+    <value>Contact</value>
+  </data>
+  <data name="Bạn cần đăng nhập để lưu phòng yêu thích. Đăng nhập ngay?" xml:space="preserve">
+    <value>You need to log in to save favorite rooms. Log in now?</value>
+  </data>
+  <data name="Đã lưu vào danh sách yêu thích!" xml:space="preserve">
+    <value>Added to favorites!</value>
+  </data>
+  <data name="Đã xoá khỏi danh sách yêu thích!" xml:space="preserve">
+    <value>Removed from favorites!</value>
+  </data>
+  <data name="Có lỗi xảy ra, vui lòng thử lại sau." xml:space="preserve">
+    <value>An error occurred, please try again later.</value>
+  </data>
+</root>

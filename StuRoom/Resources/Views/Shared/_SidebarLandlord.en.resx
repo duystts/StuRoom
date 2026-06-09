@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Quản lý" xml:space="preserve">
+    <value>Management</value>
+  </data>
+  <data name="Tòa nhà" xml:space="preserve">
+    <value>Buildings</value>
+  </data>
+  <data name="Phòng" xml:space="preserve">
+    <value>Rooms</value>
+  </data>
+  <data name="Cấu hình phí" xml:space="preserve">
+    <value>Fee Configs</value>
+  </data>
+  <data name="Nghiệp vụ" xml:space="preserve">
+    <value>Operations</value>
+  </data>
+  <data name="Lịch hẹn xem" xml:space="preserve">
+    <value>Viewing Requests</value>
+  </data>
+  <data name="Đặt phòng" xml:space="preserve">
+    <value>Booking Requests</value>
+  </data>
+  <data name="Hợp đồng" xml:space="preserve">
+    <value>Contracts</value>
+  </data>
+  <data name="Hoá đơn" xml:space="preserve">
+    <value>Invoices</value>
+  </data>
+</root>

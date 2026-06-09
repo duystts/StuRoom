@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Trang chủ" xml:space="preserve">
+    <value>Home</value>
+  </data>
+  <data name="Cho thuê" xml:space="preserve">
+    <value>Rentals</value>
+  </data>
+  <data name="Tìm ở ghép" xml:space="preserve">
+    <value>Roommates</value>
+  </data>
+  <data name="Blog" xml:space="preserve">
+    <value>Blog</value>
+  </data>
+  <data name="Lịch hẹn" xml:space="preserve">
+    <value>Appointments</value>
+  </data>
+  <data name="Đặt phòng" xml:space="preserve">
+    <value>Bookings</value>
+  </data>
+  <data name="Đăng tin" xml:space="preserve">
+    <value>Post Ad</value>
+  </data>
+  <data name="Đăng nhập" xml:space="preserve">
+    <value>Log In</value>
+  </data>
+  <data name="Đăng ký" xml:space="preserve">
+    <value>Register</value>
+  </data>
+  <data name="Chủ trọ" xml:space="preserve">
+    <value>Landlord</value>
+  </data>
+  <data name="Thông tin cá nhân" xml:space="preserve">
+    <value>Profile</value>
+  </data>
+  <data name="Đổi mật khẩu" xml:space="preserve">
+    <value>Change Password</value>
+  </data>
+  <data name="Đăng xuất" xml:space="preserve">
+    <value>Log Out</value>
+  </data>
+  <data name="Yêu thích" xml:space="preserve">
+    <value>Favorites</value>
+  </data>
+  <data name="Thông báo" xml:space="preserve">
+    <value>Notifications</value>
+  </data>
+  <data name="Đọc tất cả" xml:space="preserve">
+    <value>Mark All Read</value>
+  </data>
+  <data name="Chuyển chế độ sáng/tối" xml:space="preserve">
+    <value>Toggle Light/Dark Mode</value>
+  </data>
+  <data name="Đăng tin" xml:space="preserve">
+    <value>Post Ad</value>
+  </data>
+</root>

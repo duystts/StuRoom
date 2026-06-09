@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using StuRoom.Data;
 
@@ -11,9 +12,11 @@ using StuRoom.Data;
 namespace StuRoom.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260605113658_AddFavoritesReportsCoordinates")]
+    partial class AddFavoritesReportsCoordinates
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -177,7 +180,7 @@ namespace StuRoom.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Amenities", (string)null);
+                    b.ToTable("Amenities");
                 });
 
             modelBuilder.Entity("StuRoom.Models.ApplicationUser", b =>
@@ -307,7 +310,7 @@ namespace StuRoom.Migrations
 
                     b.HasIndex("ViewingRequestId");
 
-                    b.ToTable("BookingRequests", (string)null);
+                    b.ToTable("BookingRequests");
                 });
 
             modelBuilder.Entity("StuRoom.Models.Building", b =>
@@ -358,7 +361,7 @@ namespace StuRoom.Migrations
 
                     b.HasIndex("LandlordId");
 
-                    b.ToTable("Buildings", (string)null);
+                    b.ToTable("Buildings");
                 });
 
             modelBuilder.Entity("StuRoom.Models.Contract", b =>
@@ -420,7 +423,7 @@ namespace StuRoom.Migrations
 
                     b.HasIndex("TenantId");
 
-                    b.ToTable("Contracts", (string)null);
+                    b.ToTable("Contracts");
                 });
 
             modelBuilder.Entity("StuRoom.Models.ContractMember", b =>
@@ -453,7 +456,7 @@ namespace StuRoom.Migrations
 
                     b.HasIndex("TenantId");
 
-                    b.ToTable("ContractMembers", (string)null);
+                    b.ToTable("ContractMembers");
                 });
 
             modelBuilder.Entity("StuRoom.Models.FavoriteRoom", b =>
@@ -471,7 +474,7 @@ namespace StuRoom.Migrations
 
                     b.HasIndex("RoomId");
 
-                    b.ToTable("FavoriteRooms", (string)null);
+                    b.ToTable("FavoriteRooms");
                 });
 
             modelBuilder.Entity("StuRoom.Models.FeeConfig", b =>
@@ -518,7 +521,7 @@ namespace StuRoom.Migrations
 
                     b.HasIndex("RoomId");
 
-                    b.ToTable("FeeConfigs", (string)null);
+                    b.ToTable("FeeConfigs");
                 });
 
             modelBuilder.Entity("StuRoom.Models.Invoice", b =>
@@ -558,7 +561,7 @@ namespace StuRoom.Migrations
 
                     b.HasIndex("ContractId");
 
-                    b.ToTable("Invoices", (string)null);
+                    b.ToTable("Invoices");
                 });
 
             modelBuilder.Entity("StuRoom.Models.InvoiceItem", b =>
@@ -605,7 +608,7 @@ namespace StuRoom.Migrations
 
                     b.HasIndex("InvoiceId");
 
-                    b.ToTable("InvoiceItems", (string)null);
+                    b.ToTable("InvoiceItems");
                 });
 
             modelBuilder.Entity("StuRoom.Models.Notification", b =>
@@ -647,7 +650,7 @@ namespace StuRoom.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Notifications", (string)null);
+                    b.ToTable("Notifications");
                 });
 
             modelBuilder.Entity("StuRoom.Models.Payment", b =>
@@ -690,7 +693,7 @@ namespace StuRoom.Migrations
 
                     b.HasIndex("RecordedById");
 
-                    b.ToTable("Payments", (string)null);
+                    b.ToTable("Payments");
                 });
 
             modelBuilder.Entity("StuRoom.Models.Room", b =>
@@ -731,7 +734,7 @@ namespace StuRoom.Migrations
 
                     b.HasIndex("BuildingId");
 
-                    b.ToTable("Rooms", (string)null);
+                    b.ToTable("Rooms");
                 });
 
             modelBuilder.Entity("StuRoom.Models.RoomAmenity", b =>
@@ -746,7 +749,7 @@ namespace StuRoom.Migrations
 
                     b.HasIndex("AmenityId");
 
-                    b.ToTable("RoomAmenities", (string)null);
+                    b.ToTable("RoomAmenities");
                 });
 
             modelBuilder.Entity("StuRoom.Models.RoomImage", b =>
@@ -778,7 +781,7 @@ namespace StuRoom.Migrations
 
                     b.HasIndex("RoomId");
 
-                    b.ToTable("RoomImages", (string)null);
+                    b.ToTable("RoomImages");
                 });
 
             modelBuilder.Entity("StuRoom.Models.RoomReport", b =>
@@ -825,7 +828,7 @@ namespace StuRoom.Migrations
 
                     b.HasIndex("RoomId");
 
-                    b.ToTable("RoomReports", (string)null);
+                    b.ToTable("RoomReports");
                 });
 
             modelBuilder.Entity("StuRoom.Models.RoomReview", b =>
@@ -866,7 +869,7 @@ namespace StuRoom.Migrations
 
                     b.HasIndex("RoomId");
 
-                    b.ToTable("RoomReviews", (string)null);
+                    b.ToTable("RoomReviews");
                 });
 
             modelBuilder.Entity("StuRoom.Models.ViewingRequest", b =>
@@ -908,7 +911,7 @@ namespace StuRoom.Migrations
 
                     b.HasIndex("TenantId");
 
-                    b.ToTable("ViewingRequests", (string)null);
+                    b.ToTable("ViewingRequests");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>

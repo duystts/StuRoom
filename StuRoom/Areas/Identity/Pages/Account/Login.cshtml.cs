@@ -76,6 +76,7 @@ public class LoginModel : PageModel
         if (result.Succeeded)
         {
             _logger.LogInformation("Đăng nhập thành công: {Email}", Input.Email);
+            TempData["Success"] = "Đăng nhập thành công! Chào mừng bạn quay trở lại.";
 
             // Landlord chưa duyệt → chuyển về trang chờ
             var user = await _userManager.FindByEmailAsync(Input.Email);

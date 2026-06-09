@@ -1,7 +1,8 @@
 @page
 @model LoginModel
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @{
-    ViewData["Title"] = "Đăng nhập";
+    ViewData["Title"] = Localizer["Đăng nhập"];
 }
 
 <div class="container py-5">
@@ -9,8 +10,8 @@
     <div class="col-md-5 col-lg-4">
 
       <div class="text-center mb-4">
-        <h2 class="fw-bold mb-1">Chào mừng trở lại</h2>
-        <p class="text-muted small">Đăng nhập để tiếp tục sử dụng StuRoom</p>
+        <h2 class="fw-bold mb-1">@Localizer["Chào mừng trở lại"]</h2>
+        <p class="text-muted small">@Localizer["Đăng nhập để tiếp tục sử dụng StuRoom"]</p>
       </div>
 
       <div class="card border-0 shadow-sm">
@@ -19,7 +20,7 @@
             <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small" role="alert"></div>
 
             <div class="mb-3">
-              <label asp-for="Input.Email" class="form-label fw-semibold">Email</label>
+              <label asp-for="Input.Email" class="form-label fw-semibold">@Localizer["Email"]</label>
               <input asp-for="Input.Email" class="form-control" autocomplete="username"
                      placeholder="example@email.com" type="email" />
               <span asp-validation-for="Input.Email" class="text-danger small"></span>
@@ -27,8 +28,8 @@
 
             <div class="mb-3">
               <div class="d-flex justify-content-between align-items-center mb-1">
-                <label asp-for="Input.Password" class="form-label fw-semibold mb-0">Mật khẩu</label>
-                <a asp-page="./ForgotPassword" class="small text-muted">Quên mật khẩu?</a>
+                <label asp-for="Input.Password" class="form-label fw-semibold mb-0">@Localizer["Mật khẩu"]</label>
+                <a asp-page="./ForgotPassword" class="small text-muted">@Localizer["Quên mật khẩu?"]</a>
               </div>
               <input asp-for="Input.Password" class="form-control" autocomplete="current-password"
                      placeholder="••••••••" type="password" />
@@ -38,20 +39,20 @@
             <div class="mb-4 form-check">
               <input class="form-check-input" asp-for="Input.RememberMe" />
               <label class="form-check-label small text-muted" asp-for="Input.RememberMe">
-                Ghi nhớ đăng nhập
+                @Localizer["Ghi nhớ đăng nhập"]
               </label>
             </div>
 
             <button id="login-submit" type="submit" class="btn btn-primary w-100 py-2 fw-semibold">
-              Đăng nhập
+              @Localizer["Đăng nhập"]
             </button>
           </form>
         </div>
       </div>
 
       <p class="text-center text-muted small mt-3">
-        Chưa có tài khoản?
-        <a asp-page="./Register" asp-route-returnUrl="@Model.ReturnUrl">Đăng ký ngay</a>
+        @Localizer["Chưa có tài khoản?"]
+        <a asp-page="./Register" asp-route-returnUrl="@Model.ReturnUrl">@Localizer["Đăng ký ngay"]</a>
       </p>
 
     </div>

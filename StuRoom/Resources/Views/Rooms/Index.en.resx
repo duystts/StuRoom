@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Bộ lọc" xml:space="preserve">
+    <value>Filters</value>
+  </data>
+  <data name="Xóa tất cả" xml:space="preserve">
+    <value>Clear All</value>
+  </data>
+  <data name="Tìm kiếm" xml:space="preserve">
+    <value>Search</value>
+  </data>
+  <data name="Tên tòa nhà, khu vực..." xml:space="preserve">
+    <value>Building name, area...</value>
+  </data>
+  <data name="Tỉnh / Thành phố" xml:space="preserve">
+    <value>Province / City</value>
+  </data>
+  <data name="Tất cả" xml:space="preserve">
+    <value>All</value>
+  </data>
+  <data name="Quận / Huyện" xml:space="preserve">
+    <value>District</value>
+  </data>
+  <data name="VD: Thủ Đức" xml:space="preserve">
+    <value>e.g. Thu Duc</value>
+  </data>
+  <data name="Mức giá tối đa" xml:space="preserve">
+    <value>Maximum Price</value>
+  </data>
+  <data name="Tr" xml:space="preserve">
+    <value>M</value>
+  </data>
+  <data name="10 Tr+" xml:space="preserve">
+    <value>10M+</value>
+  </data>
+  <data name="Diện tích tối thiểu (m²)" xml:space="preserve">
+    <value>Minimum Area (m²)</value>
+  </data>
+  <data name="VD: 15" xml:space="preserve">
+    <value>e.g. 15</value>
+  </data>
+  <data name="Tiện ích cơ bản" xml:space="preserve">
+    <value>Basic Amenities</value>
+  </data>
+  <data name="Tìm phòng" xml:space="preserve">
+    <value>Search Rooms</value>
+  </data>
+  <data name="Phòng trọ tại" xml:space="preserve">
+    <value>Rooms in</value>
+  </data>
+  <data name="Không tìm thấy phòng nào phù hợp" xml:space="preserve">
+    <value>No matching rooms found</value>
+  </data>
+  <data name="Hiển thị" xml:space="preserve">
+    <value>Showing</value>
+  </data>
+  <data name="kết quả phù hợp" xml:space="preserve">
+    <value>matching results</value>
+  </data>
+  <data name="Bản đồ" xml:space="preserve">
+    <value>Map</value>
+  </data>
+  <data name="Mới nhất" xml:space="preserve">
+    <value>Latest</value>
+  </data>
+  <data name="Giá tăng dần" xml:space="preserve">
+    <value>Price Low to High</value>
+  </data>
+  <data name="Giá giảm dần" xml:space="preserve">
+    <value>Price High to Low</value>
+  </data>
+  <data name="Bộ lọc đang áp dụng:" xml:space="preserve">
+    <value>Applied Filters:</value>
+  </data>
+  <data name="Dưới" xml:space="preserve">
+    <value>Under</value>
+  </data>
+  <data name="Tr ₫" xml:space="preserve">
+    <value>M ₫</value>
+  </data>
+  <data name="Diện tích" xml:space="preserve">
+    <value>Area</value>
+  </data>
+  <data name="Xóa hết" xml:space="preserve">
+    <value>Clear</value>
+  </data>
+  <data name="Không tìm thấy phòng nào" xml:space="preserve">
+    <value>No rooms found</value>
+  </data>
+  <data name="Thử thay đổi bộ lọc hoặc xóa bộ lọc để xem tất cả phòng." xml:space="preserve">
+    <value>Try changing filters or clearing filters to see all rooms.</value>
+  </data>
+  <data name="Xem tất cả" xml:space="preserve">
+    <value>View All</value>
+  </data>
+  <data name="Nổi bật" xml:space="preserve">
+    <value>Featured</value>
+  </data>
+  <data name="người" xml:space="preserve">
+    <value>people</value>
+  </data>
+  <data name="Giá thuê" xml:space="preserve">
+    <value>Rent Price</value>
+  </data>
+  <data name="tháng" xml:space="preserve">
+    <value>month</value>
+  </data>
+  <data name="Liên hệ" xml:space="preserve">
+    <value>Contact</value>
+  </data>
+  <data name="Bạn cần đăng nhập để lưu phòng yêu thích. Đăng nhập ngay?" xml:space="preserve">
+    <value>You need to log in to save favorite rooms. Log in now?</value>
+  </data>
+  <data name="Đã lưu vào danh sách yêu thích!" xml:space="preserve">
+    <value>Added to favorites!</value>
+  </data>
+  <data name="Đã xoá khỏi danh sách yêu thích!" xml:space="preserve">
+    <value>Removed from favorites!</value>
+  </data>
+  <data name="Có lỗi xảy ra, vui lòng thử lại sau." xml:space="preserve">
+    <value>An error occurred, please try again later.</value>
+  </data>
+  <data name="Tr/tháng" xml:space="preserve">
+    <value>M/month</value>
+  </data>
+  <data name="So sánh" xml:space="preserve">
+    <value>Compare</value>
+  </data>
+</root>

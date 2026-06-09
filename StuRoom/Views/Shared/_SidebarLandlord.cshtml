@@ -1,59 +1,60 @@
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @{
     var active = ViewData["ActiveMenu"]?.ToString() ?? "";
 }
 
 <aside class="sturoom-sidebar" id="landlordSidebar">
   <nav>
-    <div class="sidebar-section-label">Quản lý</div>
+    <div class="sidebar-section-label">@Localizer["Quản lý"]</div>
 
     <a class="sidebar-link @(active == "Dashboard" ? "active" : "")"
        asp-controller="Landlord" asp-action="Dashboard">
       <i class="bi bi-grid-1x2"></i>
-      <span>Dashboard</span>
+      <span>@Localizer["Trang tổng quan"]</span>
     </a>
 
     <a class="sidebar-link @(active == "Buildings" ? "active" : "")"
        asp-controller="Landlord" asp-action="Buildings">
       <i class="bi bi-building"></i>
-      <span>Tòa nhà</span>
+      <span>@Localizer["Tòa nhà"]</span>
     </a>
 
     <a class="sidebar-link @(active == "Rooms" ? "active" : "")"
        asp-controller="Landlord" asp-action="Rooms">
       <i class="bi bi-door-open"></i>
-      <span>Phòng</span>
+      <span>@Localizer["Phòng"]</span>
     </a>
 
     <a class="sidebar-link @(active == "FeeConfigs" ? "active" : "")"
        asp-controller="Landlord" asp-action="FeeConfigs">
       <i class="bi bi-sliders"></i>
-      <span>Cấu hình phí</span>
+      <span>@Localizer["Cấu hình phí"]</span>
     </a>
 
-    <div class="sidebar-section-label mt-3">Nghiệp vụ</div>
+    <div class="sidebar-section-label mt-3">@Localizer["Nghiệp vụ"]</div>
 
     <a class="sidebar-link @(active == "ViewingRequests" ? "active" : "")"
        asp-controller="Landlord" asp-action="ViewingRequests">
       <i class="bi bi-calendar-check"></i>
-      <span>Lịch hẹn xem</span>
+      <span>@Localizer["Lịch hẹn xem"]</span>
     </a>
 
     <a class="sidebar-link @(active == "BookingRequests" ? "active" : "")"
        asp-controller="Landlord" asp-action="BookingRequests">
       <i class="bi bi-bookmark-check"></i>
-      <span>Đặt phòng</span>
+      <span>@Localizer["Đặt phòng"]</span>
     </a>
 
     <a class="sidebar-link @(active == "Contracts" ? "active" : "")"
        asp-controller="Landlord" asp-action="Contracts">
       <i class="bi bi-file-earmark-text"></i>
-      <span>Hợp đồng</span>
+      <span>@Localizer["Hợp đồng"]</span>
     </a>
 
     <a class="sidebar-link @(active == "Invoices" ? "active" : "")"
        asp-controller="Landlord" asp-action="Invoices">
       <i class="bi bi-receipt"></i>
-      <span>Hoá đơn</span>
+      <span>@Localizer["Hoá đơn"]</span>
     </a>
   </nav>
 </aside>
@@ -75,37 +76,37 @@
   </div>
   <div class="offcanvas-body p-0">
     <nav>
-      <div class="sidebar-section-label">Quản lý</div>
+      <div class="sidebar-section-label">@Localizer["Quản lý"]</div>
       <a class="sidebar-link @(active == "Dashboard" ? "active" : "")" href="#">
-        <i class="bi bi-grid-1x2"></i><span>Dashboard</span>
+        <i class="bi bi-grid-1x2"></i><span>@Localizer["Trang tổng quan"]</span>
       </a>
       <a class="sidebar-link @(active == "Buildings" ? "active" : "")"
          asp-controller="Landlord" asp-action="Buildings">
-        <i class="bi bi-building"></i><span>Tòa nhà</span>
+        <i class="bi bi-building"></i><span>@Localizer["Tòa nhà"]</span>
       </a>
       <a class="sidebar-link @(active == "Rooms" ? "active" : "")"
          asp-controller="Landlord" asp-action="Rooms">
-        <i class="bi bi-door-open"></i><span>Phòng</span>
+        <i class="bi bi-door-open"></i><span>@Localizer["Phòng"]</span>
       </a>
       <a class="sidebar-link @(active == "FeeConfigs" ? "active" : "")"
          asp-controller="Landlord" asp-action="FeeConfigs">
-        <i class="bi bi-sliders"></i><span>Cấu hình phí</span>
+        <i class="bi bi-sliders"></i><span>@Localizer["Cấu hình phí"]</span>
       </a>
-      <div class="sidebar-section-label mt-3">Nghiệp vụ</div>
+      <div class="sidebar-section-label mt-3">@Localizer["Nghiệp vụ"]</div>
       <a class="sidebar-link @(active == "ViewingRequests" ? "active" : "")"
          asp-controller="Landlord" asp-action="ViewingRequests">
-        <i class="bi bi-calendar-check"></i><span>Lịch hẹn xem</span>
+        <i class="bi bi-calendar-check"></i><span>@Localizer["Lịch hẹn xem"]</span>
       </a>
       <a class="sidebar-link @(active == "BookingRequests" ? "active" : "")"
          asp-controller="Landlord" asp-action="BookingRequests">
-        <i class="bi bi-bookmark-check"></i><span>Đặt phòng</span>
+        <i class="bi bi-bookmark-check"></i><span>@Localizer["Đặt phòng"]</span>
       </a>
       <a class="sidebar-link @(active == "Contracts" ? "active" : "")"
          asp-controller="Landlord" asp-action="Contracts">
-        <i class="bi bi-file-earmark-text"></i><span>Hợp đồng</span>
+        <i class="bi bi-file-earmark-text"></i><span>@Localizer["Hợp đồng"]</span>
       </a>
       <a class="sidebar-link @(active == "Invoices" ? "active" : "")" href="#">
-        <i class="bi bi-receipt"></i><span>Hoá đơn</span>
+        <i class="bi bi-receipt"></i><span>@Localizer["Hoá đơn"]</span>
       </a>
     </nav>
   </div>

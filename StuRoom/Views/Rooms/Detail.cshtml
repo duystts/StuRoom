@@ -1,5 +1,6 @@
 @model StuRoom.Models.ViewModels.RoomPublicDetailViewModel
 @using StuRoom.Models
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
 @{
     ViewData["Title"] = $"Phòng {Model.Room.RoomNumber} — {Model.Room.Building.Name}";
     Layout = "_Layout";
@@ -15,25 +16,27 @@
     };
 }
 
-<div class="container py-4">
-
+<div class="container py-5">
+@* Hidden antiforgery token for AJAX *@
+@Html.AntiForgeryToken()
+  
   @* Breadcrumb *@
-  <nav aria-label="breadcrumb" class="mb-3">
-    <ol class="breadcrumb small">
-      <li class="breadcrumb-item"><a asp-action="Index">Tìm phòng</a></li>
-      <li class="breadcrumb-item active">@Model.Room.Building.Name — Phòng @Model.Room.RoomNumber</li>
+  <nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb small px-3 py-2 bg-white rounded-pill shadow-sm d-inline-flex border">
+      <li class="breadcrumb-item"><a asp-action="Index" class="text-decoration-none text-primary fw-semibold"><i class="bi bi-house me-1"></i>Tìm phòng</a></li>
+      <li class="breadcrumb-item active text-secondary" aria-current="page">@Model.Room.Building.Name — Phòng @Model.Room.RoomNumber</li>
     </ol>
   </nav>
 
   <div class="row g-4">
 
-    @* ══════ Cột chính ══════ *@
+    @* ══════ Cột chính (Trái) ══════ *@
     <div class="col-lg-8">
 
       @* Image carousel *@
       @if (Model.Images.Any())
       {
-        <div id="roomCarousel" class="carousel slide rounded-3 overflow-hidden shadow-sm mb-4"
+        <div id="roomCarousel" class="carousel slide rounded-4 overflow-hidden shadow-sm mb-4 position-relative"
              data-bs-ride="false">
           <div class="carousel-inner">
             @for (int i = 0; i < Model.Images.Count; i++)
@@ -42,93 +45,129 @@
                 <img src="@Model.Images[i].ImageUrl"
                      class="d-block w-100"
                      alt="Ảnh phòng @(i+1)"
-                     style="height:420px;object-fit:cover" />
+                     style="height:450px;object-fit:cover" />
               </div>
             }
           </div>
           @if (Model.Images.Count > 1)
           {
             <button class="carousel-control-prev" type="button" data-bs-target="#roomCarousel" data-bs-slide="prev">
-              <span class="carousel-control-prev-icon"></span>
+              <span class="carousel-control-prev-icon-custom"><i class="bi bi-chevron-left"></i></span>
             </button>
             <button class="carousel-control-next" type="button" data-bs-target="#roomCarousel" data-bs-slide="next">
-              <span class="carousel-control-next-icon"></span>
+              <span class="carousel-control-next-icon-custom"><i class="bi bi-chevron-right"></i></span>
             </button>
-            <div class="carousel-indicators" style="bottom:-30px">
+            <div class="carousel-indicators-custom">
               @for (int i = 0; i < Model.Images.Count; i++)
               {
                 <button type="button" data-bs-target="#roomCarousel" data-bs-slide-to="@i"
                         class="@(i == 0 ? "active" : "")"
-                        style="background:#6c8fff;width:8px;height:8px;border-radius:50%"></button>
+                        style="width:8px;height:8px;border-radius:50%;border:none;margin:0 4px;transition:background-color 0.2s;"></button>
               }
             </div>
           }
         </div>
-        @if (Model.Images.Count > 1)
-        {
-          <div class="mb-2" style="height:16px"></div>
-        }
       }
       else
       {
-        <div class="bg-light rounded-3 d-flex align-items-center justify-content-center mb-4"
-             style="height:300px">
+        <div class="bg-light rounded-4 d-flex align-items-center justify-content-center mb-4 border"
+             style="height:350px">
           <div class="text-center text-muted">
             <i class="bi bi-camera fs-1 d-block mb-2"></i>
-            Chưa có ảnh
+            Chưa có hình ảnh phòng trọ
           </div>
         </div>
       }
 
       @* Thông tin phòng *@
-      <div class="card border-0 shadow-sm mb-4">
+      <div class="card border-0 shadow-sm mb-4 p-3 info-card">
         <div class="card-body">
-          <h5 class="fw-bold mb-1">Phòng @Model.Room.RoomNumber</h5>
-          <div class="text-muted small mb-3">
-            <i class="bi bi-geo-alt me-1"></i>
-            @Model.Room.Building.Address
-            @if (!string.IsNullOrWhiteSpace(Model.Room.Building.Ward))
-            { <span>, @Model.Room.Building.Ward</span> }
-            @if (!string.IsNullOrWhiteSpace(Model.Room.Building.District))
-            { <span>, @Model.Room.Building.District</span> }
-            @if (!string.IsNullOrWhiteSpace(Model.Room.Building.Province))
-            { <span>, @Model.Room.Building.Province</span> }
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <h3 class="fw-bold mb-0 text-dark">Phòng @Model.Room.RoomNumber</h3>
+            @{
+              bool isFav = ViewBag.IsFavorite == true;
+            }
+            <button type="button" class="btn btn-outline-danger btn-sm rounded-pill px-3 py-1.5 fw-semibold d-flex align-items-center gap-1.5 shadow-sm @(isFav ? "active" : "")"
+                    id="detailFavBtn" onclick="toggleDetailFav(@Model.Room.Id)">
+              <i class="bi @(isFav ? "bi-heart-fill text-danger" : "bi-heart")"></i>
+              <span id="favText" class="small">@(isFav ? Localizer["Đã lưu"].Value : Localizer["Lưu tin"].Value)</span>
+            </button>
+          </div>
+          <div class="text-muted small mb-4">
+            <div class="d-flex align-items-center gap-1.5">
+              <i class="bi bi-geo-alt-fill text-primary"></i>
+              <span>
+                @Model.Room.Building.Address
+                @if (!string.IsNullOrWhiteSpace(Model.Room.Building.Ward)) { <span>, @Model.Room.Building.Ward</span> }
+                @if (!string.IsNullOrWhiteSpace(Model.Room.Building.District)) { <span>, @Model.Room.Building.District</span> }
+                @if (!string.IsNullOrWhiteSpace(Model.Room.Building.Province)) { <span>, @Model.Room.Building.Province</span> }
+              </span>
+            </div>
+            <div class="mt-2 ps-3.5">
+              @if (Model.Room.Building.Latitude.HasValue && Model.Room.Building.Longitude.HasValue)
+              {
+                <a href="https://www.google.com/maps/search/?api=1&query=@Model.Room.Building.Latitude.Value.ToString(System.Globalization.CultureInfo.InvariantCulture),@Model.Room.Building.Longitude.Value.ToString(System.Globalization.CultureInfo.InvariantCulture)" 
+                   target="_blank" class="btn btn-outline-primary btn-sm rounded-pill py-1 px-2.5 small" style="font-size: 11px; padding: 2px 8px;">
+                  <i class="bi bi-map me-1"></i>@Localizer["Xem trên bản đồ"]
+                </a>
+              }
+              else
+              {
+                var addressQuery = $"{Model.Room.Building.Name}, {Model.Room.Building.Address}, {Model.Room.Building.Ward}, {Model.Room.Building.District}, {Model.Room.Building.Province}";
+                <a href="https://www.google.com/maps/search/?api=1&query=@System.Net.WebUtility.UrlEncode(addressQuery)" 
+                   target="_blank" class="btn btn-outline-primary btn-sm rounded-pill py-1 px-2.5 small" style="font-size: 11px; padding: 2px 8px;">
+                  <i class="bi bi-map me-1"></i>@Localizer["Xem trên bản đồ"]
+                </a>
+              }
+            </div>
           </div>
 
-          <div class="d-flex flex-wrap gap-3 mb-3">
-            <div class="text-center">
-              <div class="fw-bold fs-5">@Model.Room.Area m²</div>
-              <div class="text-muted small">Diện tích</div>
+          <div class="row g-3 mb-4">
+            <div class="col-6 col-md-3">
+              <div class="spec-box">
+                <div class="spec-icon-wrapper"><i class="bi bi-rulers text-primary"></i></div>
+                <div class="fw-bold text-dark fs-5 mt-1">@Model.Room.Area m²</div>
+                <div class="text-muted small">Diện tích</div>
+              </div>
             </div>
             @if (Model.Room.FloorNumber.HasValue)
             {
-              <div class="text-center">
-                <div class="fw-bold fs-5">Tầng @Model.Room.FloorNumber</div>
-                <div class="text-muted small">Vị trí</div>
+              <div class="col-6 col-md-3">
+                <div class="spec-box">
+                  <div class="spec-icon-wrapper"><i class="bi bi-layers text-primary"></i></div>
+                  <div class="fw-bold text-dark fs-5 mt-1">Tầng @Model.Room.FloorNumber</div>
+                  <div class="text-muted small">Vị trí tầng</div>
+                </div>
               </div>
             }
             @if (Model.Room.Capacity.HasValue)
             {
-              <div class="text-center">
-                <div class="fw-bold fs-5">@Model.Room.Capacity người</div>
-                <div class="text-muted small">Sức chứa</div>
+              <div class="col-6 col-md-3">
+                <div class="spec-box">
+                  <div class="spec-icon-wrapper"><i class="bi bi-people text-primary"></i></div>
+                  <div class="fw-bold text-dark fs-5 mt-1">@Model.Room.Capacity người</div>
+                  <div class="text-muted small">Sức chứa</div>
+                </div>
               </div>
             }
             @if (Model.AvgRating.HasValue)
             {
-              <div class="text-center">
-                <div class="fw-bold fs-5">
-                  <i class="bi bi-star-fill" style="color:#f59e0b;font-size:18px"></i>
-                  @Model.AvgRating.Value.ToString("0.0")
+              <div class="col-6 col-md-3">
+                <div class="spec-box">
+                  <div class="spec-icon-wrapper"><i class="bi bi-star-fill text-warning"></i></div>
+                  <div class="fw-bold text-dark fs-5 mt-1">@Model.AvgRating.Value.ToString("0.0")</div>
+                  <div class="text-muted small">@Model.Reviews.Count đánh giá</div>
                 </div>
-                <div class="text-muted small">@Model.Reviews.Count đánh giá</div>
               </div>
             }
           </div>
 
           @if (!string.IsNullOrWhiteSpace(Model.Room.Description))
           {
-            <p class="text-secondary mb-0">@Model.Room.Description</p>
+            <div class="border-top pt-4">
+              <h6 class="fw-bold text-dark mb-2">Mô tả phòng</h6>
+              <p class="text-secondary lh-lg mb-0" style="font-size: 14.5px;">@Model.Room.Description</p>
+            </div>
           }
         </div>
       </div>
@@ -136,16 +175,16 @@
       @* Tiện ích *@
       @if (Model.Amenities.Any())
       {
-        <div class="card border-0 shadow-sm mb-4">
+        <div class="card border-0 shadow-sm mb-4 p-3 info-card">
           <div class="card-body">
-            <h6 class="fw-bold mb-3"><i class="bi bi-tags me-2"></i>Tiện ích</h6>
-            <div class="row g-2">
+            <h6 class="fw-bold mb-4 text-dark"><i class="bi bi-tags-fill text-primary me-2"></i>Tiện ích sẵn có</h6>
+            <div class="row g-3">
               @foreach (var a in Model.Amenities)
               {
                 <div class="col-6 col-md-4">
-                  <div class="d-flex align-items-center gap-2 small">
-                    <i class="bi @a.IconClass fs-5 text-primary"></i>
-                    <span>@a.Name</span>
+                  <div class="d-flex align-items-center gap-2.5">
+                    <div class="amenity-icon-wrapper"><i class="bi @a.IconClass"></i></div>
+                    <span class="small fw-semibold text-secondary">@a.Name</span>
                   </div>
                 </div>
               }
@@ -157,36 +196,38 @@
       @* Bảng phí *@
       @if (Model.FeeConfigs.Any())
       {
-        <div class="card border-0 shadow-sm mb-4">
+        <div class="card border-0 shadow-sm mb-4 p-3 info-card">
           <div class="card-body">
-            <h6 class="fw-bold mb-3"><i class="bi bi-receipt me-2"></i>Thông tin phí</h6>
-            <table class="table table-sm mb-0">
-              <thead class="table-light">
-                <tr>
-                  <th>Loại phí</th>
-                  <th class="text-end">Đơn giá</th>
-                  <th>Cách tính</th>
-                </tr>
-              </thead>
-              <tbody>
-                @foreach (var f in Model.FeeConfigs)
-                {
-                  var (catName, catIcon) = categoryLabel[f.FeeCategory];
+            <h6 class="fw-bold mb-4 text-dark"><i class="bi bi-receipt-cutoff text-primary me-2"></i>Chi phí dịch vụ khác</h6>
+            <div class="table-responsive rounded-3 border">
+              <table class="table table-hover table-flat align-middle mb-0">
+                <thead>
                   <tr>
-                    <td>
-                      <i class="bi @catIcon me-1 text-muted"></i>
-                      @f.Name
-                    </td>
-                    <td class="text-end fw-semibold">
-                      @f.UnitPrice.ToString("N0") ₫<span class="text-muted fw-normal small">/@f.Unit</span>
-                    </td>
-                    <td class="text-muted small">
-                      @(f.CalcType == CalcType.Fixed ? "Cố định" : "Theo số đo")
-                    </td>
+                    <th scope="col" class="ps-3">Loại dịch vụ</th>
+                    <th scope="col" class="text-end">Đơn giá</th>
+                    <th scope="col" class="ps-4">Cách tính phí</th>
                   </tr>
-                }
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  @foreach (var f in Model.FeeConfigs)
+                  {
+                    var (catName, catIcon) = categoryLabel[f.FeeCategory];
+                    <tr>
+                      <td class="ps-3 fw-semibold text-dark">
+                        <i class="bi @catIcon me-2 text-secondary fs-6"></i>
+                        @f.Name
+                      </td>
+                      <td class="text-end fw-bold text-primary">
+                        @f.UnitPrice.ToString("N0") ₫<span class="text-muted fw-normal small">/@f.Unit</span>
+                      </td>
+                      <td class="text-secondary small ps-4">
+                        @(f.CalcType == CalcType.Fixed ? "Cố định hàng tháng" : "Theo số đo thực tế")
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       }
@@ -194,15 +235,15 @@
       @* Review alerts *@
       @if (TempData["ReviewSuccess"] != null)
       {
-        <div class="alert alert-success alert-dismissible fade show py-2 small mb-3">
-          <i class="bi bi-check-circle me-1"></i>@TempData["ReviewSuccess"]
+        <div class="alert alert-success alert-dismissible fade show rounded-3 py-2.5 small mb-3 border-0 shadow-sm">
+          <i class="bi bi-check-circle-fill me-1.5 text-success"></i>@TempData["ReviewSuccess"]
           <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
       }
       @if (TempData["ReviewError"] != null)
       {
-        <div class="alert alert-danger alert-dismissible fade show py-2 small mb-3">
-          <i class="bi bi-exclamation-circle me-1"></i>@TempData["ReviewError"]
+        <div class="alert alert-danger alert-dismissible fade show rounded-3 py-2.5 small mb-3 border-0 shadow-sm">
+          <i class="bi bi-exclamation-circle-fill me-1.5 text-danger"></i>@TempData["ReviewError"]
           <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
       }
@@ -210,31 +251,31 @@
       @* Write review form *@
       @if (Model.CanReview)
       {
-        <div class="card border-0 shadow-sm mb-3" style="border-left:3px solid #6c8fff!important">
+        <div class="card border-0 shadow-sm mb-4 p-3 info-card" style="border-left: 4px solid #2563eb !important;">
           <div class="card-body">
-            <h6 class="fw-bold mb-3"><i class="bi bi-pencil-square me-2"></i>Viết đánh giá</h6>
+            <h6 class="fw-bold mb-3 text-dark"><i class="bi bi-pencil-square text-primary me-2"></i>Viết đánh giá phòng trọ</h6>
             <form asp-controller="Reviews" asp-action="Create" method="post">
               @Html.AntiForgeryToken()
               <input type="hidden" name="roomId"     value="@Model.Room.Id" />
               <input type="hidden" name="contractId" value="@Model.ReviewContractId" />
               <div class="mb-3">
-                <label class="form-label small fw-semibold">Số sao <span class="text-danger">*</span></label>
+                <label class="form-label small fw-semibold text-secondary">Số sao đánh giá <span class="text-danger">*</span></label>
                 <div class="d-flex gap-2 star-picker" id="starPicker">
                   @for (int s = 1; s <= 5; s++)
                   {
-                    <i class="bi bi-star fs-4 star-btn" data-val="@s"
-                       style="cursor:pointer;color:#d1d5db" title="@s sao"></i>
+                    <i class="bi bi-star fs-3 star-btn" data-val="@s"
+                       style="cursor:pointer;color:#cbd5e1;transition:color 0.15s, transform 0.15s;" title="@s sao"></i>
                   }
                 </div>
                 <input type="hidden" name="rating" id="ratingInput" required />
               </div>
               <div class="mb-3">
-                <label class="form-label small fw-semibold">Nhận xét</label>
-                <textarea name="content" class="form-control form-control-sm" rows="3"
-                          placeholder="Chia sẻ trải nghiệm của bạn..."></textarea>
+                <label class="form-label small fw-semibold text-secondary">Nhận xét chi tiết</label>
+                <textarea name="content" class="form-control form-control-custom" rows="3"
+                          placeholder="Chia sẻ trải nghiệm thực tế về phòng trọ này..."></textarea>
               </div>
-              <button type="submit" class="btn btn-sm btn-primary">
-                <i class="bi bi-send me-1"></i>Gửi đánh giá
+              <button type="submit" class="btn btn-primary rounded-pill px-4 btn-sm fw-semibold shadow-sm">
+                <i class="bi bi-send-fill me-1.5"></i>Gửi đánh giá
               </button>
             </form>
           </div>
@@ -242,14 +283,14 @@
       }
 
       @* Reviews *@
-      <div class="card border-0 shadow-sm mb-4">
+      <div class="card border-0 shadow-sm mb-4 p-3 info-card">
         <div class="card-body">
-          <div class="d-flex align-items-center justify-content-between mb-3">
-            <h6 class="fw-bold mb-0">
-              <i class="bi bi-star me-2"></i>Đánh giá
+          <div class="d-flex align-items-center justify-content-between mb-4">
+            <h6 class="fw-bold mb-0 text-dark">
+              <i class="bi bi-chat-left-text-fill text-primary me-2"></i>Đánh giá từ khách thuê
               @if (Model.Reviews.Any())
               {
-                <span class="text-muted fw-normal">(@Model.Reviews.Count)</span>
+                <span class="text-muted fw-normal small ms-1">(@Model.Reviews.Count)</span>
               }
             </h6>
             @if (Model.AvgRating.HasValue)
@@ -257,52 +298,55 @@
               <div class="d-flex align-items-center gap-1">
                 @for (int i = 1; i <= 5; i++)
                 {
-                  <i class="bi @(i <= Math.Round(Model.AvgRating.Value) ? "bi-star-fill" : "bi-star")"
-                     style="color:#f59e0b"></i>
+                  <i class="bi @(i <= Math.Round(Model.AvgRating.Value) ? "bi-star-fill text-warning" : "bi-star text-muted")"
+                     style="font-size: 14px;"></i>
                 }
-                <span class="fw-bold ms-1">@Model.AvgRating.Value.ToString("0.0")</span>
+                <span class="fw-bold text-dark ms-1">@Model.AvgRating.Value.ToString("0.0")</span>
               </div>
             }
           </div>
 
           @if (!Model.Reviews.Any())
           {
-            <p class="text-muted small mb-0">Chưa có đánh giá nào cho phòng này.</p>
+            <div class="text-center py-4 text-muted small">
+              <i class="bi bi-chat-square-dots fs-3 d-block mb-2"></i>
+              Chưa có đánh giá nào cho phòng trọ này.
+            </div>
           }
           else
           {
-            <div class="d-flex flex-column gap-3">
+            <div class="d-flex flex-column gap-4">
               @foreach (var rv in Model.Reviews)
               {
-                <div class="border-bottom pb-3">
-                  <div class="d-flex align-items-center gap-2 mb-1">
+                <div class="border-bottom pb-4 last-border-none">
+                  <div class="d-flex align-items-center gap-2.5 mb-2">
                     @if (!string.IsNullOrWhiteSpace(rv.Reviewer.AvatarUrl))
                     {
-                      <img src="@rv.Reviewer.AvatarUrl" class="rounded-circle"
-                           style="width:32px;height:32px;object-fit:cover" alt="avatar" />
+                      <img src="@rv.Reviewer.AvatarUrl" class="rounded-circle border"
+                           style="width:36px;height:36px;object-fit:cover" alt="avatar" />
                     }
                     else
                     {
-                      <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center"
-                           style="width:32px;height:32px;font-size:14px;color:#fff">
+                      <div class="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center fw-bold"
+                           style="width:36px;height:36px;font-size:14px;color:#2563eb">
                         @rv.Reviewer.FullName.FirstOrDefault()
                       </div>
                     }
                     <div>
-                      <div class="fw-semibold small">@rv.Reviewer.FullName</div>
+                      <div class="fw-bold text-dark small">@rv.Reviewer.FullName</div>
                       <div class="text-muted" style="font-size:11px">@rv.CreatedAt.ToString("dd/MM/yyyy")</div>
                     </div>
-                    <div class="ms-auto">
+                    <div class="ms-auto bg-light rounded-pill px-2.5 py-1 d-flex gap-0.5 border">
                       @for (int i = 1; i <= 5; i++)
                       {
-                        <i class="bi @(i <= rv.Rating ? "bi-star-fill" : "bi-star")"
-                           style="color:#f59e0b;font-size:12px"></i>
+                        <i class="bi @(i <= rv.Rating ? "bi-star-fill text-warning" : "bi-star text-muted")"
+                           style="font-size:11px;"></i>
                       }
                     </div>
                   </div>
                   @if (!string.IsNullOrWhiteSpace(rv.Content))
                   {
-                    <p class="mb-0 small">@rv.Content</p>
+                    <p class="mb-0 text-secondary small lh-base ps-1">@rv.Content</p>
                   }
                 </div>
               }
@@ -313,70 +357,79 @@
 
     </div>
 
-    @* ══════ Sidebar CTA ══════ *@
+    @* ══════ Sidebar CTA (Phải - Sticky) ══════ *@
     <div class="col-lg-4">
-      <div class="card border-0 shadow sticky-top" style="top:70px">
-        <div class="card-body">
+      <div class="card border-0 shadow sticky-top cta-sidebar" style="top:90px; z-index: 100;">
+        <div class="card-body p-4">
 
           @* Price *@
           @if (Model.RentPrice.HasValue)
           {
-            <div class="mb-3 pb-3 border-bottom">
-              <div class="text-muted small mb-1">Giá thuê</div>
-              <div class="fw-bold" style="font-size:28px;color:#6c8fff">
-                @Model.RentPrice.Value.ToString("N0")
-                <span class="text-muted fw-normal fs-6">₫/@Model.RentUnit</span>
+            <div class="mb-4 pb-3 border-bottom">
+              <span class="text-muted small text-uppercase fw-semibold d-block" style="font-size: 10px; letter-spacing: 0.05em; margin-bottom: 4px;">Giá thuê phòng</span>
+              <div class="d-flex align-items-baseline gap-1 mb-0" style="line-height: 1;">
+                <span style="font-size: 2.2rem; font-weight: 800; color: var(--link-color); font-family: 'Outfit', sans-serif; letter-spacing: -0.02em;">@Model.RentPrice.Value.ToString("N0")</span>
+                <span style="font-size: 1.15rem; font-weight: 700; color: var(--link-color); font-family: 'Outfit', sans-serif;">₫</span><span style="font-size: 0.85rem; font-weight: 500; color: var(--text-secondary); margin-left: 2px;">/@Model.RentUnit</span>
               </div>
             </div>
           }
 
           @* Building info *@
-          <div class="mb-3 small text-muted">
-            <div class="fw-semibold text-dark mb-1">@Model.Room.Building.Name</div>
-            <div><i class="bi bi-geo-alt me-1"></i>@Model.Room.Building.Address</div>
+          <div class="mb-4 text-muted">
+            <div class="fw-bold text-dark mb-2">@Model.Room.Building.Name</div>
+            <div class="small d-flex align-items-start gap-1.5"><i class="bi bi-geo-alt-fill text-primary mt-0.5"></i><span>@Model.Room.Building.Address</span></div>
             @if (!string.IsNullOrWhiteSpace(Model.Room.Building.District))
             {
-              <div class="ms-3">@Model.Room.Building.District, @Model.Room.Building.Province</div>
+              <div class="small text-secondary ms-4 mt-1">@Model.Room.Building.District, @Model.Room.Building.Province</div>
             }
           </div>
 
           @* CTA buttons *@
           @if (Model.CanBook)
           {
-            <div class="d-grid gap-2">
+            <div class="d-grid gap-3">
               <a asp-controller="ViewingRequests" asp-action="Create"
                  asp-route-roomId="@Model.Room.Id"
-                 class="btn btn-outline-primary">
-                <i class="bi bi-calendar-check me-2"></i>Đặt lịch xem phòng
+                 class="btn btn-booking-outline py-2.5 fw-bold d-flex align-items-center justify-content-center shadow-sm">
+                <i class="bi bi-calendar-check-fill me-2"></i>Đặt lịch xem phòng
               </a>
               <a asp-controller="BookingRequests" asp-action="Create"
                  asp-route-roomId="@Model.Room.Id"
-                 class="btn btn-primary">
-                <i class="bi bi-bookmark-check me-2"></i>Đặt phòng ngay
+                 class="btn btn-booking-primary py-2.5 fw-bold d-flex align-items-center justify-content-center shadow-sm">
+                <i class="bi bi-bookmark-check-fill me-2"></i>Đặt phòng ngay
               </a>
             </div>
           }
           else if (!User.Identity!.IsAuthenticated)
           {
-            <div class="d-grid gap-2">
+            <div class="d-grid gap-3">
               <a asp-area="Identity" asp-page="/Account/Login"
                  asp-route-returnUrl="@Context.Request.Path"
-                 class="btn btn-primary">
+                 class="btn btn-booking-primary py-2.5 fw-bold d-flex align-items-center justify-content-center shadow-sm">
                 <i class="bi bi-box-arrow-in-right me-2"></i>Đăng nhập để đặt phòng
               </a>
             </div>
-            <p class="text-muted small text-center mt-2 mb-0">
+            <p class="text-muted small text-center mt-3 mb-0">
               Chưa có tài khoản?
-              <a asp-area="Identity" asp-page="/Account/Register">Đăng ký ngay</a>
+              <a asp-area="Identity" asp-page="/Account/Register" class="text-primary fw-semibold text-decoration-none">Đăng ký ngay</a>
             </p>
           }
           else
           {
-            <div class="alert alert-info small py-2 mb-0">
-              <i class="bi bi-info-circle me-1"></i>
-              Chỉ tài khoản Tenant mới có thể đặt phòng.
+            <div class="alert alert-info small py-2.5 px-3 rounded-3 border-0 mb-0 shadow-sm d-flex align-items-start gap-2">
+              <i class="bi bi-info-circle-fill text-info mt-0.5"></i>
+              <span>Chỉ tài khoản có quyền <strong>Khách thuê (Tenant)</strong> mới có thể thực hiện đặt phòng.</span>
             </div>
           }
+
+          @* Report listing button *@
+          <div class="d-grid mt-3 pt-3 border-top">
+            <button type="button" class="btn btn-outline-warning btn-sm rounded-pill d-flex align-items-center justify-content-center gap-1.5 text-warning"
+                    data-bs-toggle="modal" data-bs-target="#reportRoomModal">
+              <i class="bi bi-exclamation-triangle"></i>
+              @Localizer["Báo cáo vi phạm"]
+            </button>
+          </div>
 
         </div>
       </div>
@@ -385,9 +438,273 @@
   </div>
 </div>
 
+@* ── Modal: Báo cáo vi phạm ── *@
+<div class="modal fade" id="reportRoomModal" tabindex="-1" aria-labelledby="reportRoomModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content border-0 shadow-lg" style="border-radius: 24px;">
+      <form asp-action="ReportRoom" asp-controller="Rooms" method="post" id="reportRoomForm">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="roomId" value="@Model.Room.Id" />
+        <div class="modal-header border-bottom-0 pb-0 px-4 pt-4">
+          <h5 class="modal-title fw-bold text-dark" id="reportRoomModalLabel" style="font-family: 'Outfit', sans-serif;"><i class="bi bi-exclamation-triangle-fill text-warning me-2"></i>@Localizer["Báo cáo vi phạm"]</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body text-dark px-4 py-3">
+          @if (!User.Identity!.IsAuthenticated)
+          {
+            <div class="text-center py-4">
+              <i class="bi bi-shield-lock text-muted fs-1 mb-2 d-block"></i>
+              <p class="text-muted mb-3">@Localizer["Bạn cần đăng nhập để thực hiện báo cáo vi phạm."]</p>
+              <a asp-area="Identity" asp-page="/Account/Login" asp-route-returnUrl="@Context.Request.Path" class="btn btn-primary rounded-pill btn-sm px-4 fw-semibold shadow-sm">@Localizer["Đăng nhập ngay"]</a>
+            </div>
+          }
+          else
+          {
+            <div class="mb-3 text-start">
+              <label class="form-label fw-bold small text-secondary mb-2">@Localizer["Chọn lý do vi phạm"] <span class="text-danger">*</span></label>
+              
+              <input type="hidden" name="reason" id="reportReasonInput" required />
+              
+              <div class="report-reason-container">
+                <div class="report-reason-chip" data-reason="Fraud" title="@Localizer["Lừa đảo, đặt cọc ảo"]">
+                  <i class="bi bi-shield-slash-fill text-warning chip-icon"></i>
+                  <span class="chip-label">@Localizer["Lừa đảo, đặt cọc ảo"]</span>
+                  <i class="bi bi-check-circle-fill chip-check"></i>
+                </div>
+                <div class="report-reason-chip" data-reason="FakePrice" title="@Localizer["Giá thuê không đúng thực tế"]">
+                  <i class="bi bi-cash-coin text-success chip-icon"></i>
+                  <span class="chip-label">@Localizer["Giá không đúng thực tế"]</span>
+                  <i class="bi bi-check-circle-fill chip-check"></i>
+                </div>
+                <div class="report-reason-chip" data-reason="FakeInfo" title="@Localizer["Thông tin/Hình ảnh sai sự thật"]">
+                  <i class="bi bi-image-fill text-primary chip-icon"></i>
+                  <span class="chip-label">@Localizer["Thông tin sai sự thật"]</span>
+                  <i class="bi bi-check-circle-fill chip-check"></i>
+                </div>
+                <div class="report-reason-chip" data-reason="Other" title="@Localizer["Lý do khác"]">
+                  <i class="bi bi-three-dots text-secondary chip-icon"></i>
+                  <span class="chip-label">@Localizer["Lý do vi phạm khác"]</span>
+                  <i class="bi bi-check-circle-fill chip-check"></i>
+                </div>
+              </div>
+              
+              <div id="reasonHelpText" class="alert alert-secondary py-2 px-3 small rounded-3 border-0 d-none mb-3" style="font-size: 11.5px; background: rgba(79, 70, 229, 0.03); color: var(--text-color);"></div>
+            </div>
+            
+            <div class="mb-3 text-start">
+              <label class="form-label fw-bold small text-secondary">@Localizer["Chi tiết vi phạm"] <span class="text-danger">*</span></label>
+              <textarea name="description" id="reportDescInput" class="form-control form-control-custom" rows="4" 
+                        maxlength="500" placeholder="@Localizer["Cung cấp thêm thông tin chi tiết về hành vi vi phạm..."]" required></textarea>
+              <div class="d-flex justify-content-between text-muted mt-1.5" style="font-size: 11px;">
+                <span id="reportDescWarning" class="text-danger fw-semibold">Nhập tối thiểu 10 ký tự</span>
+                <span id="reportCharCount">0/500 ký tự</span>
+              </div>
+            </div>
+          }
+        </div>
+        <div class="modal-footer border-top-0 px-4 pb-4 pt-0">
+          <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3.5 py-1.5 fw-semibold" data-bs-dismiss="modal">@Localizer["Huỷ"]</button>
+          @if (User.Identity.IsAuthenticated)
+          {
+            <button type="submit" id="btnSubmitReport" class="btn btn-danger btn-sm rounded-pill px-4 py-1.5 fw-semibold shadow-sm" disabled>
+              <i class="bi bi-send-fill me-1.5"></i>@Localizer["Gửi báo cáo"]
+            </button>
+          }
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+@section Styles {
+<style>
+  /* Base cards */
+  .info-card {
+    border-radius: 20px !important;
+    background: #ffffff;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03) !important;
+  }
+
+  /* Carousel */
+  .carousel {
+    box-shadow: 0 10px 35px rgba(0, 0, 0, 0.05) !important;
+  }
+  
+  .carousel-control-prev-icon-custom,
+  .carousel-control-next-icon-custom {
+    width: 40px;
+    height: 40px;
+    background-color: rgba(255, 255, 255, 0.75);
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #1f2937;
+    font-size: 16px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+    transition: background-color 0.2s, color 0.2s, transform 0.2s;
+  }
+  
+  .carousel-control-prev:hover .carousel-control-prev-icon-custom,
+  .carousel-control-next:hover .carousel-control-next-icon-custom {
+    background-color: #ffffff;
+    color: #2563eb;
+    transform: scale(1.05);
+  }
+  
+  .carousel-indicators-custom {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 15;
+    display: flex;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 6px 12px;
+    border-radius: 30px;
+    backdrop-filter: blur(4px);
+  }
+  
+  .carousel-indicators-custom button {
+    background-color: rgba(255, 255, 255, 0.5);
+  }
+  
+  .carousel-indicators-custom button.active {
+    background-color: #ffffff !important;
+    width: 16px !important;
+    border-radius: 4px !important;
+  }
+
+  /* Spec boxes */
+  .spec-box {
+    background-color: #f8fafc;
+    border: 1px solid #f1f5f9;
+    border-radius: 16px;
+    padding: 16px;
+    text-align: center;
+    transition: background-color 0.15s, transform 0.15s;
+  }
+  .spec-box:hover {
+    background-color: #f1f5f9;
+    transform: translateY(-2px);
+  }
+  
+  .spec-icon-wrapper {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background-color: rgba(37, 99, 235, 0.08);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+  }
+
+  .spec-icon-wrapper i.text-warning {
+    background-color: rgba(245, 158, 11, 0.08);
+  }
+
+  /* Amenities */
+  .amenity-icon-wrapper {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background-color: rgba(37, 99, 235, 0.08);
+    color: #2563eb;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    flex-shrink: 0;
+  }
+
+  /* Table styling */
+  .table-flat {
+    border: none;
+  }
+  .table-flat th {
+    background-color: #f8fafc !important;
+    color: #64748b;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    font-weight: 600;
+    padding: 12px 16px;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  .table-flat td {
+    padding: 14px 16px;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 14px;
+  }
+  
+  /* Form customization */
+  .form-control-custom {
+    border-radius: 12px !important;
+    padding: 0.75rem 1rem;
+    border: 1px solid #e2e8f0;
+    font-size: 14px;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .form-control-custom:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
+  }
+
+  /* Starpicker animations */
+  .star-btn:hover {
+    transform: scale(1.2);
+  }
+
+  /* Sticky sidebar */
+  .cta-sidebar {
+    border-radius: 24px !important;
+    background: #ffffff;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.06) !important;
+    border: none !important;
+  }
+
+  /* Action buttons */
+  .btn-booking-primary {
+    background-color: #2563eb;
+    border: 1px solid #2563eb;
+    color: white;
+    border-radius: 30px !important;
+    transition: background-color 0.2s, border-color 0.2s, transform 0.15s, box-shadow 0.2s;
+  }
+  .btn-booking-primary:hover {
+    background-color: #1d4ed8;
+    border-color: #1d4ed8;
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+  }
+  
+  .btn-booking-outline {
+    background-color: transparent;
+    border: 2px solid #2563eb;
+    color: #2563eb;
+    border-radius: 30px !important;
+    transition: background-color 0.2s, color 0.2s, transform 0.15s, box-shadow 0.2s;
+  }
+  .btn-booking-outline:hover {
+    background-color: rgba(37, 99, 235, 0.05);
+    color: #1d4ed8;
+    border-color: #1d4ed8;
+    transform: translateY(-1px);
+  }
+  
+  .last-border-none:last-child {
+    border-bottom: none !important;
+    pb-0 { padding-bottom: 0 !important; }
+  }
+</style>
+}
+
 @section Scripts {
 <script>
-// Star picker
+// Star picker logic
 const stars = document.querySelectorAll('.star-btn');
 const ratingInput = document.getElementById('ratingInput');
 if (stars.length) {
@@ -404,10 +721,121 @@ function highlightStars(n) {
   stars.forEach(s => {
     const v = +s.dataset.val;
     s.className = v <= n
-      ? 'bi bi-star-fill fs-4 star-btn'
-      : 'bi bi-star fs-4 star-btn';
-    s.style.color = v <= n ? '#f59e0b' : '#d1d5db';
+      ? 'bi bi-star-fill fs-3 star-btn'
+      : 'bi bi-star fs-3 star-btn';
+    s.style.color = v <= n ? '#f59e0b' : '#cbd5e1';
   });
 }
+
+function toggleDetailFav(roomId) {
+  @if (!User.Identity!.IsAuthenticated)
+  {
+    <text>
+    if (confirm("@Localizer["Bạn cần đăng nhập để lưu phòng yêu thích. Đăng nhập ngay?"]")) {
+      window.location.href = '@Url.Page("/Account/Login", new { area = "Identity", returnUrl = Context.Request.Path })';
+    }
+    </text>
+  }
+  else
+  {
+    <text>
+    const btn = document.getElementById('detailFavBtn');
+    const text = document.getElementById('favText');
+    const icon = btn.querySelector('i');
+    
+    $.ajax({
+      url: '@Url.Action("ToggleFavorite", "Rooms")',
+      type: 'POST',
+      headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() },
+      data: { roomId: roomId },
+      success: function(response) {
+        if (response.success) {
+          btn.classList.add('animating');
+          setTimeout(() => btn.classList.remove('animating'), 500);
+          
+          if (response.isFavorite) {
+            btn.classList.add('active');
+            icon.className = 'bi bi-heart-fill text-danger';
+            text.textContent = "@Localizer["Đã lưu"]";
+            showToast("@Localizer["Đã lưu vào danh sách yêu thích!"]", "success");
+          } else {
+            btn.classList.remove('active');
+            icon.className = 'bi bi-heart';
+            text.textContent = "@Localizer["Lưu tin"]";
+            showToast("@Localizer["Đã xoá khỏi danh sách yêu thích!"]", "info");
+          }
+        }
+      },
+      error: function() {
+        showToast("@Localizer["Có lỗi xảy ra, vui lòng thử lại sau."]", "error");
+      }
+    });
+    </text>
+  }
+}
+
+// Logic for report reason chips and input validation
+document.addEventListener("DOMContentLoaded", function() {
+  const reasonInput = document.getElementById('reportReasonInput');
+  const reasonHelp = document.getElementById('reasonHelpText');
+  const descInput = document.getElementById('reportDescInput');
+  const descWarning = document.getElementById('reportDescWarning');
+  const charCount = document.getElementById('reportCharCount');
+  const submitBtn = document.getElementById('btnSubmitReport');
+  const chips = document.querySelectorAll('.report-reason-chip');
+  
+  const helpTexts = {
+    'Fraud': 'Báo cáo nếu bạn phát hiện tin đăng này là giả mạo, yêu cầu chuyển khoản đặt cọc giữ chỗ đáng ngờ trước khi xem phòng, hoặc có dấu hiệu chiếm đoạt tài sản.',
+    'FakePrice': 'Báo cáo nếu giá thuê thực tế khi liên hệ hoặc đến xem nhà cao hơn nhiều so với giá hiển thị trên website.',
+    'FakeInfo': 'Báo cáo nếu hình ảnh phòng trọ không đúng thực tế, sai lệch vị trí nghiêm trọng hoặc toà nhà không tồn tại.',
+    'Other': 'Báo cáo nếu vi phạm các quy tắc khác như thái độ chủ nhà không phù hợp, tin đăng trùng lặp hoặc chứa nội dung rác.'
+  };
+
+  chips.forEach(chip => {
+    chip.addEventListener('click', function() {
+      chips.forEach(c => c.classList.remove('active'));
+      this.classList.add('active');
+      const val = this.getAttribute('data-reason');
+      if (reasonInput) reasonInput.value = val;
+      
+      if (reasonHelp) {
+        reasonHelp.textContent = helpTexts[val] || '';
+        reasonHelp.classList.remove('d-none');
+      }
+      
+      validateReportForm();
+    });
+  });
+
+  if (descInput) {
+    descInput.addEventListener('input', function() {
+      const len = this.value.length;
+      if (charCount) charCount.textContent = `${len}/500 ký tự`;
+      
+      if (descWarning) {
+        if (len < 10) {
+          descWarning.textContent = 'Nhập tối thiểu 10 ký tự';
+          descWarning.classList.remove('text-success');
+          descWarning.classList.add('text-danger');
+        } else {
+          descWarning.textContent = 'Nội dung hợp lệ';
+          descWarning.classList.remove('text-danger');
+          descWarning.classList.add('text-success');
+        }
+      }
+      
+      validateReportForm();
+    });
+  }
+
+  function validateReportForm() {
+    const isReasonSelected = reasonInput && reasonInput.value !== '';
+    const isDescValid = descInput && descInput.value.length >= 10 && descInput.value.length <= 500;
+    
+    if (submitBtn) {
+      submitBtn.disabled = !(isReasonSelected && isDescValid);
+    }
+  }
+});
 </script>
 }

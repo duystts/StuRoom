@@ -1,8 +1,481 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+@model List<StuRoom.Models.ViewModels.RoomCardViewModel>
+@inject Microsoft.AspNetCore.Mvc.Localization.IViewLocalizer Localizer
+@{
+    ViewData["Title"] = Localizer["Trang chủ - StuRoom"];
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+@section Styles {
+  <style>
+    /* Hero section with a beautiful gradient overlay & Unsplash background */
+    .hero-section {
+      background: linear-gradient(180deg, rgba(15, 23, 42, 0.4) 0%, rgba(15, 23, 42, 0.8) 100%), url('https://images.unsplash.com/photo-1515263487990-61b07816b324?auto=format&fit=crop&w=1600&q=80');
+      background-size: cover;
+      background-position: center;
+      min-height: 480px;
+      border-radius: 32px;
+      margin-bottom: 80px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 80px 24px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.05);
+    }
+    
+    .hero-content {
+      position: relative;
+      z-index: 2;
+      max-width: 850px;
+    }
+
+    /* Glassmorphism badge */
+    .hero-badge {
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 50px;
+      padding: 8px 20px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #fff;
+      display: inline-block;
+      margin-bottom: 24px;
+      letter-spacing: 0.03em;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+
+    .hero-title {
+      font-family: 'Inter', 'Be Vietnam Pro', sans-serif;
+      font-size: 3.8rem;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 18px;
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+    }
+
+    .hero-subtitle {
+      font-size: 1.15rem;
+      color: rgba(255, 255, 255, 0.9);
+      margin-bottom: 36px;
+      line-height: 1.6;
+    }
+
+    /* Floating search box (AirBnB style) */
+    .search-box-container {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 100px;
+      padding: 10px 14px;
+      max-width: 850px;
+      width: 95%;
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translate(-50%, 50%);
+      box-shadow: 0 20px 50px rgba(15, 23, 42, 0.08);
+      z-index: 10;
+      transition: box-shadow 0.3s ease, border-color 0.3s ease;
+    }
+    
+    html[data-theme="dark"] .search-box-container {
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+    }
+
+    .search-input {
+      border: 0;
+      box-shadow: none !important;
+      font-size: 14px;
+      padding-left: 15px;
+      background: transparent !important;
+      color: var(--text-color) !important;
+    }
+
+    .search-select {
+      border: 0;
+      box-shadow: none !important;
+      font-size: 14px;
+      border-left: 1px solid var(--spec-box-border) !important;
+      border-radius: 0;
+      color: var(--text-secondary);
+      background: transparent !important;
+    }
+
+    /* Features Section */
+    .feature-card {
+      transition: transform var(--transition-speed) ease, box-shadow var(--transition-speed) ease;
+      border-radius: 24px !important;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border) !important;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.01) !important;
+    }
+    
+    .feature-card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 20px 40px rgba(79, 70, 229, 0.05) !important;
+      border-color: rgba(79, 70, 229, 0.15) !important;
+    }
+
+    .feature-icon-circle {
+      width: 54px;
+      height: 54px;
+      border-radius: 50%;
+      background-color: rgba(79, 70, 229, 0.08);
+      color: #4f46e5;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: background-color var(--transition-speed), color var(--transition-speed);
+    }
+
+    .feature-card:hover .feature-icon-circle {
+      background-color: #4f46e5;
+      color: #fff;
+    }
+
+    /* Premium Call to Action */
+    .cta-section {
+      background: var(--link-gradient);
+      color: #fff;
+      border-radius: 28px;
+      padding: 55px;
+      margin-top: 80px;
+      box-shadow: 0 15px 45px rgba(79, 70, 229, 0.15);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cta-section::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -20%;
+      width: 400px;
+      height: 400px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.05);
+      pointer-events: none;
+    }
+
+    @@media (max-width: 768px) {
+      .hero-title {
+        font-size: 2.5rem;
+      }
+      .search-box-container {
+        border-radius: 24px;
+        padding: 16px;
+        position: relative;
+        bottom: auto;
+        left: auto;
+        transform: none;
+        margin-top: 30px;
+        width: 100%;
+      }
+      .search-select {
+        border-left: 0 !important;
+        margin-top: 10px;
+        margin-bottom: 10px;
+      }
+      .hero-section {
+        margin-bottom: 40px;
+        border-radius: 20px;
+        padding: 40px 16px;
+      }
+      .cta-section {
+        padding: 30px 20px;
+      }
+    }
+  </style>
+}
+
+@* Hidden form for AJAX anti-forgery token *@
+@Html.AntiForgeryToken()
+
+<div class="hero-section">
+  <div class="hero-content text-center">
+    <div class="hero-badge">
+      <i class="bi bi-shield-check me-1"></i>@Localizer["Hơn 10,000+ phòng trọ xác thực"]
+    </div>
+    <h1 class="hero-title">@Localizer["Không gian sống hoàn hảo cho khởi đầu mới."]</h1>
+    <p class="hero-subtitle max-width-600 mx-auto">
+      @Localizer["Tìm kiếm phòng trọ, căn hộ mini và không gian chia sẻ chất lượng tại các khu vực trung tâm một cách nhanh chóng."]
+    </p>
+
+    <!-- Floating Search Box -->
+    <div class="search-box-container">
+      <form action="/Rooms" method="get" class="row g-2 align-items-center m-0">
+        <div class="col-md-6 text-start">
+          <div class="d-flex align-items-center">
+            <span class="ps-2 text-muted"><i class="bi bi-search"></i></span>
+            <input type="text" name="Q" class="form-control search-input" placeholder="@Localizer["Nhập tên đường, khu vực..."]" />
+          </div>
+        </div>
+        <div class="col-md-3">
+          <select name="Province" class="form-select search-select">
+            <option value="">@Localizer["Khu vực (Tất cả)"]</option>
+            <option value="Thành phố Hồ Chí Minh">TP. Hồ Chí Minh</option>
+            <option value="Hà Nội">Hà Nội</option>
+            <option value="Đà Nẵng">Đà Nẵng</option>
+          </select>
+        </div>
+        <div class="col-md-3 text-end">
+          <button type="submit" class="btn btn-primary w-100 py-2.5 px-4 rounded-pill fw-bold shadow-sm" style="background: var(--link-gradient); border: none;">
+            @Localizer["Tìm kiếm"]
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
 </div>
+
+<!-- Core platform features -->
+<h3 class="fw-bold mb-2 text-center text-dark" style="margin-top: 60px; font-family: 'Inter', 'Be Vietnam Pro', sans-serif;">@Localizer["Tại sao nên chọn StuRoom?"]</h3>
+<p class="text-center text-muted mb-5 small">@Localizer["Nền tảng giúp bạn kết nối nhanh chóng, minh bạch và an toàn."]</p>
+
+<div class="row g-4 mb-5">
+  <div class="col-md-4">
+    <div class="card h-100 p-4 feature-card">
+      <div class="d-flex align-items-center mb-3">
+        <div class="feature-icon-circle me-3">
+          <i class="bi bi-search fs-5"></i>
+        </div>
+        <h6 class="fw-bold mb-0 text-dark" style="font-family: 'Outfit', sans-serif;">@Localizer["Tìm phòng nhanh chóng"]</h6>
+      </div>
+      <p class="text-secondary small mb-0 lh-relaxed">
+        @Localizer["Hệ thống lọc thông minh theo địa điểm, giá cả, diện tích và tiện ích chi tiết giúp sinh viên dễ dàng tìm thấy nơi ở ưng ý."]
+      </p>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card h-100 p-4 feature-card">
+      <div class="d-flex align-items-center mb-3">
+        <div class="feature-icon-circle me-3">
+          <i class="bi bi-people fs-5"></i>
+        </div>
+        <h6 class="fw-bold mb-0 text-dark" style="font-family: 'Outfit', sans-serif;">@Localizer["Hỗ trợ tìm người ở ghép"]</h6>
+      </div>
+      <p class="text-secondary small mb-0 lh-relaxed">
+        @Localizer["Dễ dàng đăng thông tin ghép cặp ở chung và tự động chia đều tiền phòng, điện nước hóa đơn hàng tháng trên hệ thống."]
+      </p>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card h-100 p-4 feature-card">
+      <div class="d-flex align-items-center mb-3">
+        <div class="feature-icon-circle me-3">
+          <i class="bi bi-file-earmark-check fs-5"></i>
+        </div>
+        <h6 class="fw-bold mb-0 text-dark" style="font-family: 'Outfit', sans-serif;">@Localizer["Ký hợp đồng & Hóa đơn tự động"]</h6>
+      </div>
+      <p class="text-secondary small mb-0 lh-relaxed">
+        @Localizer["Xuất hợp đồng mẫu PDF/Word theo đúng pháp lý, nhập chỉ số điện nước để hệ thống tự động sinh hóa đơn gửi trực tiếp."]
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- Featured Room Listings -->
+<div class="d-flex align-items-center justify-content-between mb-4 mt-5 pt-3">
+  <div>
+    <h4 class="fw-bold mb-1 text-dark" style="font-family: 'Inter', 'Be Vietnam Pro', sans-serif;">@Localizer["Phòng nổi bật gần đây"]</h4>
+    <p class="text-muted small mb-0">@Localizer["Các phòng trọ và căn hộ dịch vụ mini vừa được đăng lên nền tảng"]</p>
+  </div>
+  <a href="/Rooms" class="btn btn-outline-primary btn-sm rounded-pill px-3.5 py-1.5 fw-semibold shadow-sm text-decoration-none">@Localizer["Xem tất cả phòng"]</a>
+</div>
+
+@if (!Model.Any())
+{
+  <div class="text-center py-5 text-muted card border-0 shadow-sm" style="border-radius:24px;">
+    <i class="bi bi-house-slash fs-1 d-block mb-2 text-muted"></i>
+    @Localizer["Chưa có phòng trọ khả dụng nào được đăng."]
+  </div>
+}
+else
+{
+  <div class="row g-4 mb-5">
+    @foreach (var room in Model)
+    {
+      // Dynamic category label based on capacity and area
+      var categoryLabel = Localizer["Phòng trọ"].Value;
+      if (room.Capacity == 1) { categoryLabel = Localizer["Ký túc xá"].Value; }
+      else if (room.Area > 25 && room.Capacity <= 2) { categoryLabel = Localizer["Phòng Studio"].Value; }
+      else if (room.Area > 40) { categoryLabel = Localizer["Căn hộ"].Value; }
+
+      <div class="col-sm-6 col-xl-4">
+        <a href="/Rooms/Detail/@room.Id" class="text-decoration-none text-dark">
+          <div class="card border-0 shadow-sm h-100 room-card">
+            
+            @* Image & Badges *@
+            <div class="position-relative overflow-hidden card-img-wrapper" style="height: 200px;">
+              @if (room.PrimaryImageUrl != null)
+              {
+                <img src="@room.PrimaryImageUrl" alt="@room.BuildingName"
+                     class="w-100 h-100 room-card-img" style="object-fit:cover" />
+              }
+              else
+              {
+                <div class="w-100 h-100 d-flex align-items-center justify-content-center bg-light">
+                  <i class="bi bi-image text-muted fs-1"></i>
+                </div>
+              }
+
+              @* Badges *@
+              <div class="position-absolute top-0 start-0 m-3 d-flex gap-2" style="z-index: 2;">
+                @if (room.AvgRating >= 4.5 || room.ReviewCount > 2)
+                {
+                  <span class="badge badge-featured">@Localizer["Nổi bật"]</span>
+                }
+                <span class="badge badge-category">@categoryLabel</span>
+              </div>
+
+              @* Favorite heart icon *@
+              @{
+                bool isFav = ViewBag.FavoriteRoomIds != null && ((List<int>)ViewBag.FavoriteRoomIds).Contains(room.Id);
+              }
+              <button type="button" class="btn-fav @(isFav ? "active" : "") position-absolute top-0 end-0 m-3 d-flex align-items-center justify-content-center shadow-sm"
+                      style="z-index: 2;"
+                      onclick="handleFavToggle(event, @room.Id, this)">
+                <i class="bi @(isFav ? "bi-heart-fill text-danger" : "bi-heart")"></i>
+              </button>
+            </div>
+
+            @* Details *@
+            <div class="card-body p-4 d-flex flex-column justify-content-between">
+              <div>
+                <div class="d-flex align-items-start justify-content-between gap-2 mb-2">
+                  <h6 class="fw-bold mb-0 text-truncate text-dark card-room-title">@room.BuildingName - P.@room.RoomNumber</h6>
+                  @if (room.ReviewCount > 0)
+                  {
+                    <span class="badge badge-rating d-inline-flex align-items-center gap-1">
+                      @room.AvgRating!.Value.ToString("0.0") <i class="bi bi-star-fill text-warning" style="font-size: 10px;"></i>
+                    </span>
+                  }
+                </div>
+                
+                <div class="text-muted small text-truncate mb-3">
+                  <i class="bi bi-geo-alt me-1"></i>@room.Address
+                  @if (!string.IsNullOrWhiteSpace(room.District))
+                  {
+                    <span>, @room.District</span>
+                  }
+                </div>
+
+                <div class="d-flex flex-wrap gap-1.5 mb-3">
+                  <span class="badge badge-spec"><i class="bi bi-rulers me-1"></i>@room.Area m²</span>
+                  @if (room.Capacity.HasValue)
+                  {
+                    <span class="badge badge-spec"><i class="bi bi-people me-1"></i>@room.Capacity @Localizer["người"]</span>
+                  }
+                  @foreach (var (icon, name) in room.Amenities.Take(3))
+                  {
+                    <span class="badge badge-spec-icon" title="@name"><i class="bi @icon"></i></span>
+                  }
+                </div>
+              </div>
+
+              @* Footer *@
+              <div class="d-flex align-items-center justify-content-between pt-3 border-top">
+                <div>
+                  <span class="text-muted text-uppercase fw-semibold d-block" style="font-size: 9px; letter-spacing: 0.05em; margin-bottom: 2.5px;">@Localizer["Giá thuê"]</span>
+                  @if (room.RentPrice.HasValue)
+                  {
+                    <div class="card-room-price mb-0">
+                      <span class="price-value">@((room.RentPrice.Value / 1000000.0m).ToString("0.#"))</span> <span class="price-unit">@Localizer["Tr"]</span><span class="price-period">/@Localizer["tháng"]</span>
+                    </div>
+                  }
+                  else
+                  {
+                    <div class="text-muted small fw-semibold">@Localizer["Liên hệ"]</div>
+                  }
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                  <button type="button" class="btn btn-sm btn-compare rounded-pill px-2.5 py-1" data-room-id="@room.Id"
+                          onclick="toggleCompareRoom(event, @room.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(room.BuildingName)) - P.@room.RoomNumber', '@((room.RentPrice ?? 0) / 1000000.0m).ToString("0.#") ' + '@Localizer["Tr/tháng"]', '@room.PrimaryImageUrl')">
+                    <i class="bi bi-shuffle me-1"></i><span class="compare-text">@Localizer["So sánh"]</span>
+                  </button>
+                  <div class="btn-detail-arrow d-flex align-items-center justify-content-center">
+                    <i class="bi bi-arrow-right"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </a>
+      </div>
+    }
+  </div>
+}
+
+<!-- CTA section -->
+<div class="cta-section shadow-sm">
+  <div class="row align-items-center">
+    <div class="col-lg-8 mb-4 mb-lg-0 text-center text-lg-start">
+      <h4 class="fw-bold mb-2" style="font-family: 'Inter', 'Be Vietnam Pro', sans-serif; font-size: 1.65rem;">@Localizer["Bắt đầu trải nghiệm StuRoom ngay hôm nay!"]</h4>
+      <p class="mb-0 opacity-90" style="font-size: 14.5px;">
+        @Localizer["Đăng ký tài khoản để khám phá phòng trọ hoặc bắt đầu quản lý danh sách phòng cho thuê của bạn."]
+      </p>
+    </div>
+    <div class="col-lg-4 text-center text-lg-end">
+      <div class="d-flex flex-column flex-sm-row gap-2.5 justify-content-center justify-content-lg-end">
+        <a href="/Identity/Account/Register" class="btn btn-light fw-bold px-4 py-2.5 text-primary rounded-pill shadow-sm">
+          @Localizer["Đăng ký thành viên"]
+        </a>
+        <a href="/Identity/Account/Login" class="btn btn-outline-light fw-bold px-4 py-2.5 rounded-pill shadow-sm">
+          @Localizer["Đăng nhập"]
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+@section Scripts {
+<script>
+  // AJAX Favorite Toggle Logic
+  function handleFavToggle(e, roomId, btn) {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    @if (!User.Identity!.IsAuthenticated)
+    {
+      <text>
+      if (confirm("@Localizer["Bạn cần đăng nhập để lưu phòng yêu thích. Đăng nhập ngay?"]")) {
+        window.location.href = '@Url.Page("/Account/Login", new { area = "Identity" })?returnUrl=' + encodeURIComponent('/');
+      }
+      </text>
+    }
+    else
+    {
+      <text>
+      $.ajax({
+        url: '@Url.Action("ToggleFavorite", "Rooms")',
+        type: 'POST',
+        headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() },
+        data: { roomId: roomId },
+        success: function(response) {
+          if (response.success) {
+            btn.classList.add('animating');
+            setTimeout(() => btn.classList.remove('animating'), 500);
+            
+            const heart = btn.querySelector('i');
+            if (response.isFavorite) {
+              btn.classList.add('active');
+              heart.className = 'bi bi-heart-fill text-danger';
+              showToast("@Localizer["Đã lưu vào danh sách yêu thích!"]", "success");
+            } else {
+              btn.classList.remove('active');
+              heart.className = 'bi bi-heart';
+              showToast("@Localizer["Đã xoá khỏi danh sách yêu thích!"]", "info");
+            }
+          }
+        },
+        error: function() {
+          showToast("@Localizer["Có lỗi xảy ra, vui lòng thử lại sau."]", "error");
+        }
+      });
+      </text>
+    }
+  }
+</script>
+}

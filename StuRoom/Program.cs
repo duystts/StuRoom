@@ -66,7 +66,10 @@ builder.Services.AddTransient<IEmailSender, SmtpEmailSender>();
 builder.Services.AddSingleton<ICloudinaryService, CloudinaryService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 
-builder.Services.AddControllersWithViews();
+builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
+builder.Services.AddControllersWithViews()
+    .AddViewLocalization(Microsoft.AspNetCore.Mvc.Razor.LanguageViewLocationExpanderFormat.Suffix)
+    .AddDataAnnotationsLocalization();
 
 QuestPDF.Settings.License = LicenseType.Community;
 
@@ -91,6 +94,13 @@ else
 
 app.UseHttpsRedirection();
 app.UseRouting();
+
+var supportedCultures = new[] { "vi" };
+var localizationOptions = new RequestLocalizationOptions()
+    .SetDefaultCulture("vi")
+    .AddSupportedCultures(supportedCultures)
+    .AddSupportedUICultures(supportedCultures);
+app.UseRequestLocalization(localizationOptions);
 
 app.UseAuthentication();
 app.UseAuthorization();

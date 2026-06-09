@@ -126,6 +126,7 @@ public class RegisterModel : PageModel
 
                 if (_userManager.Options.SignIn.RequireConfirmedAccount)
                 {
+                    TempData["Success"] = "Đăng ký thành công! Vui lòng kiểm tra hộp thư email để xác nhận tài khoản.";
                     return RedirectToPage("RegisterConfirmation", new { email = Input.Email, returnUrl });
                 }
 
@@ -133,8 +134,12 @@ public class RegisterModel : PageModel
 
                 // Landlord chưa được duyệt → về trang chờ
                 if (Input.Role == "Landlord")
+                {
+                    TempData["Success"] = "Đăng ký thành công! Tài khoản Chủ trọ đang chờ ban quản trị phê duyệt.";
                     return RedirectToAction("PendingApproval", "AccountStatus");
+                }
 
+                TempData["Success"] = "Đăng ký tài khoản thành công! Chào mừng bạn đến với StuRoom.";
                 return LocalRedirect(returnUrl);
             }
 
