@@ -22,7 +22,8 @@ public class LandlordController(
     ApplicationDbContext db,
     ICloudinaryService cloudinary,
     IEmailSender emailSender,
-    INotificationService notifier) : Controller
+    INotificationService notifier,
+    IAuditLogService auditLog) : Controller
 {
     private string CurrentUserId =>
         userManager.GetUserId(User)!;
@@ -142,7 +143,7 @@ public class LandlordController(
             return RedirectToAction(nameof(Buildings));
         }
 
-        db.Buildings.Add(new Building
+        var building = new Building
         {
             LandlordId  = CurrentUserId,
             Name        = name.Trim(),
@@ -153,8 +154,17 @@ public class LandlordController(
             Description = string.IsNullOrWhiteSpace(description) ? null : description.Trim(),
             Latitude    = latitude,
             Longitude   = longitude
-        });
+        };
+        db.Buildings.Add(building);
         await db.SaveChangesAsync();
+
+        await auditLog.LogAsync(
+            CurrentUserId,
+            "CreateBuilding",
+            "Building",
+            building.Id.ToString(),
+            $"Chủ trọ đã tạo tòa nhà mới: {building.Name} ({building.Address})",
+            HttpContext.Connection.RemoteIpAddress?.ToString());
 
         TempData["Success"] = $"Đã thêm tòa nhà <strong>{name.Trim()}</strong>.";
         return RedirectToAction(nameof(Buildings));
@@ -186,6 +196,14 @@ public class LandlordController(
         building.Longitude   = longitude;
         await db.SaveChangesAsync();
 
+        await auditLog.LogAsync(
+            CurrentUserId,
+            "EditBuilding",
+            "Building",
+            building.Id.ToString(),
+            $"Chủ trọ đã sửa tòa nhà #{building.Id}: {building.Name}",
+            HttpContext.Connection.RemoteIpAddress?.ToString());
+
         TempData["Success"] = $"Đã cập nhật tòa nhà <strong>{building.Name}</strong>.";
         return RedirectToAction(nameof(Buildings));
     }
@@ -206,6 +224,14 @@ public class LandlordController(
 
         db.Buildings.Remove(building);
         await db.SaveChangesAsync();
+
+        await auditLog.LogAsync(
+            CurrentUserId,
+            "DeleteBuilding",
+            "Building",
+            id.ToString(),
+            $"Chủ trọ đã xóa tòa nhà #{id}: {building.Name}",
+            HttpContext.Connection.RemoteIpAddress?.ToString());
 
         TempData["Success"] = $"Đã xoá tòa nhà <strong>{building.Name}</strong>.";
         return RedirectToAction(nameof(Buildings));
@@ -259,7 +285,7 @@ public class LandlordController(
             return RedirectToAction(nameof(Rooms), new { buildingId });
         }
 
-        db.Rooms.Add(new Room
+        var room = new Room
         {
             BuildingId   = buildingId,
             RoomNumber   = roomNumber.Trim(),
@@ -268,8 +294,17 @@ public class LandlordController(
             Capacity     = capacity,
             Description  = string.IsNullOrWhiteSpace(description) ? null : description.Trim(),
             Status       = RoomStatus.Available
-        });
+        };
+        db.Rooms.Add(room);
         await db.SaveChangesAsync();
+
+        await auditLog.LogAsync(
+            CurrentUserId,
+            "CreateRoom",
+            "Room",
+            room.Id.ToString(),
+            $"Chủ trọ đã thêm phòng mới {room.RoomNumber} vào tòa nhà #{buildingId}",
+            HttpContext.Connection.RemoteIpAddress?.ToString());
 
         TempData["Success"] = $"Đã thêm phòng <strong>{roomNumber.Trim()}</strong>.";
         return RedirectToAction(nameof(Rooms), new { buildingId });
@@ -299,6 +334,14 @@ public class LandlordController(
         room.Description = string.IsNullOrWhiteSpace(description) ? null : description.Trim();
         await db.SaveChangesAsync();
 
+        await auditLog.LogAsync(
+            CurrentUserId,
+            "EditRoom",
+            "Room",
+            room.Id.ToString(),
+            $"Chủ trọ đã sửa phòng #{room.Id}: {room.RoomNumber} trong tòa nhà {room.Building.Name}",
+            HttpContext.Connection.RemoteIpAddress?.ToString());
+
         TempData["Success"] = $"Đã cập nhật phòng <strong>{room.RoomNumber}</strong>.";
         return RedirectToAction(nameof(Rooms), new { buildingId = returnBuildingId });
     }
@@ -321,6 +364,14 @@ public class LandlordController(
 
         db.Rooms.Remove(room);
         await db.SaveChangesAsync();
+
+        await auditLog.LogAsync(
+            CurrentUserId,
+            "DeleteRoom",
+            "Room",
+            id.ToString(),
+            $"Chủ trọ đã xóa phòng #{id}: {room.RoomNumber} trong tòa nhà {room.Building.Name}",
+            HttpContext.Connection.RemoteIpAddress?.ToString());
 
         TempData["Success"] = $"Đã xoá phòng <strong>{room.RoomNumber}</strong>.";
         return RedirectToAction(nameof(Rooms), new { buildingId = returnBuildingId });
@@ -397,8 +448,16 @@ public class LandlordController(
                 return RedirectToAction(nameof(RoomDetail), new { id });
             }
         }
-
         await db.SaveChangesAsync();
+
+        await auditLog.LogAsync(
+            CurrentUserId,
+            "UploadRoomImages",
+            "Room",
+            id.ToString(),
+            $"Chủ trọ đã tải lên {toUpload.Count} ảnh cho phòng #{id}",
+            HttpContext.Connection.RemoteIpAddress?.ToString());
+
         TempData["Success"] = $"Đã tải lên {toUpload.Count} ảnh.";
         return RedirectToAction(nameof(RoomDetail), new { id });
     }
@@ -439,6 +498,14 @@ public class LandlordController(
         db.RoomImages.Remove(image);
         await db.SaveChangesAsync();
 
+        await auditLog.LogAsync(
+            CurrentUserId,
+            "DeleteRoomImage",
+            "RoomImage",
+            imageId.ToString(),
+            $"Chủ trọ đã xóa ảnh #{imageId} của phòng #{roomId}",
+            HttpContext.Connection.RemoteIpAddress?.ToString());
+
         // If deleted image was primary, promote the first remaining image
         if (wasPrimary)
         {
@@ -477,6 +544,15 @@ public class LandlordController(
         }
 
         await db.SaveChangesAsync();
+
+        await auditLog.LogAsync(
+            CurrentUserId,
+            "SaveRoomAmenities",
+            "Room",
+            id.ToString(),
+            $"Chủ trọ đã cập nhật các tiện ích cho phòng #{id}",
+            HttpContext.Connection.RemoteIpAddress?.ToString());
+
         TempData["Success"] = "Đã lưu tiện ích phòng.";
         return RedirectToAction(nameof(RoomDetail), new { id });
     }
@@ -559,7 +635,7 @@ public class LandlordController(
             buildingId = null;
         }
 
-        db.FeeConfigs.Add(new FeeConfig
+        var config = new FeeConfig
         {
             BuildingId  = scope == "building" ? buildingId : null,
             RoomId      = scope == "room" ? roomId : null,
@@ -570,8 +646,17 @@ public class LandlordController(
             Unit        = unit.Trim(),
             IsActive    = isActive,
             SortOrder   = sortOrder
-        });
+        };
+        db.FeeConfigs.Add(config);
         await db.SaveChangesAsync();
+
+        await auditLog.LogAsync(
+            CurrentUserId,
+            "CreateFeeConfig",
+            "FeeConfig",
+            config.Id.ToString(),
+            $"Chủ trọ đã tạo cấu hình phí: {config.Name} ({config.UnitPrice:N0} ₫/{config.Unit})",
+            HttpContext.Connection.RemoteIpAddress?.ToString());
 
         TempData["Success"] = $"Đã thêm cấu hình phí <strong>{name.Trim()}</strong>.";
         return RedirectToAction(nameof(FeeConfigs), new { buildingId = returnBuildingId });
@@ -601,6 +686,14 @@ public class LandlordController(
         config.SortOrder   = sortOrder;
         await db.SaveChangesAsync();
 
+        await auditLog.LogAsync(
+            CurrentUserId,
+            "EditFeeConfig",
+            "FeeConfig",
+            config.Id.ToString(),
+            $"Chủ trọ đã sửa cấu hình phí #{config.Id}: {config.Name} ({config.UnitPrice:N0} ₫/{config.Unit})",
+            HttpContext.Connection.RemoteIpAddress?.ToString());
+
         TempData["Success"] = $"Đã cập nhật <strong>{config.Name}</strong>.";
         return RedirectToAction(nameof(FeeConfigs), new { buildingId = returnBuildingId });
     }
@@ -620,6 +713,14 @@ public class LandlordController(
 
         db.FeeConfigs.Remove(config);
         await db.SaveChangesAsync();
+
+        await auditLog.LogAsync(
+            CurrentUserId,
+            "DeleteFeeConfig",
+            "FeeConfig",
+            id.ToString(),
+            $"Chủ trọ đã xóa cấu hình phí #{id}: {config.Name}",
+            HttpContext.Connection.RemoteIpAddress?.ToString());
 
         TempData["Success"] = $"Đã xoá cấu hình phí <strong>{config.Name}</strong>.";
         return RedirectToAction(nameof(FeeConfigs), new { buildingId = returnBuildingId });
@@ -830,6 +931,14 @@ public class LandlordController(
         booking.ContractId = contract.Id;
         await db.SaveChangesAsync();
 
+        await auditLog.LogAsync(
+            CurrentUserId,
+            "ApproveBooking",
+            "BookingRequest",
+            booking.Id.ToString(),
+            $"Chủ trọ đã duyệt đặt phòng #{booking.Id} cho phòng {booking.Room.RoomNumber} và tạo hợp đồng #{contract.Id} (Tiền cọc: {depositAmount:N0} ₫, Tiền thuê: {monthlyRent:N0} ₫)",
+            HttpContext.Connection.RemoteIpAddress?.ToString());
+
         // Task 20 — email
         await emailSender.SendEmailAsync(booking.Tenant.Email!,
             "Yêu cầu đặt phòng được chấp nhận — StuRoom",
@@ -864,6 +973,14 @@ public class LandlordController(
         booking.Status          = BookingStatus.Rejected;
         booking.RejectionReason = string.IsNullOrWhiteSpace(rejectionReason) ? null : rejectionReason.Trim();
         await db.SaveChangesAsync();
+
+        await auditLog.LogAsync(
+            CurrentUserId,
+            "RejectBooking",
+            "BookingRequest",
+            booking.Id.ToString(),
+            $"Chủ trọ đã từ chối đặt phòng #{booking.Id} cho phòng {booking.Room.RoomNumber}. Lý do: {booking.RejectionReason ?? "không có lý do cụ thể"}",
+            HttpContext.Connection.RemoteIpAddress?.ToString());
 
         // Task 20 — email
         var reason = string.IsNullOrWhiteSpace(rejectionReason) ? "không có lý do cụ thể" : rejectionReason;
@@ -986,6 +1103,14 @@ public class LandlordController(
 
         await db.SaveChangesAsync();
 
+        await auditLog.LogAsync(
+            CurrentUserId,
+            "ActivateContract",
+            "Contract",
+            contract.Id.ToString(),
+            $"Chủ trọ đã kích hoạt hợp đồng #{contract.Id} cho phòng {contract.Room.RoomNumber}",
+            HttpContext.Connection.RemoteIpAddress?.ToString());
+
         TempData["Success"] = "Hợp đồng đã được kích hoạt. Phòng chuyển sang trạng thái Đã thuê.";
         return RedirectToAction(nameof(ContractDetail), new { id });
     }
@@ -1011,6 +1136,14 @@ public class LandlordController(
         if (room != null) room.Status = RoomStatus.Available;
 
         await db.SaveChangesAsync();
+
+        await auditLog.LogAsync(
+            CurrentUserId,
+            "TerminateContract",
+            "Contract",
+            contract.Id.ToString(),
+            $"Chủ trọ đã chấm dứt hợp đồng #{contract.Id} cho phòng {contract.Room.RoomNumber}. Lý do: {contract.TerminationReason ?? "không có lý do cụ thể"}",
+            HttpContext.Connection.RemoteIpAddress?.ToString());
 
         TempData["Success"] = "Đã chấm dứt hợp đồng. Phòng trở về trạng thái Trống.";
         return RedirectToAction(nameof(ContractDetail), new { id });
@@ -1083,6 +1216,14 @@ public class LandlordController(
         });
         await db.SaveChangesAsync();
 
+        await auditLog.LogAsync(
+            CurrentUserId,
+            "AddContractMember",
+            "Contract",
+            contractId.ToString(),
+            $"Chủ trọ đã thêm thành viên ở ghép {tenant.FullName} ({tenant.Email}) vào hợp đồng #{contractId}",
+            HttpContext.Connection.RemoteIpAddress?.ToString());
+
         TempData["Success"] = $"Đã thêm <strong>{tenant.FullName}</strong> vào hợp đồng.";
         return RedirectToAction(nameof(ContractDetail), new { id = contractId });
     }
@@ -1104,6 +1245,14 @@ public class LandlordController(
 
         member.LeaveDate = leaveDate;
         await db.SaveChangesAsync();
+
+        await auditLog.LogAsync(
+            CurrentUserId,
+            "RemoveContractMember",
+            "ContractMember",
+            memberId.ToString(),
+            $"Chủ trọ đã xác nhận thành viên ở ghép {member.Tenant.FullName} ({member.Tenant.Email}) rời khỏi hợp đồng #{member.ContractId}",
+            HttpContext.Connection.RemoteIpAddress?.ToString());
 
         TempData["Success"] = "Đã ghi nhận ngày ra của thành viên.";
         return RedirectToAction(nameof(ContractDetail), new { id = member.ContractId });
@@ -1486,6 +1635,14 @@ public class LandlordController(
         db.Invoices.Add(invoice);
         await db.SaveChangesAsync();
 
+        await auditLog.LogAsync(
+            CurrentUserId,
+            "CreateInvoice",
+            "Invoice",
+            invoice.Id.ToString(),
+            $"Chủ trọ đã tạo hóa đơn tháng {billingMonth}/{billingYear} cho hợp đồng #{contractId}. Tổng tiền: {total:N0} ₫",
+            HttpContext.Connection.RemoteIpAddress?.ToString());
+
         TempData["Success"] = $"Đã tạo hoá đơn tháng {billingMonth}/{billingYear}.";
         return RedirectToAction(nameof(InvoiceDetail), new { id = invoice.Id });
     }
@@ -1576,6 +1733,14 @@ public class LandlordController(
 
         await db.SaveChangesAsync();
 
+        await auditLog.LogAsync(
+            CurrentUserId,
+            "RecordPayment",
+            "Payment",
+            payment.Id.ToString(),
+            $"Chủ trọ đã ghi nhận thanh toán {amount:N0} ₫ cho hóa đơn #{invoiceId} qua phương thức {method}",
+            HttpContext.Connection.RemoteIpAddress?.ToString());
+
         TempData["Success"] = $"Đã ghi nhận thanh toán {amount:N0} ₫.";
         return RedirectToAction(nameof(InvoiceDetail), new { id = invoiceId });
     }
@@ -1592,6 +1757,15 @@ public class LandlordController(
         {
             invoice.Status = InvoiceStatus.Cancelled;
             await db.SaveChangesAsync();
+
+            await auditLog.LogAsync(
+                CurrentUserId,
+                "CancelInvoice",
+                "Invoice",
+                id.ToString(),
+                $"Chủ trọ đã hủy hóa đơn #{id} của tháng {invoice.BillingMonth}/{invoice.BillingYear}",
+                HttpContext.Connection.RemoteIpAddress?.ToString());
+
             TempData["Success"] = "Đã huỷ hoá đơn.";
         }
         return RedirectToAction(nameof(InvoiceDetail), new { id });

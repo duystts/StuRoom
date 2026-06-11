@@ -1,0 +1,181 @@
+@model IEnumerable<StuRoom.Models.AuditLog>
+@{
+    ViewData["Title"] = "Nhật ký hoạt động hệ thống";
+    var actionTypes = (List<string>)ViewBag.ActionTypes;
+    int currentPage = (int)ViewBag.CurrentPage;
+    int totalPages = (int)ViewBag.TotalPages;
+    int totalItems = (int)ViewBag.TotalItems;
+    string currentSearch = (string?)ViewData["Search"] ?? "";
+    string currentFilter = (string?)ViewData["ActionFilter"] ?? "";
+}
+
+<div class="d-flex align-items-center justify-content-between mb-4">
+  <div>
+    <h4 class="fw-bold mb-0">Nhật ký hoạt động</h4>
+    <p class="text-muted small mb-0">Lịch sử các hành động nhạy cảm của Admin và Chủ trọ</p>
+  </div>
+  <span class="badge bg-secondary px-3 py-2">Tổng số: @totalItems bản ghi</span>
+</div>
+
+@* ── Filters Form ── *@
+<div class="card border-0 shadow-sm mb-4">
+  <div class="card-body">
+    <form method="get" asp-action="AuditLogs" class="row g-3 align-items-end">
+      <div class="col-md-5">
+        <label class="form-label small fw-semibold text-muted">Tìm kiếm từ khóa</label>
+        <div class="input-group">
+          <span class="input-group-text bg-transparent border-end-0"><i class="bi bi-search text-muted"></i></span>
+          <input type="text" name="search" value="@currentSearch" class="form-control border-start-0" placeholder="Tìm kiếm nội dung, email, tên..." />
+        </div>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label small fw-semibold text-muted">Lọc theo hành động</label>
+        <select name="actionFilter" class="form-select">
+          <option value="">-- Tất cả hành động --</option>
+          @foreach (var type in actionTypes)
+          {
+              if (type == currentFilter)
+              {
+                  <option value="@type" selected="selected">@type</option>
+              }
+              else
+              {
+                  <option value="@type">@type</option>
+              }
+          }
+        </select>
+      </div>
+      <div class="col-md-3 d-flex gap-2">
+        <button type="submit" class="btn btn-primary w-100"><i class="bi bi-funnel me-1"></i>Lọc</button>
+        <a asp-action="AuditLogs" class="btn btn-outline-secondary w-100">Xóa bộ lọc</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+@* ── Logs Table ── *@
+<div class="card border-0 shadow-sm">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th style="width: 160px;">Thời gian</th>
+            <th style="width: 150px;">Hành động</th>
+            <th>Người thực hiện</th>
+            <th>Chi tiết nội dung</th>
+            <th style="width: 130px;">IP Address</th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (!Model.Any())
+          {
+            <tr>
+              <td colspan="5" class="text-center py-4 text-muted">
+                <i class="bi bi-inbox fs-3 d-block mb-2"></i>Không tìm thấy hoạt động nào phù hợp.
+              </td>
+            </tr>
+          }
+          else
+          {
+            @foreach (var log in Model)
+            {
+              // Determine badge style
+              string badgeClass = "bg-secondary";
+              if (log.Action.Contains("Delete") || log.Action.Contains("Reject") || log.Action.Contains("Cancel"))
+              {
+                badgeClass = "bg-danger bg-opacity-10 text-danger";
+              }
+              else if (log.Action.Contains("Create") || log.Action.Contains("Approve") || log.Action.Contains("Record"))
+              {
+                badgeClass = "bg-success bg-opacity-10 text-success";
+              }
+              else if (log.Action.Contains("Edit") || log.Action.Contains("Update") || log.Action.Contains("Save"))
+              {
+                badgeClass = "bg-warning bg-opacity-10 text-warning";
+              }
+              else if (log.Action.Contains("Activate"))
+              {
+                badgeClass = "bg-primary bg-opacity-10 text-primary";
+              }
+
+              <tr>
+                <td class="small text-muted">
+                  @log.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss")
+                </td>
+                <td>
+                  <span class="badge @badgeClass font-monospace" style="font-size: 11px;">
+                    @log.Action
+                  </span>
+                </td>
+                <td>
+                  @if (log.User != null)
+                  {
+                    <div class="fw-semibold small">@log.UserFullName</div>
+                    <div class="text-muted" style="font-size: 11px;">@log.UserEmail</div>
+                  }
+                  else if (!string.IsNullOrEmpty(log.UserEmail))
+                  {
+                    <div class="fw-semibold small">@log.UserFullName <span class="badge bg-secondary" style="font-size:9px">Đã xóa</span></div>
+                    <div class="text-muted" style="font-size: 11px;">@log.UserEmail</div>
+                  }
+                  else
+                  {
+                    <span class="text-muted small"><em>System / Ẩn danh</em></span>
+                  }
+                </td>
+                <td class="small text-wrap" style="max-width: 400px; line-height: 1.4;">
+                  @log.Description
+                  @if (!string.IsNullOrEmpty(log.EntityName) && !string.IsNullOrEmpty(log.EntityId))
+                  {
+                    <span class="text-muted d-block mt-1" style="font-size: 10px;">
+                      Đối tượng: <strong class="font-monospace text-secondary">@log.EntityName (#@log.EntityId)</strong>
+                    </span>
+                  }
+                </td>
+                <td class="small font-monospace text-muted">
+                  @(string.IsNullOrEmpty(log.IpAddress) ? "N/A" : log.IpAddress)
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+  
+  @* ── Pagination ── *@
+  @if (totalPages > 1)
+  {
+    <div class="card-footer bg-transparent py-3 d-flex align-items-center justify-content-between border-top">
+      <span class="small text-muted">Hiển thị trang <strong>@currentPage</strong> trên tổng số <strong>@totalPages</strong> trang</span>
+      <nav>
+        <ul class="pagination pagination-sm mb-0">
+          <li class="page-item @(currentPage == 1 ? "disabled" : "")">
+            <a class="page-link" asp-action="AuditLogs" asp-route-search="@currentSearch" asp-route-actionFilter="@currentFilter" asp-route-page="@(currentPage - 1)">
+              <i class="bi bi-chevron-left"></i>
+            </a>
+          </li>
+          
+          @for (int i = 1; i <= totalPages; i++)
+          {
+            if (i == currentPage)
+            {
+              <li class="page-item active"><span class="page-link">@i</span></li>
+            }
+            else
+            {
+              <li class="page-item"><a class="page-link" asp-action="AuditLogs" asp-route-search="@currentSearch" asp-route-actionFilter="@currentFilter" asp-route-page="@i">@i</a></li>
+            }
+          }
+          
+          <li class="page-item @(currentPage == totalPages ? "disabled" : "")">
+            <a class="page-link" asp-action="AuditLogs" asp-route-search="@currentSearch" asp-route-actionFilter="@currentFilter" asp-route-page="@(currentPage + 1)">
+              <i class="bi bi-chevron-right"></i>
+            </a>
+          </li>
+        </ul>
+      </nav>
+    </div>
+  }
+</div>

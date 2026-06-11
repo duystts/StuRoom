@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using StuRoom.Data;
 using StuRoom.Models;
 using StuRoom.Models.ViewModels;
+using StuRoom.Services;
 
 namespace StuRoom.Controllers;
 
@@ -13,7 +14,8 @@ namespace StuRoom.Controllers;
 public class AdminController(
     UserManager<ApplicationUser> userManager,
     IEmailSender emailSender,
-    ApplicationDbContext db) : Controller
+    ApplicationDbContext db,
+    IAuditLogService auditLog) : Controller
 {
     // ════════════════════════════════════════════════════════
     // DASHBOARD  (Task 33)
@@ -25,6 +27,25 @@ public class AdminController(
 
         var landlords = await userManager.GetUsersInRoleAsync("Landlord");
         var tenants   = await userManager.GetUsersInRoleAsync("Tenant");
+
+        // ── System revenue chart — last 12 months ───────────────────
+        var now = DateTime.Now;
+        var since = new DateTime(now.Year, now.Month, 1).AddMonths(-11);
+        var payments = await db.Payments
+            .Where(p => p.PaymentDate >= since)
+            .Select(p => new { p.PaymentDate.Year, p.PaymentDate.Month, p.Amount })
+            .ToListAsync();
+
+        var revenueLabels = new List<string>();
+        var revenueData   = new List<decimal>();
+        for (int i = 11; i >= 0; i--)
+        {
+            var m = now.AddMonths(-i);
+            revenueLabels.Add($"{m.Month:D2}/{m.Year}");
+            revenueData.Add(payments
+                .Where(p => p.Year == m.Year && p.Month == m.Month)
+                .Sum(p => p.Amount));
+        }
 
         var vm = new AdminDashboardViewModel
         {
@@ -45,6 +66,9 @@ public class AdminController(
             TotalRevenue    = await db.Payments.SumAsync(p => (decimal?)p.Amount) ?? 0,
 
             PendingReviews  = await db.RoomReviews.CountAsync(r => !r.IsApproved),
+
+            RevenueLabels   = revenueLabels,
+            RevenueData     = revenueData
         };
 
         return View(vm);
@@ -88,6 +112,14 @@ public class AdminController(
         review.IsApproved = !review.IsApproved;
         await db.SaveChangesAsync();
 
+        await auditLog.LogAsync(
+            userManager.GetUserId(User),
+            review.IsApproved ? "ApproveReview" : "HideReview",
+            "RoomReview",
+            review.Id.ToString(),
+            $"Admin đã {(review.IsApproved ? "duyệt/hiển thị" : "ẩn")} review #{review.Id} của user {review.ReviewerId}",
+            HttpContext.Connection.RemoteIpAddress?.ToString());
+
         TempData["Success"] = review.IsApproved
             ? "Đã hiển thị review."
             : "Đã ẩn review.";
@@ -103,6 +135,14 @@ public class AdminController(
 
         db.RoomReviews.Remove(review);
         await db.SaveChangesAsync();
+
+        await auditLog.LogAsync(
+            userManager.GetUserId(User),
+            "DeleteReview",
+            "RoomReview",
+            id.ToString(),
+            $"Admin đã xóa review #{id} của reviewer {review.ReviewerId}",
+            HttpContext.Connection.RemoteIpAddress?.ToString());
 
         TempData["Success"] = "Đã xoá review.";
         return RedirectToAction(nameof(ReviewModeration), new { filter = returnFilter });
@@ -151,6 +191,14 @@ public class AdminController(
         await userManager.SetLockoutEndDateAsync(user, null);
         await userManager.UpdateAsync(user);
 
+        await auditLog.LogAsync(
+            userManager.GetUserId(User),
+            "ApproveLandlord",
+            "ApplicationUser",
+            user.Id,
+            $"Admin đã duyệt tài khoản chủ trọ: {user.FullName} ({user.Email})",
+            HttpContext.Connection.RemoteIpAddress?.ToString());
+
         await emailSender.SendEmailAsync(user.Email!,
             "Tài khoản StuRoom đã được duyệt",
             $"Xin chào <strong>{user.FullName}</strong>,<br><br>" +
@@ -170,6 +218,15 @@ public class AdminController(
         await userManager.SetLockoutEndDateAsync(user, DateTimeOffset.MaxValue);
 
         var reasonText = string.IsNullOrWhiteSpace(reason) ? "không đáp ứng yêu cầu" : reason;
+
+        await auditLog.LogAsync(
+            userManager.GetUserId(User),
+            "RejectLandlord",
+            "ApplicationUser",
+            user.Id,
+            $"Admin đã từ chối tài khoản chủ trọ: {user.FullName} ({user.Email}). Lý do: {reasonText}",
+            HttpContext.Connection.RemoteIpAddress?.ToString());
+
         await emailSender.SendEmailAsync(user.Email!,
             "Tài khoản StuRoom không được phê duyệt",
             $"Xin chào <strong>{user.FullName}</strong>,<br><br>" +
@@ -199,8 +256,17 @@ public class AdminController(
             return RedirectToAction(nameof(Amenities));
         }
 
-        db.Amenities.Add(new Amenity { Name = name.Trim(), IconClass = iconClass.Trim() });
+        var amenity = new Amenity { Name = name.Trim(), IconClass = iconClass.Trim() };
+        db.Amenities.Add(amenity);
         await db.SaveChangesAsync();
+
+        await auditLog.LogAsync(
+            userManager.GetUserId(User),
+            "CreateAmenity",
+            "Amenity",
+            amenity.Id.ToString(),
+            $"Admin đã tạo tiện ích mới: {amenity.Name} (Icon: {amenity.IconClass})",
+            HttpContext.Connection.RemoteIpAddress?.ToString());
 
         TempData["Success"] = $"Đã thêm tiện ích <strong>{name.Trim()}</strong>.";
         return RedirectToAction(nameof(Amenities));
@@ -222,6 +288,14 @@ public class AdminController(
         amenity.IconClass = iconClass.Trim();
         await db.SaveChangesAsync();
 
+        await auditLog.LogAsync(
+            userManager.GetUserId(User),
+            "EditAmenity",
+            "Amenity",
+            amenity.Id.ToString(),
+            $"Admin đã sửa tiện ích #{amenity.Id}: {amenity.Name} (Icon: {amenity.IconClass})",
+            HttpContext.Connection.RemoteIpAddress?.ToString());
+
         TempData["Success"] = $"Đã cập nhật tiện ích <strong>{amenity.Name}</strong>.";
         return RedirectToAction(nameof(Amenities));
     }
@@ -241,6 +315,14 @@ public class AdminController(
 
         db.Amenities.Remove(amenity);
         await db.SaveChangesAsync();
+
+        await auditLog.LogAsync(
+            userManager.GetUserId(User),
+            "DeleteAmenity",
+            "Amenity",
+            id.ToString(),
+            $"Admin đã xóa tiện ích #{id}: {amenity.Name}",
+            HttpContext.Connection.RemoteIpAddress?.ToString());
 
         TempData["Success"] = $"Đã xoá tiện ích <strong>{amenity.Name}</strong>.";
         return RedirectToAction(nameof(Amenities));
@@ -295,6 +377,70 @@ public class AdminController(
         }
 
         await db.SaveChangesAsync();
+
+        await auditLog.LogAsync(
+            userManager.GetUserId(User),
+            actionType == "block" ? "BlockRoomByReport" : "DismissReport",
+            "RoomReport",
+            id.ToString(),
+            $"Admin đã xử lý báo cáo vi phạm #{id}. Hành động: {(actionType == "block" ? "Khóa phòng trọ" : "Bỏ qua báo cáo")}. Phản hồi: {report.AdminFeedback}",
+            HttpContext.Connection.RemoteIpAddress?.ToString());
+
         return RedirectToAction(nameof(Reports), new { status = actionType == "block" ? "resolved" : "dismissed" });
+    }
+
+    // ════════════════════════════════════════════════════════
+    // AUDIT LOGS VIEW
+    // ════════════════════════════════════════════════════════
+
+    public async Task<IActionResult> AuditLogs(string? search, string? actionFilter, int page = 1)
+    {
+        ViewData["ActiveMenu"] = "AuditLogs";
+        ViewData["Search"]     = search;
+        ViewData["ActionFilter"] = actionFilter;
+
+        var query = db.AuditLogs
+            .Include(a => a.User)
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            query = query.Where(a => 
+                a.Description.Contains(search) || 
+                (a.UserEmail != null && a.UserEmail.Contains(search)) || 
+                (a.UserFullName != null && a.UserFullName.Contains(search)) ||
+                a.Action.Contains(search));
+        }
+
+        if (!string.IsNullOrWhiteSpace(actionFilter))
+        {
+            query = query.Where(a => a.Action == actionFilter);
+        }
+
+        // Get unique action types for filter dropdown
+        var actionTypes = await db.AuditLogs
+            .Select(a => a.Action)
+            .Distinct()
+            .OrderBy(a => a)
+            .ToListAsync();
+        ViewBag.ActionTypes = actionTypes;
+
+        // Pagination
+        const int pageSize = 20;
+        int totalItems = await query.CountAsync();
+        int totalPages = (int)Math.Ceiling((double)totalItems / pageSize);
+        if (page < 1) page = 1;
+
+        var logs = await query
+            .OrderByDescending(a => a.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        ViewBag.CurrentPage = page;
+        ViewBag.TotalPages  = totalPages;
+        ViewBag.TotalItems  = totalItems;
+
+        return View(logs);
     }
 }

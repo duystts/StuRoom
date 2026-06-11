@@ -85,105 +85,246 @@
 
 </div>
 
-@* ── Action items ── *@
-<div class="row g-3">
-
-  @* Landlord chờ duyệt *@
-  <div class="col-md-6">
-    <div class="card border-0 shadow-sm">
+@* ── System charts ── *@
+<div class="row g-4 mb-4">
+  @* System-wide Revenue Chart *@
+  <div class="col-lg-8">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-header bg-transparent py-2 d-flex align-items-center justify-content-between">
+        <span class="fw-semibold small">
+          <i class="bi bi-bar-chart me-1"></i>Doanh thu hệ thống 12 tháng gần nhất
+        </span>
+        <span class="text-muted small">
+          Tổng cộng: @Model.TotalRevenue.ToString("N0") ₫
+        </span>
+      </div>
       <div class="card-body">
-        <div class="d-flex align-items-center justify-content-between mb-3">
-          <h6 class="fw-bold mb-0">Landlord chờ duyệt</h6>
-          <a asp-action="LandlordApproval" class="btn btn-outline-primary btn-sm">Xem tất cả</a>
+        <canvas id="revenueChart" height="100"></canvas>
+      </div>
+    </div>
+  </div>
+
+  @* User distribution doughnut *@
+  <div class="col-lg-4">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-header bg-transparent py-2 fw-semibold small">
+        <i class="bi bi-pie-chart me-1"></i>Cơ cấu người dùng
+      </div>
+      <div class="card-body d-flex flex-column align-items-center justify-content-center">
+        <canvas id="userChart" width="200" height="200"></canvas>
+        <div class="mt-3 d-flex gap-4 small">
+          <span><i class="bi bi-circle-fill me-1" style="color:#7c3aed"></i>Chủ trọ (@Model.TotalLandlords)</span>
+          <span><i class="bi bi-circle-fill me-1" style="color:#1d4ed8"></i>Người thuê (@Model.TotalTenants)</span>
         </div>
-        @if (Model.PendingLandlords == 0)
-        {
-          <p class="text-muted small mb-0">
-            <i class="bi bi-check2-circle me-1 text-success"></i>Không có tài khoản nào chờ duyệt.
-          </p>
-        }
-        else
-        {
-          <div class="d-flex align-items-center gap-2">
-            <span class="badge bg-warning text-dark fs-6 px-3 py-2">@Model.PendingLandlords</span>
-            <span class="small text-muted">tài khoản đang chờ xét duyệt</span>
-          </div>
-        }
       </div>
     </div>
   </div>
-
-  @* Review chờ duyệt *@
-  <div class="col-md-6">
-    <div class="card border-0 shadow-sm">
-      <div class="card-body">
-        <div class="d-flex align-items-center justify-content-between mb-3">
-          <h6 class="fw-bold mb-0">Review bị ẩn</h6>
-          <a asp-action="ReviewModeration" asp-route-filter="hidden" class="btn btn-outline-primary btn-sm">Xem tất cả</a>
-        </div>
-        @if (Model.PendingReviews == 0)
-        {
-          <p class="text-muted small mb-0">
-            <i class="bi bi-check2-circle me-1 text-success"></i>Không có review nào đang bị ẩn.
-          </p>
-        }
-        else
-        {
-          <div class="d-flex align-items-center gap-2">
-            <span class="badge bg-danger fs-6 px-3 py-2">@Model.PendingReviews</span>
-            <span class="small text-muted">review đang bị ẩn</span>
-          </div>
-        }
-      </div>
-    </div>
-  </div>
-
-  @* Tỷ lệ Landlord *@
-  <div class="col-md-6">
-    <div class="card border-0 shadow-sm">
-      <div class="card-body">
-        <h6 class="fw-bold mb-3">Landlord</h6>
-        @if (Model.TotalLandlords > 0)
-        {
-          var pct = (int)Math.Round((double)Model.ActiveLandlords / Model.TotalLandlords * 100);
-          <div class="d-flex justify-content-between small text-muted mb-1">
-            <span>Đã duyệt</span>
-            <span>@Model.ActiveLandlords / @Model.TotalLandlords (@pct%)</span>
-          </div>
-          <div class="progress" style="height:8px">
-            <div class="progress-bar bg-success" style="width:@pct%"></div>
-          </div>
-        }
-        else
-        {
-          <p class="text-muted small mb-0">Chưa có Landlord nào.</p>
-        }
-      </div>
-    </div>
-  </div>
-
-  @* Tỷ lệ phòng *@
-  <div class="col-md-6">
-    <div class="card border-0 shadow-sm">
-      <div class="card-body">
-        <h6 class="fw-bold mb-3">Tỷ lệ lấp đầy</h6>
-        @if (Model.TotalRooms > 0)
-        {
-          var pct = (int)Math.Round((double)Model.OccupiedRooms / Model.TotalRooms * 100);
-          <div class="d-flex justify-content-between small text-muted mb-1">
-            <span>Đã thuê</span>
-            <span>@Model.OccupiedRooms / @Model.TotalRooms (@pct%)</span>
-          </div>
-          <div class="progress" style="height:8px">
-            <div class="progress-bar" style="width:@pct%;background:#6c8fff"></div>
-          </div>
-        }
-        else
-        {
-          <p class="text-muted small mb-0">Chưa có phòng nào.</p>
-        }
-      </div>
-    </div>
-  </div>
-
 </div>
+
+@* ── Action items & Room status ── *@
+<div class="row g-4">
+  @* Action items on the left *@
+  <div class="col-lg-8">
+    <div class="row g-3">
+      @* Landlord chờ duyệt *@
+      <div class="col-md-6">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-body">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+              <h6 class="fw-bold mb-0">Landlord chờ duyệt</h6>
+              <a asp-action="LandlordApproval" class="btn btn-outline-primary btn-sm">Xem tất cả</a>
+            </div>
+            @if (Model.PendingLandlords == 0)
+            {
+              <p class="text-muted small mb-0">
+                <i class="bi bi-check2-circle me-1 text-success"></i>Không có tài khoản nào chờ duyệt.
+              </p>
+            }
+            else
+            {
+              <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-warning text-dark fs-6 px-3 py-2">@Model.PendingLandlords</span>
+                <span class="small text-muted">tài khoản đang chờ xét duyệt</span>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+
+      @* Review bị ẩn *@
+      <div class="col-md-6">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-body">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+              <h6 class="fw-bold mb-0">Review bị ẩn</h6>
+              <a asp-action="ReviewModeration" asp-route-filter="hidden" class="btn btn-outline-primary btn-sm">Xem tất cả</a>
+            </div>
+            @if (Model.PendingReviews == 0)
+            {
+              <p class="text-muted small mb-0">
+                <i class="bi bi-check2-circle me-1 text-success"></i>Không có review nào đang bị ẩn.
+              </p>
+            }
+            else
+            {
+              <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-danger fs-6 px-3 py-2">@Model.PendingReviews</span>
+                <span class="small text-muted">review đang bị ẩn</span>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  @* Room occupancy distribution doughnut *@
+  <div class="col-lg-4">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-header bg-transparent py-2 fw-semibold small">
+        <i class="bi bi-door-open me-1"></i>Trạng thái phòng trọ
+      </div>
+      <div class="card-body d-flex flex-column align-items-center justify-content-center">
+        <canvas id="occupancyChart" width="200" height="200"></canvas>
+        <div class="mt-3 d-flex gap-4 small">
+          <span><i class="bi bi-circle-fill me-1" style="color:#10b981"></i>Trống (@Model.AvailableRooms)</span>
+          <span><i class="bi bi-circle-fill me-1" style="color:#6c8fff"></i>Đang thuê (@Model.OccupiedRooms)</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+@section Scripts {
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+let revenueChart;
+let userChart;
+let occupancyChart;
+
+function initCharts() {
+  // Revenue bar chart
+  revenueChart = new Chart(document.getElementById('revenueChart'), {
+    type: 'bar',
+    data: {
+      labels: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.RevenueLabels)),
+      datasets: [{
+        label: 'Doanh thu (₫)',
+        data: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.RevenueData)),
+        backgroundColor: 'rgba(124,58,237,0.75)',
+        borderColor: 'rgba(124,58,237,1)',
+        borderWidth: 1,
+        borderRadius: 4,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { 
+        legend: { display: false },
+        tooltip: { borderWidth: 1 }
+      },
+      scales: {
+        x: { grid: {} },
+        y: {
+          beginAtZero: true,
+          grid: {},
+          ticks: {
+            callback: v => new Intl.NumberFormat('vi-VN',
+              { notation: 'compact', maximumFractionDigits: 1 }).format(v) + ' ₫'
+          }
+        }
+      }
+    }
+  });
+
+  // User type distribution chart
+  userChart = new Chart(document.getElementById('userChart'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Chủ trọ', 'Người thuê'],
+      datasets: [{
+        data: [@Model.TotalLandlords, @Model.TotalTenants],
+        backgroundColor: ['#7c3aed', '#1d4ed8'],
+        borderWidth: 0,
+      }]
+    },
+    options: {
+      cutout: '70%',
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          borderWidth: 1,
+          callbacks: {
+            label: ctx => ` ${ctx.label}: ${ctx.raw} người`
+          }
+        }
+      }
+    }
+  });
+
+  // Occupancy doughnut
+  occupancyChart = new Chart(document.getElementById('occupancyChart'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Trống', 'Đang thuê'],
+      datasets: [{
+        data: [@Model.AvailableRooms, @Model.OccupiedRooms],
+        backgroundColor: ['#10b981', '#6c8fff'],
+        borderWidth: 0,
+      }]
+    },
+    options: {
+      cutout: '70%',
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          borderWidth: 1,
+          callbacks: {
+            label: ctx => ` ${ctx.label}: ${ctx.raw} phòng`
+          }
+        }
+      }
+    }
+  });
+}
+
+function applyThemeToCharts(theme) {
+  if (!revenueChart || !userChart || !occupancyChart) return;
+  const isDark = theme === 'dark';
+  const textColor = isDark ? '#9ca3af' : '#4b5563';
+  const gridColor = isDark ? '#232742' : '#e5e7eb';
+  const tooltipBg = isDark ? '#181a30' : '#ffffff';
+  const tooltipBorder = isDark ? '#252847' : '#e2e8f0';
+  const tooltipColor = isDark ? '#f3f4f6' : '#1f2937';
+
+  // Revenue chart scaling colors
+  revenueChart.options.scales.x.ticks.color = textColor;
+  revenueChart.options.scales.y.ticks.color = textColor;
+  revenueChart.options.scales.x.grid.color = gridColor;
+  revenueChart.options.scales.y.grid.color = gridColor;
+  
+  // Tooltip colors
+  const charts = [revenueChart, userChart, occupancyChart];
+  charts.forEach(c => {
+    c.options.plugins.tooltip.backgroundColor = tooltipBg;
+    c.options.plugins.tooltip.titleColor = tooltipColor;
+    c.options.plugins.tooltip.bodyColor = tooltipColor;
+    c.options.plugins.tooltip.borderColor = tooltipBorder;
+  });
+
+  revenueChart.update();
+  userChart.update();
+  occupancyChart.update();
+}
+
+// Initialise and apply current theme
+initCharts();
+const initialTheme = document.documentElement.getAttribute('data-theme') || 'light';
+applyThemeToCharts(initialTheme);
+
+// Listen for global theme-changed event
+window.addEventListener('theme-changed', (e) => {
+  applyThemeToCharts(e.detail.theme);
+});
+</script>
+}

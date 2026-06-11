@@ -21,4 +21,8 @@ public class AdminDashboardViewModel
 
     // Reviews
     public int PendingReviews { get; set; }
+
+    // Charts Data
+    public List<string> RevenueLabels { get; set; } = new();
+    public List<decimal> RevenueData { get; set; } = new();
 }

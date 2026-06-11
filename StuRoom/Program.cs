@@ -65,6 +65,7 @@ builder.Services.AddTransient<IEmailSender, SmtpEmailSender>();
 // ── Cloudinary ─────────────────────────────────────────────────────────
 builder.Services.AddSingleton<ICloudinaryService, CloudinaryService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddScoped<IAuditLogService, AuditLogService>();
 
 builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
 builder.Services.AddControllersWithViews()
