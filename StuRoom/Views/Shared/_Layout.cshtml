@@ -82,6 +82,11 @@
   function loadCompareRooms() {
     try {
       compareRooms = JSON.parse(localStorage.getItem('compare_rooms')) || [];
+      if (!Array.isArray(compareRooms)) {
+        compareRooms = [];
+      } else {
+        compareRooms = compareRooms.filter(r => r && typeof r === 'object' && typeof r.id === 'number');
+      }
     } catch (e) {
       compareRooms = [];
     }
@@ -90,33 +95,45 @@
   }
 
   window.toggleCompareRoom = function(e, id, name, price, img) {
-    if (e) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-    
-    // Trigger button micro-animation
-    document.querySelectorAll(`.btn-compare[data-room-id="${id}"]`).forEach(btn => {
-      btn.classList.add('animating');
-      setTimeout(() => btn.classList.remove('animating'), 500);
-    });
-    
-    const index = compareRooms.findIndex(r => r.id === id);
-    if (index > -1) {
-      compareRooms.splice(index, 1);
-      showToast("@Localizer["Đã xoá phòng khỏi danh sách so sánh."]", "info");
-    } else {
-      if (compareRooms.length >= 3) {
-        showToast("@Localizer["Chỉ có thể so sánh tối đa 3 phòng trọ cùng lúc."]", "warning");
-        return;
+    try {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
       }
-      compareRooms.push({ id, name, price, img });
-      showToast("@Localizer["Đã thêm phòng vào danh sách so sánh."]", "success");
+      
+      // Trigger button micro-animation
+      document.querySelectorAll(`.btn-compare[data-room-id="${id}"]`).forEach(btn => {
+        btn.classList.add('animating');
+        setTimeout(() => btn.classList.remove('animating'), 500);
+      });
+      
+      // Defensive check
+      if (!Array.isArray(compareRooms)) {
+        compareRooms = [];
+      } else {
+        compareRooms = compareRooms.filter(r => r && typeof r === 'object' && typeof r.id === 'number');
+      }
+      
+      const targetId = parseInt(id);
+      const index = compareRooms.findIndex(r => r.id === targetId);
+      if (index > -1) {
+        compareRooms.splice(index, 1);
+        showToast("@Localizer["Đã xoá phòng khỏi danh sách so sánh."]", "info");
+      } else {
+        if (compareRooms.length >= 3) {
+          showToast("@Localizer["Chỉ có thể so sánh tối đa 3 phòng trọ cùng lúc."]", "warning");
+          return;
+        }
+        compareRooms.push({ id: targetId, name, price, img });
+        showToast("@Localizer["Đã thêm phòng vào danh sách so sánh."]", "success");
+      }
+      
+      localStorage.setItem('compare_rooms', JSON.stringify(compareRooms));
+      renderCompareDrawer();
+      syncCompareButtons();
+    } catch (err) {
+      alert("Error in toggleCompareRoom: " + err.message + "\nStack: " + err.stack);
     }
-    
-    localStorage.setItem('compare_rooms', JSON.stringify(compareRooms));
-    renderCompareDrawer();
-    syncCompareButtons();
   };
 
   window.removeCompareRoom = function(id) {
@@ -126,7 +143,13 @@
       setTimeout(() => btn.classList.remove('animating'), 500);
     });
     
-    compareRooms = compareRooms.filter(r => r.id !== id);
+    if (!Array.isArray(compareRooms)) {
+      compareRooms = [];
+    } else {
+      compareRooms = compareRooms.filter(r => r && typeof r === 'object' && typeof r.id === 'number');
+    }
+    
+    compareRooms = compareRooms.filter(r => r.id !== parseInt(id));
     localStorage.setItem('compare_rooms', JSON.stringify(compareRooms));
     renderCompareDrawer();
     syncCompareButtons();
@@ -142,8 +165,15 @@
   };
 
   function syncCompareButtons() {
+    if (!Array.isArray(compareRooms)) {
+      compareRooms = [];
+    } else {
+      compareRooms = compareRooms.filter(r => r && typeof r === 'object' && typeof r.id === 'number');
+    }
+    
     document.querySelectorAll('.btn-compare').forEach(btn => {
       const id = parseInt(btn.getAttribute('data-room-id'));
+      if (isNaN(id)) return;
       const active = compareRooms.some(r => r.id === id);
       if (active) {
         btn.classList.add('active');
@@ -166,6 +196,12 @@
     const submitBtn = document.getElementById('btnCompareSubmit');
     
     if (!drawer || !countSpan || !itemsDiv || !submitBtn) return;
+    
+    if (!Array.isArray(compareRooms)) {
+      compareRooms = [];
+    } else {
+      compareRooms = compareRooms.filter(r => r && typeof r === 'object' && typeof r.id === 'number');
+    }
     
     countSpan.textContent = compareRooms.length;
     itemsDiv.innerHTML = '';
