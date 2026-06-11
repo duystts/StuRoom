@@ -177,7 +177,7 @@ namespace StuRoom.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Amenities");
+                    b.ToTable("Amenities", (string)null);
                 });
 
             modelBuilder.Entity("StuRoom.Models.ApplicationUser", b =>
@@ -351,7 +351,7 @@ namespace StuRoom.Migrations
 
                     b.HasIndex("ViewingRequestId");
 
-                    b.ToTable("BookingRequests");
+                    b.ToTable("BookingRequests", (string)null);
                 });
 
             modelBuilder.Entity("StuRoom.Models.Building", b =>
@@ -402,7 +402,7 @@ namespace StuRoom.Migrations
 
                     b.HasIndex("LandlordId");
 
-                    b.ToTable("Buildings");
+                    b.ToTable("Buildings", (string)null);
                 });
 
             modelBuilder.Entity("StuRoom.Models.Contract", b =>
@@ -464,7 +464,7 @@ namespace StuRoom.Migrations
 
                     b.HasIndex("TenantId");
 
-                    b.ToTable("Contracts");
+                    b.ToTable("Contracts", (string)null);
                 });
 
             modelBuilder.Entity("StuRoom.Models.ContractMember", b =>
@@ -497,7 +497,25 @@ namespace StuRoom.Migrations
 
                     b.HasIndex("TenantId");
 
-                    b.ToTable("ContractMembers");
+                    b.ToTable("ContractMembers", (string)null);
+                });
+
+            modelBuilder.Entity("StuRoom.Models.FavoriteRoom", b =>
+                {
+                    b.Property<string>("TenantId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("RoomId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("TenantId", "RoomId");
+
+                    b.HasIndex("RoomId");
+
+                    b.ToTable("FavoriteRooms", (string)null);
                 });
 
             modelBuilder.Entity("StuRoom.Models.FavoriteRoom", b =>
@@ -562,7 +580,7 @@ namespace StuRoom.Migrations
 
                     b.HasIndex("RoomId");
 
-                    b.ToTable("FeeConfigs");
+                    b.ToTable("FeeConfigs", (string)null);
                 });
 
             modelBuilder.Entity("StuRoom.Models.Invoice", b =>
@@ -602,7 +620,7 @@ namespace StuRoom.Migrations
 
                     b.HasIndex("ContractId");
 
-                    b.ToTable("Invoices");
+                    b.ToTable("Invoices", (string)null);
                 });
 
             modelBuilder.Entity("StuRoom.Models.InvoiceItem", b =>
@@ -649,7 +667,7 @@ namespace StuRoom.Migrations
 
                     b.HasIndex("InvoiceId");
 
-                    b.ToTable("InvoiceItems");
+                    b.ToTable("InvoiceItems", (string)null);
                 });
 
             modelBuilder.Entity("StuRoom.Models.Notification", b =>
@@ -691,7 +709,7 @@ namespace StuRoom.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Notifications");
+                    b.ToTable("Notifications", (string)null);
                 });
 
             modelBuilder.Entity("StuRoom.Models.Payment", b =>
@@ -734,7 +752,7 @@ namespace StuRoom.Migrations
 
                     b.HasIndex("RecordedById");
 
-                    b.ToTable("Payments");
+                    b.ToTable("Payments", (string)null);
                 });
 
             modelBuilder.Entity("StuRoom.Models.Room", b =>
@@ -775,7 +793,7 @@ namespace StuRoom.Migrations
 
                     b.HasIndex("BuildingId");
 
-                    b.ToTable("Rooms");
+                    b.ToTable("Rooms", (string)null);
                 });
 
             modelBuilder.Entity("StuRoom.Models.RoomAmenity", b =>
@@ -790,7 +808,7 @@ namespace StuRoom.Migrations
 
                     b.HasIndex("AmenityId");
 
-                    b.ToTable("RoomAmenities");
+                    b.ToTable("RoomAmenities", (string)null);
                 });
 
             modelBuilder.Entity("StuRoom.Models.RoomImage", b =>
@@ -822,7 +840,54 @@ namespace StuRoom.Migrations
 
                     b.HasIndex("RoomId");
 
-                    b.ToTable("RoomImages");
+                    b.ToTable("RoomImages", (string)null);
+                });
+
+            modelBuilder.Entity("StuRoom.Models.RoomReport", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AdminFeedback")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<DateTime?>("HandledAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("ReporterId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("RoomId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ReporterId");
+
+                    b.HasIndex("RoomId");
+
+                    b.ToTable("RoomReports", (string)null);
                 });
 
             modelBuilder.Entity("StuRoom.Models.RoomReport", b =>
@@ -910,7 +975,7 @@ namespace StuRoom.Migrations
 
                     b.HasIndex("RoomId");
 
-                    b.ToTable("RoomReviews");
+                    b.ToTable("RoomReviews", (string)null);
                 });
 
             modelBuilder.Entity("StuRoom.Models.ViewingRequest", b =>
@@ -952,7 +1017,7 @@ namespace StuRoom.Migrations
 
                     b.HasIndex("TenantId");
 
-                    b.ToTable("ViewingRequests");
+                    b.ToTable("ViewingRequests", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
