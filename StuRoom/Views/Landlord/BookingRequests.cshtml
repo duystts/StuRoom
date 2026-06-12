@@ -207,15 +207,43 @@ else
 
 @section Scripts {
 <script>
-  // Preload rent from FeeConfig data per room (optional enhancement — just open modal for now)
+  const roomPrices = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewBag.RoomPrices ?? new Dictionary<int, decimal>()));
+
   function openApprove(id, desiredMoveIn, roomId) {
     document.getElementById('approveId').value        = id;
     document.getElementById('approveStartDate').value = desiredMoveIn;
+    
+    const rentInput = document.getElementById('approveRent');
+    const depositInput = document.getElementById('approveDeposit');
+    
+    if (roomPrices[roomId] !== undefined) {
+      const fixedPrice = roomPrices[roomId];
+      rentInput.value = fixedPrice;
+      depositInput.value = fixedPrice;
+      
+      rentInput.readOnly = true;
+      depositInput.readOnly = true;
+      
+      rentInput.classList.add('bg-light');
+      depositInput.classList.add('bg-light');
+    } else {
+      rentInput.value = "";
+      depositInput.value = "";
+      
+      rentInput.readOnly = false;
+      depositInput.readOnly = false;
+      
+      rentInput.classList.remove('bg-light');
+      depositInput.classList.remove('bg-light');
+    }
+    
     new bootstrap.Modal(document.getElementById('approveModal')).show();
   }
+
   function openReject(id) {
     document.getElementById('rejectId').value = id;
     new bootstrap.Modal(document.getElementById('rejectModal')).show();
   }
 </script>
 }
+

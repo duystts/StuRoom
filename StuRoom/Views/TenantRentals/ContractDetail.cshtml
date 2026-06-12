@@ -1,0 +1,258 @@
+@model StuRoom.Models.Contract
+@using StuRoom.Models
+@{
+    ViewData["Title"] = $"Hợp đồng #{Model.Id}";
+
+    var activeMembers = Model.Members.Where(m => m.LeaveDate == null).ToList();
+    var inactiveMembers = Model.Members.Where(m => m.LeaveDate != null).ToList();
+
+    var statusCss = Model.Status switch
+    {
+        ContractStatus.Active     => "bg-success-subtle text-success border border-success-subtle",
+        ContractStatus.Pending    => "bg-warning-subtle text-warning border border-warning-subtle",
+        ContractStatus.Terminated => "bg-danger-subtle text-danger border border-danger-subtle",
+        _                         => "bg-secondary-subtle text-secondary border border-secondary-subtle"
+    };
+    var statusLabel = Model.Status switch
+    {
+        ContractStatus.Active     => "Đang thuê",
+        ContractStatus.Pending    => "Chờ kích hoạt",
+        ContractStatus.Terminated => "Đã chấm dứt",
+        _                         => "Hết hạn"
+    };
+
+    var invoiceStatusMap = new Dictionary<InvoiceStatus, (string label, string css)>
+    {
+        [InvoiceStatus.Draft]     = ("Nháp", "bg-secondary-subtle text-secondary"),
+        [InvoiceStatus.Sent]      = ("Chưa thanh toán", "bg-warning-subtle text-warning border border-warning-subtle"),
+        [InvoiceStatus.Paid]      = ("Đã thanh toán", "bg-success-subtle text-success border border-success-subtle"),
+        [InvoiceStatus.Overdue]   = ("Trễ hạn", "bg-danger-subtle text-danger border border-danger-subtle"),
+        [InvoiceStatus.Cancelled] = ("Đã huỷ", "bg-dark-subtle text-dark-emphasis"),
+    };
+}
+
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb small">
+    <li class="breadcrumb-item"><a asp-action="Index">Phòng đang thuê</a></li>
+    <li class="breadcrumb-item active">Hợp đồng #@Model.Id</li>
+  </ol>
+</nav>
+
+<div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-3">
+  <div>
+    <h4 class="fw-bold mb-0">
+      Chi tiết hợp đồng #@Model.Id
+      <span class="badge @statusCss ms-2" style="font-size:13px">@statusLabel</span>
+    </h4>
+    <p class="text-muted small mb-0">
+      Phòng @Model.Room.RoomNumber — @Model.Room.Building.Name
+    </p>
+  </div>
+  <div class="d-flex gap-2">
+    <a asp-action="ExportContractPdf" asp-route-id="@Model.Id" class="btn btn-outline-danger btn-sm rounded-pill px-3 fw-bold">
+      <i class="bi bi-file-earmark-pdf-fill me-1"></i>Xuất PDF
+    </a>
+    <a asp-action="ExportContractDocx" asp-route-id="@Model.Id" class="btn btn-outline-primary btn-sm rounded-pill px-3 fw-bold">
+      <i class="bi bi-file-earmark-word-fill me-1"></i>Xuất Word
+    </a>
+  </div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+  <div class="alert alert-success alert-dismissible fade show py-2 small border-0 shadow-sm rounded-3 mb-4">
+    <i class="bi bi-check-circle-fill me-2 text-success"></i>@Html.Raw(TempData["Success"])
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+}
+
+<div class="row g-4">
+  @* ── Cột trái: Thông tin hợp đồng & Chủ trọ ── *@
+  <div class="col-lg-7">
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+      <div class="card-body p-4">
+        <h6 class="fw-bold mb-3 text-dark"><i class="bi bi-file-earmark-text-fill me-2 text-primary"></i>Thông tin hợp đồng</h6>
+        <div class="table-responsive">
+          <table class="table table-borderless table-sm mb-0 align-middle">
+            <tbody>
+              <tr class="border-bottom border-light">
+                <td class="text-muted py-2 small" style="width:180px">Tòa nhà / Khu trọ</td>
+                <td class="small fw-semibold py-2">@Model.Room.Building.Name</td>
+              </tr>
+              <tr class="border-bottom border-light">
+                <td class="text-muted py-2 small">Địa chỉ</td>
+                <td class="small py-2">@Model.Room.Building.Address, @Model.Room.Building.Ward, @Model.Room.Building.District, @Model.Room.Building.Province</td>
+              </tr>
+              <tr class="border-bottom border-light">
+                <td class="text-muted py-2 small">Phòng số</td>
+                <td class="small fw-bold py-2 text-primary">Phòng @Model.Room.RoomNumber</td>
+              </tr>
+              <tr class="border-bottom border-light">
+                <td class="text-muted py-2 small">Ngày bắt đầu</td>
+                <td class="small py-2 fw-semibold">@Model.StartDate.ToString("dd/MM/yyyy")</td>
+              </tr>
+              <tr class="border-bottom border-light">
+                <td class="text-muted py-2 small">Ngày kết thúc (Dự kiến)</td>
+                <td class="small py-2 fw-semibold">@(Model.EndDate.HasValue ? Model.EndDate.Value.ToString("dd/MM/yyyy") : "Không xác định")</td>
+              </tr>
+              @if (Model.ActualEndDate.HasValue)
+              {
+                <tr class="border-bottom border-light bg-danger-subtle">
+                  <td class="text-muted py-2 small">Ngày kết thúc thực tế</td>
+                  <td class="small py-2 text-danger fw-bold">@Model.ActualEndDate.Value.ToString("dd/MM/yyyy")</td>
+                </tr>
+              }
+              <tr class="border-bottom border-light">
+                <td class="text-muted py-2 small">Giá thuê hàng tháng</td>
+                <td class="small py-2 fw-bold text-dark" style="font-size: 15px;">@Model.MonthlyRent.ToString("N0") ₫ / tháng</td>
+              </tr>
+              <tr class="border-bottom border-light">
+                <td class="text-muted py-2 small">Số tiền đặt cọc</td>
+                <td class="small py-2 fw-semibold text-dark">@Model.DepositAmount.ToString("N0") ₫</td>
+              </tr>
+              @if (!string.IsNullOrWhiteSpace(Model.Notes))
+              {
+                <tr>
+                  <td class="text-muted py-2 small">Ghi chú từ chủ trọ</td>
+                  <td class="small py-2 italic text-secondary">@Model.Notes</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    @* Thông tin chủ trọ *@
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+      <div class="card-body p-4">
+        <h6 class="fw-bold mb-3 text-dark"><i class="bi bi-person-workspace me-2 text-primary"></i>Thông tin chủ trọ (Bên A)</h6>
+        <div class="d-flex align-items-center gap-3">
+          <div class="rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+            <i class="bi bi-person-fill fs-4"></i>
+          </div>
+          <div>
+            <div class="fw-bold text-dark">@Model.Room.Building.Landlord.FullName</div>
+            <div class="text-muted small">
+              <span class="me-3"><i class="bi bi-telephone me-1"></i>@(string.IsNullOrEmpty(Model.Room.Building.Landlord.PhoneNumber) ? "Chưa cung cấp" : Model.Room.Building.Landlord.PhoneNumber)</span>
+              <span><i class="bi bi-envelope me-1"></i>@Model.Room.Building.Landlord.Email</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    @* Hóa đơn cần thanh toán *@
+    <div class="card border-0 shadow-sm rounded-4">
+      <div class="card-body p-4">
+        <h6 class="fw-bold mb-3 text-dark"><i class="bi bi-receipt-cutoff me-2 text-primary"></i>Hóa đơn tiền phòng & Dịch vụ</h6>
+        @if (!Model.Invoices.Any())
+        {
+          <div class="text-center py-4 text-muted small">
+            <i class="bi bi-inbox fs-2 d-block mb-1"></i>
+            Chưa có hóa đơn nào được phát hành cho hợp đồng này.
+          </div>
+        }
+        else
+        {
+          <div class="table-responsive">
+            <table class="table table-sm align-middle table-hover mb-0">
+              <thead>
+                <tr class="text-secondary small">
+                  <th>Kỳ hóa đơn</th>
+                  <th>Tổng tiền</th>
+                  <th>Hạn thanh toán</th>
+                  <th>Trạng thái</th>
+                  <th class="text-end">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody>
+                @foreach (var inv in Model.Invoices.OrderByDescending(i => i.BillingYear).ThenByDescending(i => i.BillingMonth))
+                {
+                  var (lbl, css) = invoiceStatusMap[inv.Status];
+                  <tr>
+                    <td class="small fw-semibold">Tháng @inv.BillingMonth/@inv.BillingYear</td>
+                    <td class="small text-primary fw-bold">@inv.TotalAmount.ToString("N0") ₫</td>
+                    <td class="small text-muted">@inv.DueDate.ToString("dd/MM/yyyy")</td>
+                    <td>
+                      <span class="badge @css rounded-pill" style="font-size:10px">@lbl</span>
+                    </td>
+                    <td class="text-end">
+                      <a asp-action="InvoiceDetail" asp-route-id="@inv.Id" class="btn btn-outline-primary btn-sm rounded-pill px-3 font-semibold" style="font-size: 11px;">
+                        Chi tiết
+                      </a>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+
+  @* ── Cột phải: Thành viên ở ghép (Bên B) ── *@
+  <div class="col-lg-5">
+    <div class="card border-0 shadow-sm rounded-4">
+      <div class="card-body p-4">
+        <h6 class="fw-bold mb-3 text-dark"><i class="bi bi-people-fill me-2 text-primary"></i>Thành viên cùng phòng (@(activeMembers.Count + 1))</h6>
+        
+        @* Tenant chính *@
+        <div class="d-flex align-items-center gap-3 p-3 bg-primary-subtle rounded-3 mb-3 border border-primary-subtle">
+          <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold" style="width: 40px; height: 40px; font-size: 16px;">
+            @Model.Tenant.FullName.FirstOrDefault()
+          </div>
+          <div class="flex-grow-1 min-w-0">
+            <div class="fw-bold text-dark text-truncate">@Model.Tenant.FullName</div>
+            <div class="text-muted small text-truncate">Tenant chính · Ký ngày @Model.StartDate.ToString("dd/MM/yyyy")</div>
+          </div>
+          <span class="badge bg-primary text-white rounded-pill px-2 py-1 small" style="font-size: 10px;">Chính</span>
+        </div>
+
+        @* Thành viên ghép phòng *@
+        @if (!activeMembers.Any())
+        {
+          <div class="text-center py-4 bg-light rounded-3 text-muted small mb-3">
+            <i class="bi bi-person-x fs-3 d-block mb-1"></i>
+            Chưa có thành viên nào khác ở ghép phòng này.
+          </div>
+        }
+        else
+        {
+          <div class="d-flex flex-column gap-2 mb-3">
+            @foreach (var m in activeMembers)
+            {
+              <div class="d-flex align-items-center gap-3 p-3 bg-light rounded-3 border">
+                <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center fw-bold" style="width: 40px; height: 40px; font-size: 16px;">
+                  @m.Tenant.FullName.FirstOrDefault()
+                </div>
+                <div class="flex-grow-1 min-w-0">
+                  <div class="fw-semibold text-dark text-truncate">@m.Tenant.FullName</div>
+                  <div class="text-muted small text-truncate">Ngày vào: @m.JoinDate.ToString("dd/MM/yyyy") @(string.IsNullOrEmpty(m.Note) ? "" : $"· {m.Note}")</div>
+                </div>
+                <span class="badge bg-info text-white rounded-pill px-2 py-1 small" style="font-size: 10px;">Ở ghép</span>
+              </div>
+            }
+          </div>
+        }
+
+        @* Lịch sử thành viên đã rời *@
+        @if (inactiveMembers.Any())
+        {
+          <hr class="my-3" />
+          <div class="text-muted small fw-semibold mb-2">Thành viên đã dời đi</div>
+          <div class="d-flex flex-column gap-1">
+            @foreach (var m in inactiveMembers)
+            {
+              <div class="d-flex align-items-center justify-content-between text-muted small p-2 bg-light-subtle rounded border border-dashed" style="font-size: 12px;">
+                <span><i class="bi bi-person-dash me-1 text-danger"></i>@m.Tenant.FullName</span>
+                <span>Rời ngày: @m.LeaveDate!.Value.ToString("dd/MM/yyyy")</span>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+</div>

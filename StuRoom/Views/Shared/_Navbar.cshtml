@@ -71,6 +71,11 @@
         {
           <li class="nav-item border-start ps-2 ms-2 d-none d-lg-block"></li>
           <li class="nav-item">
+            <a class="nav-link" asp-controller="TenantRentals" asp-action="Index">
+              <i class="bi bi-house-door me-1"></i>@Localizer["Phòng đang thuê"]
+            </a>
+          </li>
+          <li class="nav-item">
             <a class="nav-link" asp-controller="ViewingRequests" asp-action="Index">
               <i class="bi bi-calendar-check me-1"></i>@Localizer["Lịch hẹn"]
             </a>
