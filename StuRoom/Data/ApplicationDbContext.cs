@@ -24,11 +24,19 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<RoomReport> RoomReports => Set<RoomReport>();
     public DbSet<FavoriteRoom> FavoriteRooms => Set<FavoriteRoom>();
+    public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<ChatMessage> ChatMessages => Set<ChatMessage>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
+
+        // AuditLog - restrict delete
+        builder.Entity<AuditLog>()
+            .HasOne(a => a.User)
+            .WithMany()
+            .HasForeignKey(a => a.UserId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         // RoomAmenity — composite PK
         builder.Entity<RoomAmenity>()

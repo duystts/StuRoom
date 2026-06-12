@@ -66,6 +66,7 @@ builder.Services.AddTransient<IEmailSender, SmtpEmailSender>();
 // ── Cloudinary ─────────────────────────────────────────────────────────
 builder.Services.AddSingleton<ICloudinaryService, CloudinaryService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddScoped<IAuditLogService, AuditLogService>();
 builder.Services.AddSignalR();
 
 // ── Background — nhắc hẹn xem phòng qua email ────────────────────────
