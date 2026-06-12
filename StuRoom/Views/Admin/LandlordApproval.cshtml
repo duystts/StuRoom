@@ -197,6 +197,12 @@
                 <td>
                   <div class="fw-semibold small">@item.FullName</div>
                   <div class="text-muted" style="font-size:12px">@item.Email</div>
+                  @if (!string.IsNullOrEmpty(item.RejectionReason))
+                  {
+                    <div class="text-danger small mt-1" style="font-size: 11px;">
+                      <i class="bi bi-info-circle me-1"></i>Lý do: @item.RejectionReason
+                    </div>
+                  }
                 </td>
                 <td><span class="badge bg-danger">Bị từ chối</span></td>
               </tr>

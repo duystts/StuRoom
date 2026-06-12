@@ -274,9 +274,19 @@
             else if (room.Area > 40) { categoryLabel = Localizer["Căn hộ"].Value; }
 
             <div class="col-sm-6 col-xl-4">
-              <a asp-action="Detail" asp-route-id="@room.Id" class="text-decoration-none text-dark">
-                <div class="card border-0 shadow-sm h-100 room-card">
+              <div class="card border-0 shadow-sm h-100 room-card position-relative text-dark d-flex flex-column">
 
+                @* Favorite heart icon *@
+                @{
+                  bool isFav = ViewBag.FavoriteRoomIds != null && ((List<int>)ViewBag.FavoriteRoomIds).Contains(room.Id);
+                }
+                <button type="button" class="btn btn-fav @(isFav ? "active" : "") position-absolute top-0 end-0 m-3 d-flex align-items-center justify-content-center shadow-sm"
+                        style="z-index: 3;"
+                        onclick="handleFavToggle(event, @room.Id, this)">
+                  <i class="bi @(isFav ? "bi-heart-fill text-danger" : "bi-heart")"></i>
+                </button>
+
+                <a asp-action="Detail" asp-route-id="@room.Id" class="text-decoration-none text-dark d-flex flex-column flex-grow-1">
                   @* Image & Badges *@
                   <div class="position-relative overflow-hidden card-img-wrapper" style="height: 200px;">
                     @if (room.PrimaryImageUrl != null)
@@ -299,20 +309,10 @@
                       }
                       <span class="badge badge-category">@categoryLabel</span>
                     </div>
-
-                    @* Favorite heart icon *@
-                    @{
-                      bool isFav = ViewBag.FavoriteRoomIds != null && ((List<int>)ViewBag.FavoriteRoomIds).Contains(room.Id);
-                    }
-                    <button type="button" class="btn btn-fav @(isFav ? "active" : "") position-absolute top-0 end-0 m-3 d-flex align-items-center justify-content-center shadow-sm"
-                            style="z-index: 2;"
-                            onclick="handleFavToggle(event, @room.Id, this)">
-                      <i class="bi @(isFav ? "bi-heart-fill text-danger" : "bi-heart")"></i>
-                    </button>
                   </div>
 
                   @* Details *@
-                  <div class="card-body p-4 d-flex flex-column justify-content-between">
+                  <div class="card-body p-4 d-flex flex-column justify-content-between flex-grow-1">
                     <div>
                       <div class="d-flex align-items-start justify-content-between gap-2 mb-2">
                         <h6 class="fw-bold mb-0 text-truncate text-dark card-room-title">@room.BuildingName - P.@room.RoomNumber</h6>
@@ -344,36 +344,38 @@
                         }
                       </div>
                     </div>
+                  </div>
+                </a>
 
-                    @* Footer *@
-                    <div class="d-flex align-items-center justify-content-between pt-3 border-top">
-                      <div>
-                        <span class="text-muted text-uppercase fw-semibold d-block" style="font-size: 9px; letter-spacing: 0.05em; margin-bottom: 2.5px;">@Localizer["Giá thuê"]</span>
-                        @if (room.RentPrice.HasValue)
-                        {
-                          <div class="card-room-price mb-0">
-                            <span class="price-value">@((room.RentPrice.Value / 1000000.0m).ToString("0.#"))</span> <span class="price-unit">@Localizer["Tr"]</span><span class="price-period">/@Localizer["tháng"]</span>
-                          </div>
-                        }
-                        else
-                        {
-                          <div class="text-muted small fw-semibold">@Localizer["Liên hệ"]</div>
-                        }
-                      </div>
-                      <div class="d-flex align-items-center gap-2">
-                        <button type="button" class="btn btn-sm btn-compare rounded-pill px-2.5 py-1" data-room-id="@room.Id"
-                                onclick="toggleCompareRoom(event, @room.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(room.BuildingName)) - P.@room.RoomNumber', '@((room.RentPrice ?? 0) / 1000000.0m).ToString("0.#") ' + '@Localizer["Tr/tháng"]', '@room.PrimaryImageUrl')">
-                          <i class="bi bi-shuffle me-1"></i><span class="compare-text">@Localizer["So sánh"]</span>
-                        </button>
-                        <div class="btn-detail-arrow d-flex align-items-center justify-content-center">
-                          <i class="bi bi-arrow-right"></i>
+                @* Footer is outside the <a> tag *@
+                <div class="card-body p-4 pt-0">
+                  <div class="d-flex align-items-center justify-content-between pt-3 border-top">
+                    <div>
+                      <span class="text-muted text-uppercase fw-semibold d-block" style="font-size: 9px; letter-spacing: 0.05em; margin-bottom: 2.5px;">@Localizer["Giá thuê"]</span>
+                      @if (room.RentPrice.HasValue)
+                      {
+                        <div class="card-room-price mb-0">
+                          <span class="price-value">@((room.RentPrice.Value / 1000000.0m).ToString("0.#"))</span> <span class="price-unit">@Localizer["Tr"]</span><span class="price-period">/@Localizer["tháng"]</span>
                         </div>
-                      </div>
+                      }
+                      else
+                      {
+                        <div class="text-muted small fw-semibold">@Localizer["Liên hệ"]</div>
+                      }
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                      <button type="button" class="btn btn-sm btn-compare rounded-pill px-2.5 py-1" data-room-id="@room.Id"
+                              onclick="toggleCompareRoom(event, @room.Id, '@room.BuildingName.Replace("'", "\\'") - P.@room.RoomNumber', '@(((room.RentPrice ?? 0) / 1000000.0m).ToString("0.#")) ' + '@Localizer["Tr/tháng"]', '@room.PrimaryImageUrl')">
+                        <i class="bi bi-shuffle me-1"></i><span class="compare-text">@Localizer["So sánh"]</span>
+                      </button>
+                      <a asp-action="Detail" asp-route-id="@room.Id" class="btn-detail-arrow d-flex align-items-center justify-content-center text-decoration-none">
+                        <i class="bi bi-arrow-right"></i>
+                      </a>
                     </div>
                   </div>
-
                 </div>
-              </a>
+
+              </div>
             </div>
           }
         </div>

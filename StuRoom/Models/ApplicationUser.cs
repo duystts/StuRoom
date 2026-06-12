@@ -11,4 +11,7 @@ public class ApplicationUser : IdentityUser
 
     /// <summary>Chỉ dùng cho Landlord — Admin duyệt trước khi được tạo Building/Room</summary>
     public bool IsApproved { get; set; }
+
+    public string? RejectionReason { get; set; }
 }
+

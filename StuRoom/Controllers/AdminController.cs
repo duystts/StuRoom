@@ -6,6 +6,8 @@ using Microsoft.EntityFrameworkCore;
 using StuRoom.Data;
 using StuRoom.Models;
 using StuRoom.Models.ViewModels;
+using StuRoom.Services;
+
 
 namespace StuRoom.Controllers;
 
@@ -123,11 +125,12 @@ public class AdminController(
         {
             var item = new LandlordItem
             {
-                Id        = u.Id,
-                FullName  = u.FullName,
-                Email     = u.Email ?? "",
-                AvatarUrl = u.AvatarUrl,
-                CreatedAt = DateTime.UtcNow
+                Id              = u.Id,
+                FullName        = u.FullName,
+                Email           = u.Email ?? "",
+                AvatarUrl       = u.AvatarUrl,
+                CreatedAt       = DateTime.UtcNow,
+                RejectionReason = u.RejectionReason
             };
 
             if (!u.IsApproved && !(u.LockoutEnd.HasValue && u.LockoutEnd > DateTimeOffset.UtcNow))
@@ -148,6 +151,7 @@ public class AdminController(
         if (user == null) return NotFound();
 
         user.IsApproved = true;
+        user.RejectionReason = null;
         await userManager.SetLockoutEndDateAsync(user, null);
         await userManager.UpdateAsync(user);
 
@@ -166,8 +170,10 @@ public class AdminController(
         var user = await userManager.FindByIdAsync(id);
         if (user == null) return NotFound();
 
+        user.RejectionReason = reason;
         await userManager.SetLockoutEnabledAsync(user, true);
         await userManager.SetLockoutEndDateAsync(user, DateTimeOffset.MaxValue);
+        await userManager.UpdateAsync(user);
 
         var reasonText = string.IsNullOrWhiteSpace(reason) ? "không đáp ứng yêu cầu" : reason;
         await emailSender.SendEmailAsync(user.Email!,
@@ -297,4 +303,75 @@ public class AdminController(
         await db.SaveChangesAsync();
         return RedirectToAction(nameof(Reports), new { status = actionType == "block" ? "resolved" : "dismissed" });
     }
+
+    // ════════════════════════════════════════════════════════
+    // TESTING/TRIGGER FOR VIEWING REMINDERS
+    // ════════════════════════════════════════════════════════
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> TriggerViewingReminders()
+    {
+        var now = DateTime.Now;
+        var cutoff = now.AddHours(24);
+
+        var upcomingViewings = await db.ViewingRequests
+            .Include(v => v.Tenant)
+            .Include(v => v.Room).ThenInclude(r => r.Building).ThenInclude(b => b.Landlord)
+            .Where(v => !v.ReminderSent
+                && (v.Status == ViewingStatus.Confirmed || v.Status == ViewingStatus.Pending)
+                && (v.ConfirmedTime ?? v.ProposedTime) > now
+                && (v.ConfirmedTime ?? v.ProposedTime) <= cutoff)
+            .ToListAsync();
+
+        if (upcomingViewings.Count == 0)
+        {
+            TempData["Warning"] = "Không tìm thấy lịch hẹn xem phòng nào sắp diễn ra trong vòng 24h tới để gửi nhắc nhở.";
+            return RedirectToAction(nameof(Dashboard));
+        }
+
+        int sentCount = 0;
+        foreach (var v in upcomingViewings)
+        {
+            var scheduledTime = v.ConfirmedTime ?? v.ProposedTime;
+            var roomInfo = $"{v.Room.RoomNumber} — {v.Room.Building.Name}";
+            var landlord = v.Room.Building.Landlord;
+
+            // Send to Tenant
+            try
+            {
+                await emailSender.SendEmailAsync(
+                    v.Tenant.Email!,
+                    "Nhắc lịch xem phòng ngày mai — StuRoom",
+                    ViewingReminderService.BuildTenantReminderHtml(v.Tenant.FullName, roomInfo,
+                        v.Room.Building.Address, scheduledTime, landlord.FullName));
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = $"Lỗi gửi mail nhắc tenant: {ex.Message}";
+            }
+
+            // Send to Landlord
+            try
+            {
+                await emailSender.SendEmailAsync(
+                    landlord.Email!,
+                    "Nhắc lịch khách xem phòng ngày mai — StuRoom",
+                    ViewingReminderService.BuildLandlordReminderHtml(landlord.FullName, roomInfo,
+                        scheduledTime, v.Tenant.FullName));
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = $"Lỗi gửi mail nhắc landlord: {ex.Message}";
+            }
+
+            // Mark as sent
+            v.ReminderSent = true;
+            sentCount++;
+        }
+
+        await db.SaveChangesAsync();
+        TempData["Success"] = $"Đã kích hoạt gửi nhắc hẹn thành công! Đã gửi mail nhắc nhở cho {sentCount} lịch hẹn sắp diễn ra.";
+        return RedirectToAction(nameof(Dashboard));
+    }
 }
+

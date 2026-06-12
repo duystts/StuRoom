@@ -87,11 +87,22 @@
             @{
               bool isFav = ViewBag.IsFavorite == true;
             }
-            <button type="button" class="btn btn-outline-danger btn-sm rounded-pill px-3 py-1.5 fw-semibold d-flex align-items-center gap-1.5 shadow-sm @(isFav ? "active" : "")"
-                    id="detailFavBtn" onclick="toggleDetailFav(@Model.Room.Id)">
-              <i class="bi @(isFav ? "bi-heart-fill text-danger" : "bi-heart")"></i>
-              <span id="favText" class="small">@(isFav ? Localizer["Đã lưu"].Value : Localizer["Lưu tin"].Value)</span>
-            </button>
+            <div class="d-flex gap-2">
+              @* Compare *@
+              <button type="button" class="btn btn-sm btn-compare rounded-pill px-3 py-1.5 fw-semibold d-flex align-items-center gap-1.5 shadow-sm"
+                      data-room-id="@Model.Room.Id"
+                      onclick="toggleCompareRoom(event, @Model.Room.Id, '@Model.Room.Building.Name.Replace("'", "\\'") - P.@Model.Room.RoomNumber', '@(((Model.RentPrice ?? 0) / 1000000.0m).ToString("0.#")) ' + '@Localizer["Tr/tháng"]', '@Model.Images.FirstOrDefault()?.ImageUrl')">
+                <i class="bi bi-shuffle"></i>
+                <span class="compare-text small">@Localizer["So sánh"]</span>
+              </button>
+
+              @* Favorite *@
+              <button type="button" class="btn btn-outline-danger btn-sm rounded-pill px-3 py-1.5 fw-semibold d-flex align-items-center gap-1.5 shadow-sm @(isFav ? "active" : "")"
+                      id="detailFavBtn" onclick="toggleDetailFav(@Model.Room.Id)">
+                <i class="bi @(isFav ? "bi-heart-fill text-danger" : "bi-heart")"></i>
+                <span id="favText" class="small">@(isFav ? Localizer["Đã lưu"].Value : Localizer["Lưu tin"].Value)</span>
+              </button>
+            </div>
           </div>
           <div class="text-muted small mb-4">
             <div class="d-flex align-items-center gap-1.5">
@@ -383,6 +394,37 @@
               <div class="small text-secondary ms-4 mt-1">@Model.Room.Building.District, @Model.Room.Building.Province</div>
             }
           </div>
+
+          @* Landlord Contact info *@
+          @if (Model.Room.Building.Landlord != null)
+          {
+            <div class="mb-4 pt-3 border-top text-muted">
+              <span class="text-muted small text-uppercase fw-semibold d-block" style="font-size: 10px; letter-spacing: 0.05em; margin-bottom: 8px;">Thông tin liên hệ</span>
+              <div class="d-flex align-items-center gap-2.5 mb-3">
+                <div class="bg-primary bg-opacity-10 d-flex align-items-center justify-content-center text-primary rounded-circle" style="width: 32px; height: 32px; flex-shrink: 0;">
+                  <i class="bi bi-person-fill"></i>
+                </div>
+                <div>
+                  <div class="fw-semibold text-dark small" style="font-size: 13.5px;">@Model.Room.Building.Landlord.FullName</div>
+                  <div class="text-muted" style="font-size: 11.5px;">Chủ trọ</div>
+                </div>
+              </div>
+              
+              <div class="small d-flex align-items-center gap-2 text-secondary mb-1.5" style="font-size: 13px;">
+                <i class="bi bi-telephone text-primary"></i>
+                <a href="tel:@Model.Room.Building.Landlord.PhoneNumber" class="text-decoration-none text-secondary hover-text-primary">
+                  @(string.IsNullOrWhiteSpace(Model.Room.Building.Landlord.PhoneNumber) ? "Chưa cập nhật SĐT" : Model.Room.Building.Landlord.PhoneNumber)
+                </a>
+              </div>
+              
+              <div class="small d-flex align-items-center gap-2 text-secondary" style="font-size: 13px;">
+                <i class="bi bi-envelope text-primary"></i>
+                <a href="mailto:@Model.Room.Building.Landlord.Email" class="text-decoration-none text-secondary hover-text-primary">
+                  @Model.Room.Building.Landlord.Email
+                </a>
+              </div>
+            </div>
+          }
 
           @* CTA buttons *@
           @if (Model.CanBook)

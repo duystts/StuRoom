@@ -186,4 +186,26 @@
     </div>
   </div>
 
+  @* Công cụ thử nghiệm *@
+  <div class="col-12">
+    <div class="card border-0 shadow-sm border-start border-primary border-3">
+      <div class="card-body">
+        <h6 class="fw-bold mb-2">
+          <i class="bi bi-gear-fill me-1 text-primary"></i>Công cụ kiểm thử &amp; vận hành
+        </h6>
+        <p class="text-muted small mb-3">
+          Kích hoạt chạy thủ công các dịch vụ chạy ngầm để kiểm tra tính năng gửi email, thông báo tức thời.
+        </p>
+        <div class="d-flex flex-wrap gap-2">
+          <form asp-action="TriggerViewingReminders" method="post" class="d-inline">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn btn-primary btn-sm d-inline-flex align-items-center gap-1">
+              <i class="bi bi-envelope-paper"></i> Chạy thử gửi nhắc hẹn xem phòng
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </div>

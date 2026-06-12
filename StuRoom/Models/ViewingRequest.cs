@@ -19,5 +19,9 @@ public class ViewingRequest
     public ViewingStatus Status { get; set; } = ViewingStatus.Pending;
     public string? TenantNote { get; set; }
     public string? LandlordNote { get; set; }
+
+    /// <summary>Đã gửi email nhắc hẹn trước 1 ngày chưa</summary>
+    public bool ReminderSent { get; set; }
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }

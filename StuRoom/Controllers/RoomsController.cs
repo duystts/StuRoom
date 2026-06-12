@@ -177,7 +177,7 @@ public class RoomsController(ApplicationDbContext db,
     public async Task<IActionResult> Detail(int id)
     {
         var room = await db.Rooms
-            .Include(r => r.Building)
+            .Include(r => r.Building).ThenInclude(b => b.Landlord)
             .Include(r => r.Images.OrderBy(i => i.SortOrder))
             .Include(r => r.RoomAmenities).ThenInclude(ra => ra.Amenity)
             .Include(r => r.FeeConfigs.Where(f => f.IsActive))
