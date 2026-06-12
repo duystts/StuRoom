@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using StuRoom.Data;
@@ -12,7 +13,8 @@ namespace StuRoom.Controllers;
 public class ViewingRequestsController(
     UserManager<ApplicationUser> userManager,
     ApplicationDbContext db,
-    INotificationService notifier) : Controller
+    INotificationService notifier,
+    IEmailSender emailSender) : Controller
 {
     private string CurrentUserId => userManager.GetUserId(User)!;
 
@@ -114,6 +116,86 @@ public class ViewingRequestsController(
         await db.SaveChangesAsync();
 
         TempData["Success"] = "Đã huỷ lịch hẹn.";
+        return RedirectToAction(nameof(Index));
+    }
+
+    // ── Tenant chấp nhận đổi giờ hẹn ──────────────────────────
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> AcceptReschedule(int id)
+    {
+        var request = await db.ViewingRequests
+            .Include(v => v.Room).ThenInclude(r => r.Building).ThenInclude(b => b.Landlord)
+            .Include(v => v.Tenant)
+            .FirstOrDefaultAsync(v => v.Id == id && v.TenantId == CurrentUserId);
+
+        if (request == null) return NotFound();
+
+        if (request.Status != ViewingStatus.Rescheduled)
+        {
+            TempData["Error"] = "Lịch hẹn không ở trạng thái yêu cầu đổi giờ.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        request.Status = ViewingStatus.Confirmed;
+        await db.SaveChangesAsync();
+
+        // Notify Landlord
+        await notifier.SendAsync(request.Room.Building.LandlordId, NotificationType.NewViewingRequest,
+            "Lịch hẹn xem phòng được xác nhận",
+            $"Khách thuê {request.Tenant.FullName} đã đồng ý với đề xuất đổi giờ hẹn phòng {request.Room.RoomNumber} sang lúc {request.ConfirmedTime:dd/MM HH:mm}.",
+            "ViewingRequest", request.Id);
+
+        // Email Landlord
+        await emailSender.SendEmailAsync(request.Room.Building.Landlord.Email!,
+            "Khách thuê đồng ý đổi giờ xem phòng — StuRoom",
+            $"Xin chào <strong>{request.Room.Building.Landlord.FullName}</strong>,<br><br>" +
+            $"Khách thuê <strong>{request.Tenant.FullName}</strong> đã <strong>chấp nhận</strong> đổi lịch xem phòng <strong>{request.Room.RoomNumber}</strong> " +
+            $"tại <strong>{request.Room.Building.Name}</strong> sang " +
+            $"lúc <strong>{request.ConfirmedTime:dd/MM/yyyy HH:mm}</strong>.<br><br>" +
+            "Vui lòng đến đúng giờ. Cảm ơn bạn!");
+
+        TempData["Success"] = "Đã chấp nhận thay đổi lịch hẹn.";
+        return RedirectToAction(nameof(Index));
+    }
+
+    // ── Tenant từ chối đổi giờ hẹn ──────────────────────────
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeclineReschedule(int id)
+    {
+        var request = await db.ViewingRequests
+            .Include(v => v.Room).ThenInclude(r => r.Building).ThenInclude(b => b.Landlord)
+            .Include(v => v.Tenant)
+            .FirstOrDefaultAsync(v => v.Id == id && v.TenantId == CurrentUserId);
+
+        if (request == null) return NotFound();
+
+        if (request.Status != ViewingStatus.Rescheduled)
+        {
+            TempData["Error"] = "Lịch hẹn không ở trạng thái yêu cầu đổi giờ.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        request.Status = ViewingStatus.Cancelled;
+        await db.SaveChangesAsync();
+
+        // Notify Landlord
+        await notifier.SendAsync(request.Room.Building.LandlordId, NotificationType.NewViewingRequest,
+            "Lịch hẹn xem phòng bị từ chối",
+            $"Khách thuê {request.Tenant.FullName} không đồng ý với đề xuất đổi giờ hẹn phòng {request.Room.RoomNumber} sang lúc {request.ConfirmedTime:dd/MM HH:mm} và đã huỷ lịch.",
+            "ViewingRequest", request.Id);
+
+        // Email Landlord
+        await emailSender.SendEmailAsync(request.Room.Building.Landlord.Email!,
+            "Khách thuê từ chối đổi giờ xem phòng — StuRoom",
+            $"Xin chào <strong>{request.Room.Building.Landlord.FullName}</strong>,<br><br>" +
+            $"Khách thuê <strong>{request.Tenant.FullName}</strong> đã <strong>từ chối</strong> đổi lịch xem phòng <strong>{request.Room.RoomNumber}</strong> " +
+            $"tại <strong>{request.Room.Building.Name}</strong> sang " +
+            $"lúc <strong>{request.ConfirmedTime:dd/MM/yyyy HH:mm}</strong>. Lịch hẹn này đã bị huỷ.<br><br>" +
+            "Cảm ơn bạn!");
+
+        TempData["Success"] = "Đã từ chối đổi giờ hẹn và huỷ lịch.";
         return RedirectToAction(nameof(Index));
     }
 }

@@ -25,6 +25,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<RoomReport> RoomReports => Set<RoomReport>();
     public DbSet<FavoriteRoom> FavoriteRooms => Set<FavoriteRoom>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+    public DbSet<ChatMessage> ChatMessages => Set<ChatMessage>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -156,6 +157,19 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .WithMany()
             .HasForeignKey(rr => rr.RoomId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        // ChatMessage - disable cascade
+        builder.Entity<ChatMessage>()
+            .HasOne(m => m.Sender)
+            .WithMany()
+            .HasForeignKey(m => m.SenderId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<ChatMessage>()
+            .HasOne(m => m.Receiver)
+            .WithMany()
+            .HasForeignKey(m => m.ReceiverId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }
 

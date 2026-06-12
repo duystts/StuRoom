@@ -9,6 +9,9 @@ public class RoomSearchViewModel
     public decimal?     MinPrice   { get; set; }
     public decimal?     MaxPrice   { get; set; }
     public decimal?     MinArea    { get; set; }
+    public decimal?     MaxElectricityPrice { get; set; }
+    public decimal?     MaxWaterPrice       { get; set; }
+    public decimal?     MaxInternetPrice    { get; set; }
     public List<int>    AmenityIds { get; set; } = [];
 
     // ── Results ────────────────────────────────────

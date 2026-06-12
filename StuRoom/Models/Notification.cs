@@ -19,6 +19,9 @@ public enum NotificationType
     // Tenant nhận (booking)
     BookingApproved,
     BookingRejected,
+
+    // Nhắc hẹn
+    ViewingReminder,
 }
 
 public class Notification

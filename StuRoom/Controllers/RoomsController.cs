@@ -69,23 +69,35 @@ public class RoomsController(ApplicationDbContext db,
         // Load into memory for rent-price filtering (derived field)
         var rooms = await query.ToListAsync();
 
-        // Compute rent price per room (room-level override → building-level)
-        decimal? GetRentPrice(Room r)
+        // Compute fee price per room (room-level override → building-level)
+        decimal? GetFeePrice(Room r, FeeCategory category)
         {
-            var roomRent = r.FeeConfigs.FirstOrDefault(f =>
-                f.RoomId == r.Id && f.FeeCategory == FeeCategory.Rent && f.IsActive);
-            if (roomRent != null) return roomRent.UnitPrice;
+            var roomFee = r.FeeConfigs.FirstOrDefault(f =>
+                f.RoomId == r.Id && f.FeeCategory == category && f.IsActive);
+            if (roomFee != null) return roomFee.UnitPrice;
 
-            var buildingRent = r.Building.FeeConfigs.FirstOrDefault(f =>
-                f.BuildingId == r.BuildingId && f.FeeCategory == FeeCategory.Rent && f.IsActive);
-            return buildingRent?.UnitPrice;
+            var buildingFee = r.Building.FeeConfigs.FirstOrDefault(f =>
+                f.BuildingId == r.BuildingId && f.FeeCategory == category && f.IsActive);
+            return buildingFee?.UnitPrice;
         }
 
         // Price filter (in-memory)
         if (filter.MinPrice.HasValue)
-            rooms = rooms.Where(r => GetRentPrice(r) >= filter.MinPrice.Value).ToList();
+            rooms = rooms.Where(r => GetFeePrice(r, FeeCategory.Rent) >= filter.MinPrice.Value).ToList();
         if (filter.MaxPrice.HasValue)
-            rooms = rooms.Where(r => GetRentPrice(r) == null || GetRentPrice(r) <= filter.MaxPrice.Value).ToList();
+            rooms = rooms.Where(r => GetFeePrice(r, FeeCategory.Rent) == null || GetFeePrice(r, FeeCategory.Rent) <= filter.MaxPrice.Value).ToList();
+
+        // Electricity price filter
+        if (filter.MaxElectricityPrice.HasValue)
+            rooms = rooms.Where(r => GetFeePrice(r, FeeCategory.Electricity) == null || GetFeePrice(r, FeeCategory.Electricity) <= filter.MaxElectricityPrice.Value).ToList();
+
+        // Water price filter
+        if (filter.MaxWaterPrice.HasValue)
+            rooms = rooms.Where(r => GetFeePrice(r, FeeCategory.Water) == null || GetFeePrice(r, FeeCategory.Water) <= filter.MaxWaterPrice.Value).ToList();
+
+        // Internet price filter
+        if (filter.MaxInternetPrice.HasValue)
+            rooms = rooms.Where(r => GetFeePrice(r, FeeCategory.Internet) == null || GetFeePrice(r, FeeCategory.Internet) <= filter.MaxInternetPrice.Value).ToList();
 
         // Amenity filter: room must have ALL selected amenities
         if (filter.AmenityIds.Any())
@@ -165,7 +177,7 @@ public class RoomsController(ApplicationDbContext db,
     public async Task<IActionResult> Detail(int id)
     {
         var room = await db.Rooms
-            .Include(r => r.Building)
+            .Include(r => r.Building).ThenInclude(b => b.Landlord)
             .Include(r => r.Images.OrderBy(i => i.SortOrder))
             .Include(r => r.RoomAmenities).ThenInclude(ra => ra.Amenity)
             .Include(r => r.FeeConfigs.Where(f => f.IsActive))

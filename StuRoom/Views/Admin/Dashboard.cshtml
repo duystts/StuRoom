@@ -195,6 +195,79 @@
   </div>
 </div>
 
+@* ── Progress cards + tooling ── *@
+<div class="row g-3 mt-3">
+  @* Tỷ lệ Landlord *@
+  <div class="col-md-6">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <h6 class="fw-bold mb-3">Landlord</h6>
+        @if (Model.TotalLandlords > 0)
+        {
+          var pctL = (int)Math.Round((double)Model.ActiveLandlords / Model.TotalLandlords * 100);
+          <div class="d-flex justify-content-between small text-muted mb-1">
+            <span>Đã duyệt</span>
+            <span>@Model.ActiveLandlords / @Model.TotalLandlords (@pctL%)</span>
+          </div>
+          <div class="progress" style="height:8px">
+            <div class="progress-bar bg-success" style="width:@pctL%"></div>
+          </div>
+        }
+        else
+        {
+          <p class="text-muted small mb-0">Chưa có Landlord nào.</p>
+        }
+      </div>
+    </div>
+  </div>
+
+  @* Tỷ lệ phòng *@
+  <div class="col-md-6">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <h6 class="fw-bold mb-3">Tỷ lệ lấp đầy</h6>
+        @if (Model.TotalRooms > 0)
+        {
+          var pctR = (int)Math.Round((double)Model.OccupiedRooms / Model.TotalRooms * 100);
+          <div class="d-flex justify-content-between small text-muted mb-1">
+            <span>Đã thuê</span>
+            <span>@Model.OccupiedRooms / @Model.TotalRooms (@pctR%)</span>
+          </div>
+          <div class="progress" style="height:8px">
+            <div class="progress-bar" style="width:@pctR%;background:#6c8fff"></div>
+          </div>
+        }
+        else
+        {
+          <p class="text-muted small mb-0">Chưa có phòng nào.</p>
+        }
+      </div>
+    </div>
+  </div>
+
+  @* Công cụ kiểm thử & vận hành *@
+  <div class="col-12">
+    <div class="card border-0 shadow-sm border-start border-primary border-3">
+      <div class="card-body">
+        <h6 class="fw-bold mb-2">
+          <i class="bi bi-gear-fill me-1 text-primary"></i>Công cụ kiểm thử &amp; vận hành
+        </h6>
+        <p class="text-muted small mb-3">
+          Kích hoạt chạy thủ công các dịch vụ chạy ngầm để kiểm tra tính năng gửi email, thông báo tức thời.
+        </p>
+        <div class="d-flex flex-wrap gap-2">
+          <form asp-action="TriggerViewingReminders" method="post" class="d-inline">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn btn-primary btn-sm d-inline-flex align-items-center gap-1">
+              <i class="bi bi-envelope-paper"></i> Chạy thử gửi nhắc hẹn xem phòng
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 @section Scripts {
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>

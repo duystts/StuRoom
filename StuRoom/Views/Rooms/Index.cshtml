@@ -75,6 +75,48 @@
               </div>
             </div>
 
+            @* Electricity price range slider *@
+            <div class="mb-4">
+              <div class="d-flex justify-content-between align-items-center mb-1">
+                <label class="form-label small fw-semibold text-secondary mb-0">@Localizer["Giá điện tối đa"]</label>
+                <span id="elecDisplay" class="text-primary fw-bold small">@(Model.MaxElectricityPrice.HasValue && Model.MaxElectricityPrice.Value < 5000 ? Model.MaxElectricityPrice.Value.ToString("N0") + " đ/kWh" : Localizer["5.000+ đ/kWh"].Value)</span>
+              </div>
+              <input type="range" name="MaxElectricityPrice" id="elecSlider" class="form-range custom-range"
+                     min="2000" max="5000" step="100" value="@(Model.MaxElectricityPrice ?? 5000)" />
+              <div class="d-flex justify-content-between small text-muted mt-1" style="font-size: 11px;">
+                <span>2.000 đ</span>
+                <span>5.000+ đ</span>
+              </div>
+            </div>
+
+            @* Water price range slider *@
+            <div class="mb-4">
+              <div class="d-flex justify-content-between align-items-center mb-1">
+                <label class="form-label small fw-semibold text-secondary mb-0">@Localizer["Giá nước tối đa"]</label>
+                <span id="waterDisplay" class="text-primary fw-bold small">@(Model.MaxWaterPrice.HasValue && Model.MaxWaterPrice.Value < 30000 ? Model.MaxWaterPrice.Value.ToString("N0") + " đ/m³" : Localizer["30.000+ đ/m³"].Value)</span>
+              </div>
+              <input type="range" name="MaxWaterPrice" id="waterSlider" class="form-range custom-range"
+                     min="10000" max="30000" step="1000" value="@(Model.MaxWaterPrice ?? 30000)" />
+              <div class="d-flex justify-content-between small text-muted mt-1" style="font-size: 11px;">
+                <span>10.000 đ</span>
+                <span>30.000+ đ</span>
+              </div>
+            </div>
+
+            @* Internet price range slider *@
+            <div class="mb-4">
+              <div class="d-flex justify-content-between align-items-center mb-1">
+                <label class="form-label small fw-semibold text-secondary mb-0">@Localizer["Giá Internet tối đa"]</label>
+                <span id="internetDisplay" class="text-primary fw-bold small">@(Model.MaxInternetPrice.HasValue && Model.MaxInternetPrice.Value < 200000 ? Model.MaxInternetPrice.Value.ToString("N0") + " đ/tháng" : Localizer["200.000+ đ/tháng"].Value)</span>
+              </div>
+              <input type="range" name="MaxInternetPrice" id="internetSlider" class="form-range custom-range"
+                     min="50000" max="200000" step="10000" value="@(Model.MaxInternetPrice ?? 200000)" />
+              <div class="d-flex justify-content-between small text-muted mt-1" style="font-size: 11px;">
+                <span>50.000 đ</span>
+                <span>200.000+ đ</span>
+              </div>
+            </div>
+
             @* Min area *@
             <div class="mb-4">
               <label class="form-label small fw-semibold text-secondary">@Localizer["Diện tích tối thiểu (m²)"]</label>
@@ -160,7 +202,10 @@
       </div>
 
       @* Active Filter Chips *@
-      @if (!string.IsNullOrWhiteSpace(Model.Q) || !string.IsNullOrWhiteSpace(Model.Province) || Model.MinPrice.HasValue || Model.MaxPrice.HasValue || Model.MinArea.HasValue || Model.AmenityIds.Any())
+      @if (!string.IsNullOrWhiteSpace(Model.Q) || !string.IsNullOrWhiteSpace(Model.Province) || Model.MinPrice.HasValue || Model.MaxPrice.HasValue || Model.MinArea.HasValue || Model.AmenityIds.Any()
+           || (Model.MaxElectricityPrice.HasValue && Model.MaxElectricityPrice.Value < 5000)
+           || (Model.MaxWaterPrice.HasValue && Model.MaxWaterPrice.Value < 30000)
+           || (Model.MaxInternetPrice.HasValue && Model.MaxInternetPrice.Value < 200000))
       {
         <div class="d-flex flex-wrap gap-1.5 mb-4 align-items-center">
           <span class="text-muted small me-1">@Localizer["Bộ lọc đang áp dụng:"]</span>
@@ -184,6 +229,24 @@
           {
             <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2.5 py-1.5">
               @Localizer["Diện tích"] ≥ @Model.MinArea m²
+            </span>
+          }
+          @if (Model.MaxElectricityPrice.HasValue && Model.MaxElectricityPrice.Value < 5000)
+          {
+            <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2.5 py-1.5">
+              @Localizer["Điện"] ≤ @(Model.MaxElectricityPrice.Value.ToString("N0")) đ/kWh
+            </span>
+          }
+          @if (Model.MaxWaterPrice.HasValue && Model.MaxWaterPrice.Value < 30000)
+          {
+            <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2.5 py-1.5">
+              @Localizer["Nước"] ≤ @(Model.MaxWaterPrice.Value.ToString("N0")) đ/m³
+            </span>
+          }
+          @if (Model.MaxInternetPrice.HasValue && Model.MaxInternetPrice.Value < 200000)
+          {
+            <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2.5 py-1.5">
+              @Localizer["Internet"] ≤ @(Model.MaxInternetPrice.Value.ToString("N0")) đ/tháng
             </span>
           }
           <a asp-action="Index" class="text-decoration-none text-muted small ms-2"><i class="bi bi-x-circle me-1"></i>@Localizer["Xóa hết"]</a>
@@ -211,9 +274,19 @@
             else if (room.Area > 40) { categoryLabel = Localizer["Căn hộ"].Value; }
 
             <div class="col-sm-6 col-xl-4">
-              <a asp-action="Detail" asp-route-id="@room.Id" class="text-decoration-none text-dark">
-                <div class="card border-0 shadow-sm h-100 room-card">
+              <div class="card border-0 shadow-sm h-100 room-card position-relative text-dark d-flex flex-column">
 
+                @* Favorite heart icon *@
+                @{
+                  bool isFav = ViewBag.FavoriteRoomIds != null && ((List<int>)ViewBag.FavoriteRoomIds).Contains(room.Id);
+                }
+                <button type="button" class="btn btn-fav @(isFav ? "active" : "") position-absolute top-0 end-0 m-3 d-flex align-items-center justify-content-center shadow-sm"
+                        style="z-index: 3;"
+                        onclick="handleFavToggle(event, @room.Id, this)">
+                  <i class="bi @(isFav ? "bi-heart-fill text-danger" : "bi-heart")"></i>
+                </button>
+
+                <a asp-action="Detail" asp-route-id="@room.Id" class="text-decoration-none text-dark d-flex flex-column flex-grow-1">
                   @* Image & Badges *@
                   <div class="position-relative overflow-hidden card-img-wrapper" style="height: 200px;">
                     @if (room.PrimaryImageUrl != null)
@@ -236,20 +309,10 @@
                       }
                       <span class="badge badge-category">@categoryLabel</span>
                     </div>
-
-                    @* Favorite heart icon *@
-                    @{
-                      bool isFav = ViewBag.FavoriteRoomIds != null && ((List<int>)ViewBag.FavoriteRoomIds).Contains(room.Id);
-                    }
-                    <button type="button" class="btn btn-fav @(isFav ? "active" : "") position-absolute top-0 end-0 m-3 d-flex align-items-center justify-content-center shadow-sm"
-                            style="z-index: 2;"
-                            onclick="handleFavToggle(event, @room.Id, this)">
-                      <i class="bi @(isFav ? "bi-heart-fill text-danger" : "bi-heart")"></i>
-                    </button>
                   </div>
 
                   @* Details *@
-                  <div class="card-body p-4 d-flex flex-column justify-content-between">
+                  <div class="card-body p-4 d-flex flex-column justify-content-between flex-grow-1">
                     <div>
                       <div class="d-flex align-items-start justify-content-between gap-2 mb-2">
                         <h6 class="fw-bold mb-0 text-truncate text-dark card-room-title">@room.BuildingName - P.@room.RoomNumber</h6>
@@ -281,36 +344,38 @@
                         }
                       </div>
                     </div>
+                  </div>
+                </a>
 
-                    @* Footer *@
-                    <div class="d-flex align-items-center justify-content-between pt-3 border-top">
-                      <div>
-                        <span class="text-muted text-uppercase fw-semibold d-block" style="font-size: 9px; letter-spacing: 0.05em; margin-bottom: 2.5px;">@Localizer["Giá thuê"]</span>
-                        @if (room.RentPrice.HasValue)
-                        {
-                          <div class="card-room-price mb-0">
-                            <span class="price-value">@((room.RentPrice.Value / 1000000.0m).ToString("0.#"))</span> <span class="price-unit">@Localizer["Tr"]</span><span class="price-period">/@Localizer["tháng"]</span>
-                          </div>
-                        }
-                        else
-                        {
-                          <div class="text-muted small fw-semibold">@Localizer["Liên hệ"]</div>
-                        }
-                      </div>
-                      <div class="d-flex align-items-center gap-2">
-                        <button type="button" class="btn btn-sm btn-compare rounded-pill px-2.5 py-1" data-room-id="@room.Id"
-                                onclick="toggleCompareRoom(event, @room.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(room.BuildingName)) - P.@room.RoomNumber', '@((room.RentPrice ?? 0) / 1000000.0m).ToString("0.#") ' + '@Localizer["Tr/tháng"]', '@room.PrimaryImageUrl')">
-                          <i class="bi bi-shuffle me-1"></i><span class="compare-text">@Localizer["So sánh"]</span>
-                        </button>
-                        <div class="btn-detail-arrow d-flex align-items-center justify-content-center">
-                          <i class="bi bi-arrow-right"></i>
+                @* Footer is outside the <a> tag *@
+                <div class="card-body p-4 pt-0">
+                  <div class="d-flex align-items-center justify-content-between pt-3 border-top">
+                    <div>
+                      <span class="text-muted text-uppercase fw-semibold d-block" style="font-size: 9px; letter-spacing: 0.05em; margin-bottom: 2.5px;">@Localizer["Giá thuê"]</span>
+                      @if (room.RentPrice.HasValue)
+                      {
+                        <div class="card-room-price mb-0">
+                          <span class="price-value">@((room.RentPrice.Value / 1000000.0m).ToString("0.#"))</span> <span class="price-unit">@Localizer["Tr"]</span><span class="price-period">/@Localizer["tháng"]</span>
                         </div>
-                      </div>
+                      }
+                      else
+                      {
+                        <div class="text-muted small fw-semibold">@Localizer["Liên hệ"]</div>
+                      }
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                      <button type="button" class="btn btn-sm btn-compare rounded-pill px-2.5 py-1" data-room-id="@room.Id"
+                              onclick="toggleCompareRoom(event, @room.Id, '@room.BuildingName.Replace("'", "\\'") - P.@room.RoomNumber', '@(((room.RentPrice ?? 0) / 1000000.0m).ToString("0.#")) ' + '@Localizer["Tr/tháng"]', '@room.PrimaryImageUrl')">
+                        <i class="bi bi-shuffle me-1"></i><span class="compare-text">@Localizer["So sánh"]</span>
+                      </button>
+                      <a asp-action="Detail" asp-route-id="@room.Id" class="btn-detail-arrow d-flex align-items-center justify-content-center text-decoration-none">
+                        <i class="bi bi-arrow-right"></i>
+                      </a>
                     </div>
                   </div>
-
                 </div>
-              </a>
+
+              </div>
             </div>
           }
         </div>
@@ -351,6 +416,57 @@
 
     // Auto submit on slider release to trigger query filtering
     priceSlider.addEventListener('change', function() {
+      $('#filterForm').submit();
+    });
+  }
+
+  // Electricity slider dynamics
+  const elecSlider = document.getElementById('elecSlider');
+  const elecDisplay = document.getElementById('elecDisplay');
+  if (elecSlider && elecDisplay) {
+    elecSlider.addEventListener('input', function() {
+      const val = parseInt(this.value);
+      if (val >= 5000) {
+        elecDisplay.textContent = '@Html.Raw(Localizer["5.000+ đ/kWh"].Value)';
+      } else {
+        elecDisplay.textContent = val.toLocaleString('vi-VN') + ' đ/kWh';
+      }
+    });
+    elecSlider.addEventListener('change', function() {
+      $('#filterForm').submit();
+    });
+  }
+
+  // Water slider dynamics
+  const waterSlider = document.getElementById('waterSlider');
+  const waterDisplay = document.getElementById('waterDisplay');
+  if (waterSlider && waterDisplay) {
+    waterSlider.addEventListener('input', function() {
+      const val = parseInt(this.value);
+      if (val >= 30000) {
+        waterDisplay.textContent = '@Html.Raw(Localizer["30.000+ đ/m³"].Value)';
+      } else {
+        waterDisplay.textContent = val.toLocaleString('vi-VN') + ' đ/m³';
+      }
+    });
+    waterSlider.addEventListener('change', function() {
+      $('#filterForm').submit();
+    });
+  }
+
+  // Internet slider dynamics
+  const internetSlider = document.getElementById('internetSlider');
+  const internetDisplay = document.getElementById('internetDisplay');
+  if (internetSlider && internetDisplay) {
+    internetSlider.addEventListener('input', function() {
+      const val = parseInt(this.value);
+      if (val >= 200000) {
+        internetDisplay.textContent = '@Html.Raw(Localizer["200.000+ đ/tháng"].Value)';
+      } else {
+        internetDisplay.textContent = val.toLocaleString('vi-VN') + ' đ/tháng';
+      }
+    });
+    internetSlider.addEventListener('change', function() {
       $('#filterForm').submit();
     });
   }

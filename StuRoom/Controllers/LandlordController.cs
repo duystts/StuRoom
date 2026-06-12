@@ -245,6 +245,9 @@ public class LandlordController(
     {
         ViewData["ActiveMenu"] = "Rooms";
 
+        var landlordUser = await userManager.GetUserAsync(User);
+        ViewBag.LandlordPhoneNumber = landlordUser?.PhoneNumber;
+
         var myBuildings = await db.Buildings
             .Where(b => b.LandlordId == CurrentUserId)
             .OrderBy(b => b.Name)
@@ -272,7 +275,8 @@ public class LandlordController(
     [HttpPost, ValidateAntiForgeryToken]
     public async Task<IActionResult> CreateRoom(
         int buildingId, string roomNumber, int? floorNumber,
-        decimal area, int? capacity, string? description)
+        decimal area, int? capacity, string? description,
+        string? phoneNumber)
     {
         // Ensure building belongs to this landlord
         var building = await db.Buildings
@@ -283,6 +287,13 @@ public class LandlordController(
         {
             TempData["Error"] = "Số phòng không được để trống.";
             return RedirectToAction(nameof(Rooms), new { buildingId });
+        }
+
+        var user = await userManager.FindByIdAsync(CurrentUserId);
+        if (user != null)
+        {
+            user.PhoneNumber = string.IsNullOrWhiteSpace(phoneNumber) ? null : phoneNumber.Trim();
+            await userManager.UpdateAsync(user);
         }
 
         var room = new Room
@@ -314,7 +325,7 @@ public class LandlordController(
     public async Task<IActionResult> EditRoom(
         int id, string roomNumber, int? floorNumber,
         decimal area, int? capacity, string? description,
-        int? returnBuildingId)
+        int? returnBuildingId, string? phoneNumber)
     {
         var room = await db.Rooms
             .Include(r => r.Building)
@@ -325,6 +336,13 @@ public class LandlordController(
         {
             TempData["Error"] = "Số phòng không được để trống.";
             return RedirectToAction(nameof(Rooms), new { buildingId = returnBuildingId });
+        }
+
+        var user = await userManager.FindByIdAsync(CurrentUserId);
+        if (user != null)
+        {
+            user.PhoneNumber = string.IsNullOrWhiteSpace(phoneNumber) ? null : phoneNumber.Trim();
+            await userManager.UpdateAsync(user);
         }
 
         room.RoomNumber  = roomNumber.Trim();
