@@ -7,6 +7,7 @@ using StuRoom.Models;
 using Microsoft.AspNetCore.Identity;
 using StuRoom.Services;
 using Microsoft.AspNetCore.Identity.UI.Services;
+using StuRoom.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -65,6 +66,7 @@ builder.Services.AddTransient<IEmailSender, SmtpEmailSender>();
 // ── Cloudinary ─────────────────────────────────────────────────────────
 builder.Services.AddSingleton<ICloudinaryService, CloudinaryService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddSignalR();
 
 // ── Background — nhắc hẹn xem phòng qua email ────────────────────────
 builder.Services.AddHostedService<ViewingReminderService>();
@@ -117,5 +119,7 @@ app.MapControllerRoute(
 
 app.MapRazorPages()
    .WithStaticAssets();
+
+app.MapHub<ChatHub>("/chatHub");
 
 app.Run();

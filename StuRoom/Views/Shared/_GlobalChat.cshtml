@@ -1,0 +1,141 @@
+<!-- Global Chat Modal -->
+<div class="modal fade" id="chatModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content shadow-lg border-0">
+      <div class="modal-header bg-primary text-white border-0">
+        <h5 class="modal-title" id="chatModalTitle"><i class="bi bi-chat-dots me-2"></i>Liên hệ</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body bg-light" id="chatBody" style="height: 400px; overflow-y: auto; scroll-behavior: smooth;">
+        <!-- Messages will appear here -->
+      </div>
+      <div class="modal-footer border-0 p-2 bg-white">
+        <form id="chatForm" class="d-flex w-100 gap-2 m-0" onsubmit="sendMessage(event)">
+          <input type="hidden" id="chatReceiverId" />
+          <input type="text" id="chatInput" class="form-control rounded-pill" placeholder="Nhập tin nhắn..." autocomplete="off" required />
+          <button type="submit" class="btn btn-primary rounded-circle px-3 d-flex align-items-center justify-content-center" id="chatSendBtn" style="min-width:40px; height:40px;">
+            <i class="bi bi-send-fill"></i>
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+<script>
+    const connection = new signalR.HubConnectionBuilder()
+        .withUrl("/chatHub")
+        .withAutomaticReconnect()
+        .build();
+
+    let currentReceiverId = null;
+    let chatModal = null;
+
+    document.addEventListener("DOMContentLoaded", function () {
+        // Init modal if it exists
+        const modalEl = document.getElementById('chatModal');
+        if(modalEl) {
+            chatModal = new bootstrap.Modal(modalEl);
+        }
+        
+        connection.on("ReceiveMessage", function (senderId, message, createdAt) {
+            // If chat modal is open with this user
+            if (senderId === currentReceiverId) {
+                appendMessage(message, false);
+            } else {
+                // Optionally show a toast for new message
+                showToast("Bạn có tin nhắn mới!", "info");
+                // Refresh unread count if element exists
+                if(typeof loadConversations === "function") {
+                    loadConversations();
+                }
+            }
+        });
+
+        connection.on("MessageSent", function (receiverId, message, createdAt) {
+            appendMessage(message, true);
+        });
+
+        connection.start().catch(err => console.error("SignalR Connection Error:", err.toString()));
+    });
+
+    function openChat(receiverId, titleContext) {
+        currentReceiverId = receiverId;
+        document.getElementById("chatReceiverId").value = receiverId;
+        document.getElementById("chatModalTitle").innerHTML = `<i class="bi bi-chat-dots me-2"></i>${titleContext}`;
+        
+        const chatBody = document.getElementById("chatBody");
+        chatBody.innerHTML = '<div class="text-center text-muted mt-5"><div class="spinner-border spinner-border-sm me-2"></div>Đang tải tin nhắn...</div>';
+        
+        if(chatModal) {
+            chatModal.show();
+        }
+
+        fetch(`/api/Chat/history/${receiverId}`)
+            .then(res => {
+                if(!res.ok) throw new Error("Network response was not ok");
+                return res.json();
+            })
+            .then(messages => {
+                chatBody.innerHTML = '';
+                if(messages.length === 0) {
+                    chatBody.innerHTML = '<div class="text-center text-muted mt-5 small">Chưa có tin nhắn nào. Bắt đầu trò chuyện ngay!</div>';
+                } else {
+                    messages.forEach(m => {
+                        appendMessage(m.message, m.isMine);
+                    });
+                    scrollToBottom();
+                }
+                
+                // Refresh unread badge
+                if(typeof loadConversations === "function") {
+                    loadConversations();
+                }
+            })
+            .catch(err => {
+                chatBody.innerHTML = '<div class="text-center text-danger mt-5 small"><i class="bi bi-exclamation-triangle me-1"></i>Lỗi tải lịch sử tin nhắn.</div>';
+                console.error("Fetch history error:", err);
+            });
+    }
+
+    function appendMessage(message, isMine) {
+        const chatBody = document.getElementById("chatBody");
+        // Remove empty state message if exists
+        const emptyState = chatBody.querySelector(".text-muted.mt-5");
+        if(emptyState) emptyState.remove();
+
+        const div = document.createElement("div");
+        div.className = `d-flex flex-column mb-2 ${isMine ? 'align-items-end' : 'align-items-start'}`;
+        
+        const bubble = document.createElement("div");
+        bubble.className = `px-3 py-2 rounded-3 shadow-sm ${isMine ? 'bg-primary text-white' : 'bg-white text-dark border'}`;
+        bubble.style.maxWidth = "85%";
+        bubble.style.wordBreak = "break-word";
+        bubble.innerText = message;
+        
+        div.appendChild(bubble);
+        chatBody.appendChild(div);
+        scrollToBottom();
+    }
+
+    function scrollToBottom() {
+        const chatBody = document.getElementById("chatBody");
+        chatBody.scrollTop = chatBody.scrollHeight;
+    }
+
+    function sendMessage(e) {
+        e.preventDefault();
+        const input = document.getElementById("chatInput");
+        const message = input.value.trim();
+        const receiverId = document.getElementById("chatReceiverId").value;
+        
+        if (!message || !receiverId) return;
+
+        input.value = '';
+        connection.invoke("SendMessage", receiverId, message).catch(err => {
+            console.error("Send message error:", err.toString());
+            alert("Không thể gửi tin nhắn. Vui lòng thử lại sau.");
+        });
+    }
+</script>
