@@ -98,27 +98,32 @@ else
               }
             </td>
             <td>
-              @if (b.Status == BookingStatus.Pending)
-              {
-                <div class="d-flex gap-1">
+              <div class="d-flex align-items-center gap-1.5 flex-wrap">
+                @if (b.Status == BookingStatus.Pending)
+                {
                   <button class="btn btn-sm btn-success"
                           onclick="openApprove(@b.Id, '@b.DesiredMoveIn.ToString("yyyy-MM-dd")', @b.Room.Id)"
                           title="Duyệt">
-                    <i class="bi bi-check-lg me-1"></i>Duyệt
+                    <i class="bi bi-check-lg"></i> Duyệt
                   </button>
                   <button class="btn btn-sm btn-outline-danger"
                           onclick="openReject(@b.Id)"
                           title="Từ chối">
                     <i class="bi bi-x-lg"></i>
                   </button>
-                </div>
-              }
-              @if (b.Status == BookingStatus.Approved && b.Contract != null)
-              {
-                <span class="small text-success">
-                  <i class="bi bi-file-earmark-check me-1"></i>HĐ #@b.Contract.Id
-                </span>
-              }
+                }
+                @if (b.Status == BookingStatus.Approved && b.Contract != null)
+                {
+                  <span class="small text-success">
+                    <i class="bi bi-file-earmark-check me-1"></i>HĐ #@b.Contract.Id
+                  </span>
+                }
+                <button type="button" class="btn btn-sm btn-outline-primary"
+                        title="Chat với tenant"
+                        onclick="openChat('@b.TenantId', '@b.Tenant.FullName.Replace("'", "\\'")')">
+                  <i class="bi bi-chat-dots"></i>
+                </button>
+              </div>
             </td>
           </tr>
         }

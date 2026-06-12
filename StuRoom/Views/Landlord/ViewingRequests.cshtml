@@ -145,6 +145,11 @@ else
                     <i class="bi bi-x-lg"></i>
                   </button>
                 }
+                <button type="button" class="btn btn-sm btn-outline-primary"
+                        title="Chat với tenant"
+                        onclick="openChat('@v.TenantId', '@v.Tenant.FullName.Replace("'", "\\'")')">
+                  <i class="bi bi-chat-dots"></i>
+                </button>
               </div>
             </td>
           </tr>

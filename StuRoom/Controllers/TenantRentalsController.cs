@@ -202,6 +202,21 @@ public class TenantRentalsController(
         var bldg = room.Building;
         var tenant = contract.Tenant;
 
+        // Fetch electricity and water fee configurations
+        var electricityFee = room.FeeConfigs.FirstOrDefault(f => f.FeeCategory == FeeCategory.Electricity && f.IsActive)
+            ?? bldg.FeeConfigs.FirstOrDefault(f => f.FeeCategory == FeeCategory.Electricity && f.IsActive);
+
+        var waterFee = room.FeeConfigs.FirstOrDefault(f => f.FeeCategory == FeeCategory.Water && f.IsActive)
+            ?? bldg.FeeConfigs.FirstOrDefault(f => f.FeeCategory == FeeCategory.Water && f.IsActive);
+
+        string elecStr = electricityFee != null
+            ? $"{electricityFee.UnitPrice:N0} đ/{electricityFee.Unit}"
+            : ".................. đ/kwh";
+
+        string waterStr = waterFee != null
+            ? $"{waterFee.UnitPrice:N0} đ/{waterFee.Unit}"
+            : ".................. đ/người";
+
         using var wordDoc = WordprocessingDocument.Create(stream, WordprocessingDocumentType.Document, true);
         var mainPart = wordDoc.AddMainDocumentPart();
         mainPart.Document = new WpDocument();
@@ -247,49 +262,70 @@ public class TenantRentalsController(
         body.AppendChild(CenteredPara($"Số: {contract.Id:D4}/{DateTime.Now.Year}/HĐTT", false, 20));
         body.AppendChild(ParagraphWithText(""));
 
+        // Preamble
+        body.AppendChild(ParagraphWithText($"Hôm nay ngày {DateTime.Now.Day:D2} tháng {DateTime.Now.Month:D2} năm {DateTime.Now.Year}; tại địa chỉ: {bldg.Address}, {bldg.Ward}, {bldg.District}, {bldg.Province}."));
+        body.AppendChild(new Paragraph(new Run(new RunProperties(new Bold(), new BoldComplexScript(), new FontSize { Val = "22" }), new Text("Chúng tôi gồm:"))));
+        body.AppendChild(ParagraphWithText(""));
+
         // Bên A
-        body.AppendChild(HeadingPara("ĐIỀU 1 – BÊN CHO THUÊ (BÊN A)"));
-        body.AppendChild(InfoPara("Họ và tên", bldg.Landlord?.FullName ?? bldg.Name));
-        body.AppendChild(InfoPara("Tòa nhà", bldg.Name));
-        body.AppendChild(InfoPara("Địa chỉ", $"{bldg.Address}, {bldg.Ward}, {bldg.District}, {bldg.Province}"));
+        body.AppendChild(HeadingPara("1. Đại diện bên cho thuê phòng trọ (Bên A):"));
+        body.AppendChild(InfoPara("Ông/bà", bldg.Landlord?.FullName ?? bldg.Name));
+        body.AppendChild(InfoPara("Sinh ngày", bldg.Landlord?.DateOfBirth?.ToString("dd/MM/yyyy") ?? ".........................................."));
+        body.AppendChild(InfoPara("Nơi đăng ký HK", ".........................................................................................."));
+        body.AppendChild(InfoPara("CMND số", ".........................................."));
+        body.AppendChild(InfoPara("Số điện thoại", bldg.Landlord?.PhoneNumber ?? ".........................................."));
         body.AppendChild(ParagraphWithText(""));
 
         // Bên B
-        body.AppendChild(HeadingPara("ĐIỀU 2 – BÊN THUÊ (BÊN B)"));
-        body.AppendChild(InfoPara("Họ và tên", tenant.FullName ?? tenant.UserName ?? "—"));
-        body.AppendChild(InfoPara("Email", tenant.Email ?? "—"));
-        body.AppendChild(InfoPara("Số điện thoại", tenant.PhoneNumber ?? "—"));
+        body.AppendChild(HeadingPara("2. Bên thuê phòng trọ (Bên B):"));
+        body.AppendChild(InfoPara("Ông/bà", tenant.FullName ?? tenant.UserName ?? "—"));
+        body.AppendChild(InfoPara("Sinh ngày", tenant.DateOfBirth?.ToString("dd/MM/yyyy") ?? ".........................................."));
+        body.AppendChild(InfoPara("Nơi đăng ký HK", ".........................................................................................."));
+        body.AppendChild(InfoPara("Số CMND", ".........................................."));
+        body.AppendChild(InfoPara("Số điện thoại", tenant.PhoneNumber ?? ".........................................."));
         body.AppendChild(ParagraphWithText(""));
 
-        // Tài sản
-        body.AppendChild(HeadingPara("ĐIỀU 3 – TÀI SẢN THUÊ"));
-        body.AppendChild(InfoPara("Phòng số", room.RoomNumber));
-        body.AppendChild(InfoPara("Tòa nhà", bldg.Name));
-        body.AppendChild(InfoPara("Địa chỉ", $"{bldg.Address}, {bldg.Ward}, {bldg.District}, {bldg.Province}"));
-        body.AppendChild(InfoPara("Diện tích", $"{room.Area:N1} m²"));
-        body.AppendChild(InfoPara("Sức chứa", room.Capacity.HasValue ? $"{room.Capacity} người" : "Không giới hạn"));
+        body.AppendChild(ParagraphWithText("Sau khi bàn bạc trên tinh thần dân chủ, hai bên cùng có lợi, cùng thống nhất như sau:"));
         body.AppendChild(ParagraphWithText(""));
 
-        // Thời hạn
-        body.AppendChild(HeadingPara("ĐIỀU 4 – THỜI HẠN VÀ GIÁ THUÊ"));
-        body.AppendChild(InfoPara("Ngày bắt đầu", contract.StartDate.ToString("dd/MM/yyyy")));
-        body.AppendChild(InfoPara("Ngày kết thúc", contract.EndDate.HasValue ? contract.EndDate.Value.ToString("dd/MM/yyyy") : "Không xác định"));
-        body.AppendChild(InfoPara("Giá thuê/tháng", $"{contract.MonthlyRent:N0} đồng"));
-        body.AppendChild(InfoPara("Tiền cọc", $"{contract.DepositAmount:N0} đồng"));
+        // Điều khoản thỏa thuận
+        body.AppendChild(HeadingPara("ĐIỀU KHOẢN THỎA THUẬN"));
+        body.AppendChild(ParagraphWithText($"- Bên A đồng ý cho bên B thuê 01 phòng ở tại địa chỉ: Phòng {room.RoomNumber}, thuộc tòa nhà {bldg.Name}, {bldg.Address}, {bldg.Ward}, {bldg.District}, {bldg.Province}."));
+        body.AppendChild(ParagraphWithText($"- Giá thuê: {contract.MonthlyRent:N0} đ/tháng."));
+        body.AppendChild(ParagraphWithText("- Hình thức thanh toán: Thanh toán vào đầu các tháng (Chuyển khoản hoặc Tiền mặt)."));
+        body.AppendChild(ParagraphWithText($"- Tiền điện: {elecStr} tính theo chỉ số công tơ, thanh toán vào cuối các tháng."));
+        body.AppendChild(ParagraphWithText($"- Tiền nước: {waterStr} thanh toán vào đầu các tháng."));
+        body.AppendChild(ParagraphWithText($"- Tiền đặt cọc: {contract.DepositAmount:N0} đ."));
+        body.AppendChild(ParagraphWithText($"- Thời hạn hợp đồng: Kể từ ngày {contract.StartDate:dd/MM/yyyy} đến ngày {(contract.EndDate.HasValue ? contract.EndDate.Value.ToString("dd/MM/yyyy") : "Không xác định")}."));
         body.AppendChild(ParagraphWithText(""));
 
-        // Điều khoản chung
-        body.AppendChild(HeadingPara("ĐIỀU 5 – ĐIỀU KHOẢN CHUNG"));
-        body.AppendChild(ParagraphWithText("1. Bên B có trách nhiệm thanh toán tiền thuê đúng hạn vào đầu mỗi tháng."));
-        body.AppendChild(ParagraphWithText("2. Bên B không được tự ý sửa chữa, cải tạo phòng khi chưa có sự đồng ý của Bên A."));
-        body.AppendChild(ParagraphWithText("3. Bên B có trách nhiệm giữ gìn vệ sinh chung và tuân thủ nội quy tòa nhà."));
-        body.AppendChild(ParagraphWithText("4. Khi chấm dứt hợp đồng, Bên B phải thông báo trước ít nhất 30 ngày."));
-        body.AppendChild(ParagraphWithText("5. Tiền cọc sẽ được hoàn trả sau khi Bên B bàn giao phòng và thanh toán đầy đủ."));
+        // Trách nhiệm
+        body.AppendChild(HeadingPara("TRÁCH NHIỆM CỦA CÁC BÊN"));
+        body.AppendChild(new Paragraph(new Run(new RunProperties(new Bold(), new BoldComplexScript(), new FontSize { Val = "22" }), new Text("* Trách nhiệm của bên A:"))));
+        body.AppendChild(ParagraphWithText("- Tạo mọi điều kiện thuận lợi để bên B thực hiện theo hợp đồng."));
+        body.AppendChild(ParagraphWithText("- Cung cấp nguồn điện, nước, wifi cho bên B sử dụng."));
+        body.AppendChild(new Paragraph(new Run(new RunProperties(new Bold(), new BoldComplexScript(), new FontSize { Val = "22" }), new Text("* Trách nhiệm của bên B:"))));
+        body.AppendChild(ParagraphWithText("- Thanh toán đầy đủ các khoản tiền theo đúng thỏa thuận."));
+        body.AppendChild(ParagraphWithText("- Bảo quản các trang thiết bị và cơ sở vật chất của bên A trang bị cho ban đầu (làm hỏng phải sửa, mất phải đền)."));
+        body.AppendChild(ParagraphWithText("- Không được tự ý sửa chữa, cải tạo cơ sở vật chất khi chưa được sự đồng ý của bên A."));
+        body.AppendChild(ParagraphWithText("- Giữ gìn vệ sinh trong và ngoài khuôn viên của phòng trọ."));
+        body.AppendChild(ParagraphWithText("- Bên B phải chấp hành mọi quy định của pháp luật Nhà nước và quy định của địa phương."));
+        body.AppendChild(ParagraphWithText("- Nếu bên B cho khách ở qua đêm thì phải báo và được sự đồng ý của chủ nhà đồng thời phải chịu trách nhiệm về các hành vi vi phạm pháp luật của khách trong thời gian ở lại."));
+        body.AppendChild(ParagraphWithText(""));
+
+        // Trách nhiệm chung
+        body.AppendChild(HeadingPara("TRÁCH NHIỆM CHUNG"));
+        body.AppendChild(ParagraphWithText("- Hai bên phải tạo điều kiện cho nhau thực hiện hợp đồng."));
+        body.AppendChild(ParagraphWithText("- Trong thời gian hợp đồng còn hiệu lực nếu bên nào vi phạm các điều khoản đã thỏa thuận thì bên còn lại có quyền đơn phương chấm dứt hợp đồng; nếu sự vi phạm hợp đồng đó gây tổn thất cho bên bị vi phạm hợp đồng thì bên vi phạm hợp đồng phải bồi thường thiệt hại."));
+        body.AppendChild(ParagraphWithText("- Một trong hai bên muốn chấm dứt hợp đồng trước thời hạn thì phải báo trước cho bên kia ít nhất 30 ngày và hai bên phải có sự thống nhất."));
+        body.AppendChild(ParagraphWithText("- Bên A phải trả lại tiền đặt cọc cho bên B."));
+        body.AppendChild(ParagraphWithText("- Bên nào vi phạm điều khoản chung thì phải chịu trách nhiệm trước pháp luật."));
+        body.AppendChild(ParagraphWithText("- Hợp đồng được lập thành 02 bản có giá trị pháp lý như nhau, mỗi bên giữ một bản."));
         body.AppendChild(ParagraphWithText(""));
 
         if (!string.IsNullOrWhiteSpace(contract.Notes))
         {
-            body.AppendChild(HeadingPara("ĐIỀU 6 – GHI CHÚ THÊM"));
+            body.AppendChild(HeadingPara("GHI CHÚ THÊM"));
             body.AppendChild(ParagraphWithText(contract.Notes));
             body.AppendChild(ParagraphWithText(""));
         }
@@ -311,18 +347,6 @@ public class TenantRentalsController(
         var cellA = new TableCell(
             new TableCellProperties(new TableCellWidth { Width = "4819", Type = TableWidthUnitValues.Dxa }),
             new Paragraph(new ParagraphProperties(new Justification { Val = JustificationValues.Center }),
-                new Run(new RunProperties(new Bold(), new FontSize { Val = "22" }), new Text("BÊN A"))),
-            new Paragraph(new ParagraphProperties(new Justification { Val = JustificationValues.Center }),
-                new Run(new RunProperties(new FontSize { Val = "20" }), new Text("(Chủ trọ)"))),
-            new Paragraph(new Text("")),
-            new Paragraph(new Text("")),
-            new Paragraph(new Text("")),
-            new Paragraph(new ParagraphProperties(new Justification { Val = JustificationValues.Center }),
-                new Run(new RunProperties(new FontSize { Val = "20" }), new Text(bldg.Landlord?.FullName ?? bldg.Name))));
-
-        var cellB = new TableCell(
-            new TableCellProperties(new TableCellWidth { Width = "4819", Type = TableWidthUnitValues.Dxa }),
-            new Paragraph(new ParagraphProperties(new Justification { Val = JustificationValues.Center }),
                 new Run(new RunProperties(new Bold(), new FontSize { Val = "22" }), new Text("BÊN B"))),
             new Paragraph(new ParagraphProperties(new Justification { Val = JustificationValues.Center }),
                 new Run(new RunProperties(new FontSize { Val = "20" }), new Text("(Người thuê)"))),
@@ -331,6 +355,18 @@ public class TenantRentalsController(
             new Paragraph(new Text("")),
             new Paragraph(new ParagraphProperties(new Justification { Val = JustificationValues.Center }),
                 new Run(new RunProperties(new FontSize { Val = "20" }), new Text(tenant.FullName ?? "—"))));
+
+        var cellB = new TableCell(
+            new TableCellProperties(new TableCellWidth { Width = "4819", Type = TableWidthUnitValues.Dxa }),
+            new Paragraph(new ParagraphProperties(new Justification { Val = JustificationValues.Center }),
+                new Run(new RunProperties(new Bold(), new FontSize { Val = "22" }), new Text("BÊN A"))),
+            new Paragraph(new ParagraphProperties(new Justification { Val = JustificationValues.Center }),
+                new Run(new RunProperties(new FontSize { Val = "20" }), new Text("(Chủ trọ)"))),
+            new Paragraph(new Text("")),
+            new Paragraph(new Text("")),
+            new Paragraph(new Text("")),
+            new Paragraph(new ParagraphProperties(new Justification { Val = JustificationValues.Center }),
+                new Run(new RunProperties(new FontSize { Val = "20" }), new Text(bldg.Landlord?.FullName ?? bldg.Name))));
 
         sigRow.AppendChild(cellA);
         sigRow.AppendChild(cellB);
