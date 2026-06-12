@@ -55,6 +55,11 @@
   </div>
 </footer>
 
+@if (User.Identity?.IsAuthenticated == true)
+{
+    <partial name="_GlobalChat" />
+}
+
 @* ── Global Room Comparison Drawer ── *@
 <div id="compareDrawer" class="compare-drawer">
   <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
@@ -200,7 +205,73 @@
     syncCompareButtons();
   });
 
-  document.addEventListener("DOMContentLoaded", loadCompareRooms);
+    // Load unread chat badge
+    function loadChatBadge() {
+      fetch('/api/Chat/unread-count')
+        .then(r => r.json())
+        .then(data => {
+            const badge = document.getElementById('chatUnreadBadge');
+            if(badge) {
+                if(data.count > 0) {
+                    badge.textContent = data.count > 99 ? '99+' : data.count;
+                    badge.classList.remove('d-none');
+                } else {
+                    badge.classList.add('d-none');
+                }
+            }
+        }).catch(e => console.error(e));
+    }
+
+    // Load conversations list in dropdown
+    window.loadConversations = function() {
+      const list = document.getElementById('conversationsList');
+      if(!list) return;
+      list.innerHTML = '<div class="text-center text-muted py-3 small"><div class="spinner-border spinner-border-sm"></div></div>';
+      
+      fetch('/api/Chat/conversations')
+        .then(r => r.json())
+        .then(data => {
+            list.innerHTML = '';
+            if(data.length === 0) {
+                list.innerHTML = '<div class="text-center text-muted py-3 small">Chưa có tin nhắn nào.</div>';
+                return;
+            }
+            data.forEach(c => {
+                const time = c.lastMessageTime ? new Date(c.lastMessageTime).toLocaleDateString() : '';
+                const unreadDot = c.unreadCount > 0 ? `<span class="badge bg-danger ms-2">${c.unreadCount}</span>` : '';
+                const item = document.createElement('a');
+                item.className = 'dropdown-item d-flex align-items-center py-2 px-3 border-bottom';
+                item.href = 'javascript:void(0)';
+                item.onclick = (e) => {
+                    e.preventDefault();
+                    // Close dropdown
+                    const toggle = document.getElementById('chatBell');
+                    if(toggle) bootstrap.Dropdown.getInstance(toggle)?.hide();
+                    openChat(c.partnerId, c.partnerName);
+                };
+                item.innerHTML = `
+                    <img src="${c.partnerAvatar}" class="rounded-circle me-2 flex-shrink-0" width="40" height="40" style="object-fit:cover" />
+                    <div class="flex-grow-1 min-w-0">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="fw-semibold small text-truncate" style="max-width:140px">${c.partnerName}</span>
+                            <span class="text-muted" style="font-size:10px">${time}</span>
+                        </div>
+                        <div class="small text-muted text-truncate" style="max-width:180px; font-size:11px;">
+                            ${c.lastMessage || 'Bắt đầu trò chuyện'}${unreadDot}
+                        </div>
+                    </div>
+                `;
+                list.appendChild(item);
+            });
+        }).catch(e => {
+            list.innerHTML = '<div class="text-center text-danger py-3 small">Lỗi tải dữ liệu.</div>';
+        });
+    };
+
+    document.addEventListener("DOMContentLoaded", () => {
+        loadCompareRooms();
+        loadChatBadge();
+    });
 </script>
 
 @if (TempData["Success"] != null)

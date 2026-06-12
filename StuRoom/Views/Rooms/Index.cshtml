@@ -75,6 +75,48 @@
               </div>
             </div>
 
+            @* Electricity price range slider *@
+            <div class="mb-4">
+              <div class="d-flex justify-content-between align-items-center mb-1">
+                <label class="form-label small fw-semibold text-secondary mb-0">@Localizer["Giá điện tối đa"]</label>
+                <span id="elecDisplay" class="text-primary fw-bold small">@(Model.MaxElectricityPrice.HasValue && Model.MaxElectricityPrice.Value < 5000 ? Model.MaxElectricityPrice.Value.ToString("N0") + " đ/kWh" : Localizer["5.000+ đ/kWh"].Value)</span>
+              </div>
+              <input type="range" name="MaxElectricityPrice" id="elecSlider" class="form-range custom-range"
+                     min="2000" max="5000" step="100" value="@(Model.MaxElectricityPrice ?? 5000)" />
+              <div class="d-flex justify-content-between small text-muted mt-1" style="font-size: 11px;">
+                <span>2.000 đ</span>
+                <span>5.000+ đ</span>
+              </div>
+            </div>
+
+            @* Water price range slider *@
+            <div class="mb-4">
+              <div class="d-flex justify-content-between align-items-center mb-1">
+                <label class="form-label small fw-semibold text-secondary mb-0">@Localizer["Giá nước tối đa"]</label>
+                <span id="waterDisplay" class="text-primary fw-bold small">@(Model.MaxWaterPrice.HasValue && Model.MaxWaterPrice.Value < 30000 ? Model.MaxWaterPrice.Value.ToString("N0") + " đ/m³" : Localizer["30.000+ đ/m³"].Value)</span>
+              </div>
+              <input type="range" name="MaxWaterPrice" id="waterSlider" class="form-range custom-range"
+                     min="10000" max="30000" step="1000" value="@(Model.MaxWaterPrice ?? 30000)" />
+              <div class="d-flex justify-content-between small text-muted mt-1" style="font-size: 11px;">
+                <span>10.000 đ</span>
+                <span>30.000+ đ</span>
+              </div>
+            </div>
+
+            @* Internet price range slider *@
+            <div class="mb-4">
+              <div class="d-flex justify-content-between align-items-center mb-1">
+                <label class="form-label small fw-semibold text-secondary mb-0">@Localizer["Giá Internet tối đa"]</label>
+                <span id="internetDisplay" class="text-primary fw-bold small">@(Model.MaxInternetPrice.HasValue && Model.MaxInternetPrice.Value < 200000 ? Model.MaxInternetPrice.Value.ToString("N0") + " đ/tháng" : Localizer["200.000+ đ/tháng"].Value)</span>
+              </div>
+              <input type="range" name="MaxInternetPrice" id="internetSlider" class="form-range custom-range"
+                     min="50000" max="200000" step="10000" value="@(Model.MaxInternetPrice ?? 200000)" />
+              <div class="d-flex justify-content-between small text-muted mt-1" style="font-size: 11px;">
+                <span>50.000 đ</span>
+                <span>200.000+ đ</span>
+              </div>
+            </div>
+
             @* Min area *@
             <div class="mb-4">
               <label class="form-label small fw-semibold text-secondary">@Localizer["Diện tích tối thiểu (m²)"]</label>
@@ -160,7 +202,10 @@
       </div>
 
       @* Active Filter Chips *@
-      @if (!string.IsNullOrWhiteSpace(Model.Q) || !string.IsNullOrWhiteSpace(Model.Province) || Model.MinPrice.HasValue || Model.MaxPrice.HasValue || Model.MinArea.HasValue || Model.AmenityIds.Any())
+      @if (!string.IsNullOrWhiteSpace(Model.Q) || !string.IsNullOrWhiteSpace(Model.Province) || Model.MinPrice.HasValue || Model.MaxPrice.HasValue || Model.MinArea.HasValue || Model.AmenityIds.Any()
+           || (Model.MaxElectricityPrice.HasValue && Model.MaxElectricityPrice.Value < 5000)
+           || (Model.MaxWaterPrice.HasValue && Model.MaxWaterPrice.Value < 30000)
+           || (Model.MaxInternetPrice.HasValue && Model.MaxInternetPrice.Value < 200000))
       {
         <div class="d-flex flex-wrap gap-1.5 mb-4 align-items-center">
           <span class="text-muted small me-1">@Localizer["Bộ lọc đang áp dụng:"]</span>
@@ -184,6 +229,24 @@
           {
             <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2.5 py-1.5">
               @Localizer["Diện tích"] ≥ @Model.MinArea m²
+            </span>
+          }
+          @if (Model.MaxElectricityPrice.HasValue && Model.MaxElectricityPrice.Value < 5000)
+          {
+            <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2.5 py-1.5">
+              @Localizer["Điện"] ≤ @(Model.MaxElectricityPrice.Value.ToString("N0")) đ/kWh
+            </span>
+          }
+          @if (Model.MaxWaterPrice.HasValue && Model.MaxWaterPrice.Value < 30000)
+          {
+            <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2.5 py-1.5">
+              @Localizer["Nước"] ≤ @(Model.MaxWaterPrice.Value.ToString("N0")) đ/m³
+            </span>
+          }
+          @if (Model.MaxInternetPrice.HasValue && Model.MaxInternetPrice.Value < 200000)
+          {
+            <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2.5 py-1.5">
+              @Localizer["Internet"] ≤ @(Model.MaxInternetPrice.Value.ToString("N0")) đ/tháng
             </span>
           }
           <a asp-action="Index" class="text-decoration-none text-muted small ms-2"><i class="bi bi-x-circle me-1"></i>@Localizer["Xóa hết"]</a>
@@ -351,6 +414,57 @@
 
     // Auto submit on slider release to trigger query filtering
     priceSlider.addEventListener('change', function() {
+      $('#filterForm').submit();
+    });
+  }
+
+  // Electricity slider dynamics
+  const elecSlider = document.getElementById('elecSlider');
+  const elecDisplay = document.getElementById('elecDisplay');
+  if (elecSlider && elecDisplay) {
+    elecSlider.addEventListener('input', function() {
+      const val = parseInt(this.value);
+      if (val >= 5000) {
+        elecDisplay.textContent = '@Html.Raw(Localizer["5.000+ đ/kWh"].Value)';
+      } else {
+        elecDisplay.textContent = val.toLocaleString('vi-VN') + ' đ/kWh';
+      }
+    });
+    elecSlider.addEventListener('change', function() {
+      $('#filterForm').submit();
+    });
+  }
+
+  // Water slider dynamics
+  const waterSlider = document.getElementById('waterSlider');
+  const waterDisplay = document.getElementById('waterDisplay');
+  if (waterSlider && waterDisplay) {
+    waterSlider.addEventListener('input', function() {
+      const val = parseInt(this.value);
+      if (val >= 30000) {
+        waterDisplay.textContent = '@Html.Raw(Localizer["30.000+ đ/m³"].Value)';
+      } else {
+        waterDisplay.textContent = val.toLocaleString('vi-VN') + ' đ/m³';
+      }
+    });
+    waterSlider.addEventListener('change', function() {
+      $('#filterForm').submit();
+    });
+  }
+
+  // Internet slider dynamics
+  const internetSlider = document.getElementById('internetSlider');
+  const internetDisplay = document.getElementById('internetDisplay');
+  if (internetSlider && internetDisplay) {
+    internetSlider.addEventListener('input', function() {
+      const val = parseInt(this.value);
+      if (val >= 200000) {
+        internetDisplay.textContent = '@Html.Raw(Localizer["200.000+ đ/tháng"].Value)';
+      } else {
+        internetDisplay.textContent = val.toLocaleString('vi-VN') + ' đ/tháng';
+      }
+    });
+    internetSlider.addEventListener('change', function() {
       $('#filterForm').submit();
     });
   }

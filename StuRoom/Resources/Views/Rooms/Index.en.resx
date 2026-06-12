@@ -138,4 +138,31 @@
   <data name="So sánh" xml:space="preserve">
     <value>Compare</value>
   </data>
+  <data name="Giá điện tối đa" xml:space="preserve">
+    <value>Max Electricity Price</value>
+  </data>
+  <data name="Giá nước tối đa" xml:space="preserve">
+    <value>Max Water Price</value>
+  </data>
+  <data name="Giá Internet tối đa" xml:space="preserve">
+    <value>Max Internet Price</value>
+  </data>
+  <data name="Điện" xml:space="preserve">
+    <value>Electricity</value>
+  </data>
+  <data name="Nước" xml:space="preserve">
+    <value>Water</value>
+  </data>
+  <data name="Internet" xml:space="preserve">
+    <value>Internet</value>
+  </data>
+  <data name="5.000+ đ/kWh" xml:space="preserve">
+    <value>5,000+ VND/kWh</value>
+  </data>
+  <data name="30.000+ đ/m³" xml:space="preserve">
+    <value>30,000+ VND/m³</value>
+  </data>
+  <data name="200.000+ đ/tháng" xml:space="preserve">
+    <value>200,000+ VND/month</value>
+  </data>
 </root>
