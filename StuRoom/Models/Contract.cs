@@ -28,6 +28,7 @@ public class Contract
     public string? GeneratedDocUrl { get; set; }
     public string? TerminationReason { get; set; }
     public string? Notes { get; set; }
+    public bool ExpiryReminderSent { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public ICollection<Invoice> Invoices { get; set; } = [];

@@ -794,6 +794,31 @@ public class LandlordController(
         };
 
         var list = await query.OrderByDescending(b => b.CreatedAt).ToListAsync();
+
+        // Lấy tất cả Rent configs đang hoạt động dạng Fixed cho các tòa nhà của Landlord này
+        var rentConfigs = await db.FeeConfigs
+            .Where(f => f.FeeCategory == FeeCategory.Rent && f.IsActive && f.CalcType == CalcType.Fixed)
+            .Where(f => (f.BuildingId != null && myBuildingIds.Contains(f.BuildingId.Value)) ||
+                        (f.RoomId != null && db.Rooms.Where(r => myBuildingIds.Contains(r.BuildingId)).Select(r => r.Id).Contains(f.RoomId.Value)))
+            .ToListAsync();
+
+        var roomPrices = new Dictionary<int, decimal>();
+        foreach (var b in list)
+        {
+            var roomId = b.RoomId;
+            var buildingId = b.Room.BuildingId;
+            
+            // Ưu tiên config ở cấp phòng (RoomId) trước, sau đó mới đến cấp tòa nhà (BuildingId)
+            var config = rentConfigs.FirstOrDefault(f => f.RoomId == roomId)
+                         ?? rentConfigs.FirstOrDefault(f => f.BuildingId == buildingId && f.RoomId == null);
+                         
+            if (config != null)
+            {
+                roomPrices[roomId] = config.UnitPrice;
+            }
+        }
+        ViewBag.RoomPrices = roomPrices;
+
         return View(list);
     }
 
@@ -809,6 +834,20 @@ public class LandlordController(
                 db.Buildings.Any(bl => bl.LandlordId == CurrentUserId && bl.Id == b.Room.BuildingId));
 
         if (booking == null) return NotFound();
+
+        // Kiểm tra xem phòng có cấu hình giá thuê cố định đang hoạt động không
+        var rentConfig = await db.FeeConfigs
+            .Where(f => f.FeeCategory == FeeCategory.Rent && f.IsActive && f.CalcType == CalcType.Fixed)
+            .Where(f => f.RoomId == booking.RoomId || (f.BuildingId == booking.Room.BuildingId && f.RoomId == null))
+            .OrderByDescending(f => f.RoomId)
+            .FirstOrDefaultAsync();
+
+        if (rentConfig != null)
+        {
+            // Nếu có giá cố định, ép buộc giá thuê và tiền cọc theo cấu hình này
+            monthlyRent = rentConfig.UnitPrice;
+            depositAmount = rentConfig.UnitPrice; // Tiền cọc bằng 1 tháng tiền thuê
+        }
 
         // Create Contract (Status = Pending — Landlord finalises in Contract management)
         var contract = new Contract

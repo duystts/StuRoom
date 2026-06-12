@@ -15,6 +15,7 @@ public class Invoice
     public InvoiceStatus Status { get; set; } = InvoiceStatus.Draft;
     public DateTime DueDate { get; set; }
     public string? Notes { get; set; }
+    public bool DueReminderSent { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public ICollection<InvoiceItem> Items { get; set; } = [];

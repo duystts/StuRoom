@@ -68,6 +68,7 @@ builder.Services.AddScoped<INotificationService, NotificationService>();
 
 // ── Background — nhắc hẹn xem phòng qua email ────────────────────────
 builder.Services.AddHostedService<ViewingReminderService>();
+builder.Services.AddHostedService<RentalReminderService>();
 
 builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
 builder.Services.AddControllersWithViews()
