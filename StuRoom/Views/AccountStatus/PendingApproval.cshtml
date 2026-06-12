@@ -1,31 +1,58 @@
+@model ApplicationUser
 @{
-    ViewData["Title"] = "Chờ duyệt tài khoản";
+    bool isRejected = Model != null && !string.IsNullOrEmpty(Model.RejectionReason);
+    ViewData["Title"] = isRejected ? "Từ chối duyệt tài khoản" : "Chờ duyệt tài khoản";
 }
 
 <div class="container d-flex align-items-center justify-content-center" style="min-height: 70vh;">
-    <div class="text-center" style="max-width: 480px;">
-        <div class="mb-4">
-            <svg xmlns="http://www.w3.org/2000/svg" width="72" height="72" fill="none" viewBox="0 0 24 24"
-                 stroke="#f59e0b" stroke-width="1.5">
-                <path stroke-linecap="round" stroke-linejoin="round"
-                      d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
-            </svg>
-        </div>
-        <h2 class="fw-semibold mb-2">Tài khoản đang chờ duyệt</h2>
-        <p class="text-muted mb-4">
-            Tài khoản chủ trọ của bạn đã được tạo thành công.<br>
-            Vui lòng chờ Admin xem xét và phê duyệt — thường trong vòng <strong>1–2 ngày làm việc</strong>.
-        </p>
-        <p class="text-muted small mb-4">
-            Sau khi được duyệt bạn sẽ có thể đăng phòng, quản lý hợp đồng và hoá đơn.
-        </p>
+    <div class="text-center" style="max-width: 520px;">
+        @if (isRejected)
+        {
+            <div class="mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" width="72" height="72" fill="none" viewBox="0 0 24 24"
+                     stroke="#ef4444" stroke-width="1.5">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                          d="m9.75 9.75 4.5 4.5m0-4.5-4.5 4.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                </svg>
+            </div>
+            <h2 class="fw-bold text-danger mb-3">Tài khoản từ chối phê duyệt</h2>
+            <p class="text-muted mb-4">
+                Yêu cầu đăng ký tài khoản chủ trọ của bạn không được phê duyệt bởi Ban quản trị.
+            </p>
+            <div class="alert alert-danger border-0 rounded-4 text-start shadow-sm p-4 mb-4" style="background: rgba(239, 68, 68, 0.08);">
+                <div class="fw-bold text-danger mb-2 small text-uppercase" style="letter-spacing: 0.05em;">Lý do từ chối:</div>
+                <div class="text-dark fw-medium fs-6">@Model!.RejectionReason</div>
+            </div>
+            <p class="text-muted small mb-4">
+                Nếu bạn cho rằng đây là một sự nhầm lẫn hoặc muốn bổ sung thông tin, vui lòng liên hệ bộ phận hỗ trợ của chúng tôi.
+            </p>
+        }
+        else
+        {
+            <div class="mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" width="72" height="72" fill="none" viewBox="0 0 24 24"
+                     stroke="#f59e0b" stroke-width="1.5">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                          d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+                </svg>
+            </div>
+            <h2 class="fw-semibold mb-2">Tài khoản đang chờ duyệt</h2>
+            <p class="text-muted mb-4">
+                Tài khoản chủ trọ của bạn đã được tạo thành công.<br>
+                Vui lòng chờ Admin xem xét và phê duyệt — thường trong vòng <strong>1–2 ngày làm việc</strong>.
+            </p>
+            <p class="text-muted small mb-4">
+                Sau khi được duyệt bạn sẽ có thể đăng phòng, quản lý hợp đồng và hoá đơn.
+            </p>
+        }
+
         <div class="d-flex gap-2 justify-content-center">
             <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary">
                 Về trang chủ
             </a>
             <form asp-area="Identity" asp-page="/Account/Logout"
                   asp-route-returnUrl="/" method="post" class="d-inline">
-                <button type="submit" class="btn btn-warning text-white">Đăng xuất</button>
+                <button type="submit" class="btn @(isRejected ? "btn-danger" : "btn-warning") text-white">Đăng xuất</button>
             </form>
         </div>
     </div>

@@ -16,6 +16,9 @@ public static class DbInitializer
         var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
         var db          = services.GetRequiredService<ApplicationDbContext>();
 
+        // Tự động tạo cơ sở dữ liệu và chạy migrations nếu chưa có
+        await db.Database.MigrateAsync();
+
         // ── 1. Seed roles ──────────────────────────────────────────
         string[] roles = ["Admin", "Landlord", "Tenant"];
 
