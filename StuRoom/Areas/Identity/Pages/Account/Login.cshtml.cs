@@ -70,6 +70,16 @@ public class LoginModel : PageModel
 
         if (!ModelState.IsValid) return Page();
 
+        var user = await _userManager.FindByEmailAsync(Input.Email);
+        if (user != null && await _userManager.IsInRoleAsync(user, "Landlord") && !user.IsApproved)
+        {
+            if (await _userManager.CheckPasswordAsync(user, Input.Password))
+            {
+                await _signInManager.SignInAsync(user, isPersistent: Input.RememberMe);
+                return RedirectToAction("PendingApproval", "AccountStatus");
+            }
+        }
+
         var result = await _signInManager.PasswordSignInAsync(
             Input.Email, Input.Password, Input.RememberMe, lockoutOnFailure: false);
 
@@ -77,15 +87,6 @@ public class LoginModel : PageModel
         {
             _logger.LogInformation("Đăng nhập thành công: {Email}", Input.Email);
             TempData["Success"] = "Đăng nhập thành công! Chào mừng bạn quay trở lại.";
-
-            // Landlord chưa duyệt → chuyển về trang chờ
-            var user = await _userManager.FindByEmailAsync(Input.Email);
-            if (user != null
-                && await _userManager.IsInRoleAsync(user, "Landlord")
-                && !user.IsApproved)
-            {
-                return RedirectToAction("PendingApproval", "AccountStatus");
-            }
 
             return LocalRedirect(returnUrl);
         }

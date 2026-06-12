@@ -123,11 +123,12 @@ public class AdminController(
         {
             var item = new LandlordItem
             {
-                Id        = u.Id,
-                FullName  = u.FullName,
-                Email     = u.Email ?? "",
-                AvatarUrl = u.AvatarUrl,
-                CreatedAt = DateTime.UtcNow
+                Id              = u.Id,
+                FullName        = u.FullName,
+                Email           = u.Email ?? "",
+                AvatarUrl       = u.AvatarUrl,
+                CreatedAt       = DateTime.UtcNow,
+                RejectionReason = u.RejectionReason
             };
 
             if (!u.IsApproved && !(u.LockoutEnd.HasValue && u.LockoutEnd > DateTimeOffset.UtcNow))
@@ -148,6 +149,7 @@ public class AdminController(
         if (user == null) return NotFound();
 
         user.IsApproved = true;
+        user.RejectionReason = null;
         await userManager.SetLockoutEndDateAsync(user, null);
         await userManager.UpdateAsync(user);
 
@@ -166,8 +168,10 @@ public class AdminController(
         var user = await userManager.FindByIdAsync(id);
         if (user == null) return NotFound();
 
+        user.RejectionReason = reason;
         await userManager.SetLockoutEnabledAsync(user, true);
         await userManager.SetLockoutEndDateAsync(user, DateTimeOffset.MaxValue);
+        await userManager.UpdateAsync(user);
 
         var reasonText = string.IsNullOrWhiteSpace(reason) ? "không đáp ứng yêu cầu" : reason;
         await emailSender.SendEmailAsync(user.Email!,
